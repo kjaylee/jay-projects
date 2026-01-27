@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Bubble Defense - 버블 디펜스</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            overflow: hidden;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 9/16;
+        }
+        
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            box-shadow: 0 0 40px rgba(0, 150, 255, 0.3);
+        }
+        
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            z-index: 10;
+        }
+        
+        .overlay.hidden {
+            display: none;
+        }
+        
+        .overlay h1 {
+            color: #fff;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 20px #00aaff;
+        }
+        
+        .overlay h2 {
+            color: #ffaa00;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .overlay p {
+            color: #aaa;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            padding: 0 20px;
+        }
+        
+        .btn {
+            background: linear-gradient(180deg, #00aaff 0%, #0066cc 100%);
+            color: #fff;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            margin: 10px;
+            box-shadow: 0 4px 15px rgba(0, 150, 255, 0.4);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 150, 255, 0.6);
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+        }
+        
+        .stats {
+            color: #fff;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .stats div {
+            margin: 5px 0;
+            font-size: 1.1rem;
+        }
+        
+        .instructions {
+            color: #888;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 10px 30px;
+            line-height: 1.4;
+        }
+        
+        /* 크레딧 - 에셋 출처 */
+        .credits {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #444;
+            font-size: 0.7rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- 시작 화면 -->
+        <div id="startScreen" class="overlay">
+            <h1>🫧 Bubble Defense</h1>
+            <p>버블을 쏴서 매치하고<br>타워를 세워 적을 막아라!</p>
+            <button class="btn" onclick="startGame()">게임 시작</button>
+            <div class="instructions">
+                🎯 드래그로 조준, 떼면 발사<br>
+                🏰 에너지로 타워 건설<br>
+                👾 적이 기지에 도달하면 체력 감소
+            </div>
+        </div>
+        
+        <!-- 게임 오버 화면 -->
+        <div id="gameOverScreen" class="overlay hidden">
+            <h1>💔 Game Over</h1>
+            <div class="stats">
+                <div>웨이브: <span id="finalWave">0</span></div>
+                <div>점수: <span id="finalScore">0</span></div>
+                <div>처치한 적: <span id="finalKills">0</span></div>
+            </div>
+            <button class="btn" onclick="startGame()">다시 시작</button>
+        </div>
+        
+        <!-- 승리 화면 -->
+        <div id="winScreen" class="overlay hidden">
+            <h1>🎉 Victory!</h1>
+            <h2>스테이지 클리어!</h2>
+            <div class="stats">
+                <div>점수: <span id="winScore">0</span></div>
+                <div>처치한 적: <span id="winKills">0</span></div>
+            </div>
+            <button class="btn" onclick="startGame()">다시 플레이</button>
+        </div>
+        
+        <div class="credits">
+            Assets: Custom Canvas Graphics | Audio: Web Audio API
+        </div>
+    </div>
+
+    <script>
+        // ==================== 게임 설정 ====================
+        const CONFIG = {
+            // 버블
+            BUBBLE_RADIUS: 18,
+            BUBBLE_COLORS: ['#ff4444', '#4488ff', '#44dd44', '#ffdd44', '#aa44ff'],
+            GRID_COLS: 9,
+            GRID_ROWS: 8,
+            
+            // 게임
+            INITIAL_HEALTH: 100,
+            TOTAL_WAVES: 10,
+            
+            // 타워
+            TOWER_SLOTS: 4,
+            
+            // 물리
+            BUBBLE_SPEED: 12,
+            ENEMY_BASE_SPEED: 0.5
+        };
+        
+        // ==================== 캔버스 설정 ====================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 고해상도 캔버스
+        function resizeCanvas() {
+            const container = document.getElementById('gameContainer');
+            const rect = container.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+            
+            ctx.scale(dpr, dpr);
+            
+            return { width: rect.width, height: rect.height };
+        }
+        
+        let canvasSize = resizeCanvas();
+        window.addEventListener('resize', () => {
+            canvasSize = resizeCanvas();
+        });
+        
+        // ==================== 오디오 시스템 ====================
+        let audioCtx = null;
+        
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        
+        function playSound(freq, duration, type = 'sine', volume = 0.3) {
+            if (!audioCtx) return;
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = type;
+            osc.frequency.value = freq;
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+        
+        function playShoot() {
+            playSound(880, 0.1, 'sine', 0.2);
+        }
+        
+        function playPop() {
+            playSound(440, 0.15, 'sine', 0.25);
+            setTimeout(() => playSound(550, 0.1, 'sine', 0.2), 50);
+            setTimeout(() => playSound(660, 0.08, 'sine', 0.15), 100);
+        }
+        
+        function playHit() {
+            playSound(200, 0.1, 'square', 0.15);
+        }
+        
+        function playKill() {
+            playSound(330, 0.2, 'sawtooth', 0.2);
+        }
+        
+        function playWaveComplete() {
+            [523, 659, 784].forEach((f, i) => {
+                setTimeout(() => playSound(f, 0.3, 'sine', 0.3), i * 100);
+            });
+        }
+        
+        // ==================== 게임 상태 ====================
+        let game = {
+            running: false,
+            health: CONFIG.INITIAL_HEALTH,
+            energy: 100,
+            score: 0,
+            kills: 0,
+            wave: 1,
+            waveEnemies: [],
+            waveInProgress: false,
+            
+            bubbles: [],
+            shootingBubble: null,
+            nextBubble: null,
+            
+            towers: [],
+            enemies: [],
+            projectiles: [],
+            particles: [],
+            
+            aimAngle: -Math.PI / 2,
+            isDragging: false
+        };
+        
+        // ==================== 버블 그리드 ====================
+        function createBubbleGrid() {
+            const bubbles = [];
+            const startY = 60;
+            const spacing = CONFIG.BUBBLE_RADIUS * 2;
+            
+            for (let row = 0; row < CONFIG.GRID_ROWS; row++) {
+                const offset = row % 2 === 1 ? CONFIG.BUBBLE_RADIUS : 0;
+                const cols = row % 2 === 1 ? CONFIG.GRID_COLS - 1 : CONFIG.GRID_COLS;
+                
+                for (let col = 0; col < cols; col++) {
+                    const x = offset + CONFIG.BUBBLE_RADIUS + col * spacing + 
+                              (canvasSize.width - CONFIG.GRID_COLS * spacing) / 2;
+                    const y = startY + row * spacing * 0.866;
+                    
+                    bubbles.push({
+                        x, y,
+                        row, col,
+                        color: CONFIG.BUBBLE_COLORS[Math.floor(Math.random() * CONFIG.BUBBLE_COLORS.length)],
+                        radius: CONFIG.BUBBLE_RADIUS,
+                        active: row < 4  // 처음 4줄만 버블
+                    });
+                }
+            }
+            return bubbles;
+        }
+        
+        // ==================== 버블 발사 ====================
+        function createShootingBubble() {
+            return {
+                x: canvasSize.width / 2,
+                y: canvasSize.height - 80,
+                vx: 0,
+                vy: 0,
+                color: CONFIG.BUBBLE_COLORS[Math.floor(Math.random() * CONFIG.BUBBLE_COLORS.length)],
+                radius: CONFIG.BUBBLE_RADIUS,
+                active: false
+            };
+        }
+        
+        function shootBubble() {
+            if (!game.shootingBubble || game.shootingBubble.active) return;
+            
+            game.shootingBubble.vx = Math.cos(game.aimAngle) * CONFIG.BUBBLE_SPEED;
+            game.shootingBubble.vy = Math.sin(game.aimAngle) * CONFIG.BUBBLE_SPEED;
+            game.shootingBubble.active = true;
+            
+            playShoot();
+        }
+        
+        function updateShootingBubble() {
+            const b = game.shootingBubble;
+            if (!b || !b.active) return;
+            
+            b.x += b.vx;
+            b.y += b.vy;
+            
+            // 벽 반사
+            if (b.x - b.radius < 0 || b.x + b.radius > canvasSize.width) {
+                b.vx *= -1;
+                b.x = Math.max(b.radius, Math.min(canvasSize.width - b.radius, b.x));
+            }
+            
+            // 천장 도달
+            if (b.y - b.radius < 50) {
+                snapBubbleToGrid(b);
+                return;
+            }
+            
+            // 그리드 버블과 충돌
+            for (const bubble of game.bubbles) {
+                if (!bubble.active) continue;
+                
+                const dx = b.x - bubble.x;
+                const dy = b.y - bubble.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < b.radius + bubble.radius) {
+                    snapBubbleToGrid(b);
+                    return;
+                }
+            }
+        }
+        
+        function snapBubbleToGrid(b) {
+            // 가장 가까운 빈 그리드 위치 찾기
+            let bestDist = Infinity;
+            let bestBubble = null;
+            
+            for (const bubble of game.bubbles) {
+                if (bubble.active) continue;
+                
+                const dx = b.x - bubble.x;
+                const dy = b.y - bubble.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    bestBubble = bubble;
+                }
+            }
+            
+            if (bestBubble && bestDist < CONFIG.BUBBLE_RADIUS * 3) {
+                bestBubble.color = b.color;
+                bestBubble.active = true;
+                
+                // 매칭 체크
+                const matches = findMatches(bestBubble);
+                if (matches.length >= 3) {
+                    popBubbles(matches);
+                }
+                
+                // 다음 버블 준비
+                game.shootingBubble = game.nextBubble;
+                game.shootingBubble.x = canvasSize.width / 2;
+                game.shootingBubble.y = canvasSize.height - 80;
+                game.nextBubble = createShootingBubble();
+            } else {
+                // 실패시 다시 발사
+                game.shootingBubble = createShootingBubble();
+            }
+        }
+        
+        function getNeighbors(bubble) {
+            const neighbors = [];
+            const spacing = CONFIG.BUBBLE_RADIUS * 2;
+            
+            for (const other of game.bubbles) {
+                if (!other.active || other === bubble) continue;
+                
+                const dx = bubble.x - other.x;
+                const dy = bubble.y - other.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < spacing * 1.2) {
+                    neighbors.push(other);
+                }
+            }
+            return neighbors;
+        }
+        
+        function findMatches(startBubble) {
+            const matches = [];
+            const visited = new Set();
+            const queue = [startBubble];
+            
+            while (queue.length > 0) {
+                const bubble = queue.shift();
+                const id = `${bubble.row}-${bubble.col}`;
+                
+                if (visited.has(id)) continue;
+                visited.add(id);
+                
+                if (bubble.color === startBubble.color && bubble.active) {
+                    matches.push(bubble);
+                    getNeighbors(bubble).forEach(n => queue.push(n));
+                }
+            }
+            
+            return matches;
+        }
+        
+        function popBubbles(bubbles) {
+            const energyGain = bubbles.length * 10 + (bubbles.length > 3 ? (bubbles.length - 3) * 10 : 0);
+            game.energy += energyGain;
+            game.score += bubbles.length * 10;
+            
+            playPop();
+            
+            for (const bubble of bubbles) {
+                bubble.active = false;
+                
+                // 파티클 효과
+                for (let i = 0; i < 5; i++) {
+                    game.particles.push({
+                        x: bubble.x,
+                        y: bubble.y,
+                        vx: (Math.random() - 0.5) * 5,
+                        vy: (Math.random() - 0.5) * 5,
+                        color: bubble.color,
+                        life: 30,
+                        radius: 4
+                    });
+                }
+            }
+            
+            // 에너지 텍스트 표시
+            game.particles.push({
+                x: bubbles[0].x,
+                y: bubbles[0].y,
+                vx: 0,
+                vy: -2,
+                text: `+${energyGain}⚡`,
+                color: '#ffff00',
+                life: 40
+            });
+            
+            // 떨어지는 버블 처리
+            checkFloatingBubbles();
+        }
+        
+        function checkFloatingBubbles() {
+            // 연결되지 않은 버블 찾기 (간단 버전)
+            const connected = new Set();
+            
+            // 최상단 버블부터 시작
+            for (const bubble of game.bubbles) {
+                if (bubble.active && bubble.row === 0) {
+                    const queue = [bubble];
+                    while (queue.length > 0) {
+                        const b = queue.shift();
+                        const id = `${b.row}-${b.col}`;
+                        if (connected.has(id)) continue;
+                        connected.add(id);
+                        
+                        getNeighbors(b).forEach(n => {
+                            if (n.active) queue.push(n);
+                        });
+                    }
+                }
+            }
+            
+            // 연결되지 않은 버블 제거
+            for (const bubble of game.bubbles) {
+                if (bubble.active && !connected.has(`${bubble.row}-${bubble.col}`)) {
+                    bubble.active = false;
+                    game.energy += 5;
+                    game.score += 5;
+                }
+            }
+        }
+        
+        // ==================== 타워 시스템 ====================
+        const TOWER_TYPES = [
+            { name: '아처', cost: 50, damage: 10, range: 120, speed: 1000, color: '#88ff88', icon: '🏹' },
+            { name: '화염', cost: 80, damage: 15, range: 100, speed: 1500, color: '#ff8844', icon: '🔥', dot: true },
+            { name: '얼음', cost: 80, damage: 8, range: 110, speed: 1200, color: '#44aaff', icon: '❄️', slow: 0.5 },
+            { name: '번개', cost: 100, damage: 20, range: 150, speed: 2000, color: '#ffff44', icon: '⚡', chain: 2 }
+        ];
+        
+        function createTower(type, slotIndex) {
+            const slotWidth = canvasSize.width / CONFIG.TOWER_SLOTS;
+            return {
+                type,
+                x: slotWidth * slotIndex + slotWidth / 2,
+                y: canvasSize.height - 160,
+                ...TOWER_TYPES[type],
+                cooldown: 0,
+                level: 1
+            };
+        }
+        
+        function updateTowers(deltaTime) {
+            for (const tower of game.towers) {
+                tower.cooldown -= deltaTime;
+                
+                if (tower.cooldown <= 0) {
+                    // 가장 가까운 적 찾기
+                    let target = null;
+                    let minDist = tower.range;
+                    
+                    for (const enemy of game.enemies) {
+                        if (!enemy.alive) continue;
+                        const dx = enemy.x - tower.x;
+                        const dy = enemy.y - tower.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (dist < minDist) {
+                            minDist = dist;
+                            target = enemy;
+                        }
+                    }
+                    
+                    if (target) {
+                        // 발사
+                        game.projectiles.push({
+                            x: tower.x,
+                            y: tower.y,
+                            targetX: target.x,
+                            targetY: target.y,
+                            damage: tower.damage,
+                            color: tower.color,
+                            dot: tower.dot,
+                            slow: tower.slow,
+                            chain: tower.chain,
+                            speed: 8
+                        });
+                        
+                        tower.cooldown = tower.speed;
+                        playHit();
+                    }
+                }
+            }
+        }
+        
+        // ==================== 적 시스템 ====================
+        const ENEMY_TYPES = [
+            { name: '슬라임', health: 30, speed: 0.5, color: '#44ff44', gold: 5, radius: 15 },
+            { name: '고블린', health: 50, speed: 0.8, color: '#4488ff', gold: 8, radius: 12 },
+            { name: '오크', health: 100, speed: 0.3, color: '#ff8844', gold: 15, radius: 20 },
+            { name: '보스', health: 300, speed: 0.2, color: '#ff44ff', gold: 50, radius: 25 }
+        ];
+        
+        // 적 경로 (S자)
+        function getEnemyPath() {
+            const path = [];
+            const startY = canvasSize.height * 0.45;
+            const endY = canvasSize.height - 130;
+            const steps = 5;
+            
+            for (let i = 0; i <= steps; i++) {
+                const t = i / steps;
+                const y = startY + (endY - startY) * t;
+                const x = i % 2 === 0 ? canvasSize.width * 0.2 : canvasSize.width * 0.8;
+                path.push({ x, y });
+            }
+            return path;
+        }
+        
+        function createEnemy(type) {
+            const enemyType = ENEMY_TYPES[type];
+            const path = getEnemyPath();
+            
+            return {
+                type,
+                x: path[0].x,
+                y: path[0].y - 50,
+                ...enemyType,
+                maxHealth: enemyType.health,
+                path,
+                pathIndex: 0,
+                alive: true,
+                slowed: 0
+            };
+        }
+        
+        function updateEnemies(deltaTime) {
+            for (const enemy of game.enemies) {
+                if (!enemy.alive) continue;
+                
+                // 슬로우 감소
+                if (enemy.slowed > 0) {
+                    enemy.slowed -= deltaTime;
+                }
+                
+                // 경로 따라 이동
+                const target = enemy.path[enemy.pathIndex];
+                if (!target) {
+                    // 기지 도달
+                    enemy.alive = false;
+                    game.health -= 10;
+                    continue;
+                }
+                
+                const dx = target.x - enemy.x;
+                const dy = target.y - enemy.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                const speedMod = enemy.slowed > 0 ? 0.5 : 1;
+                const moveSpeed = enemy.speed * speedMod * (deltaTime / 16);
+                
+                if (dist < 5) {
+                    enemy.pathIndex++;
+                } else {
+                    enemy.x += (dx / dist) * moveSpeed * 3;
+                    enemy.y += (dy / dist) * moveSpeed * 3;
+                }
+            }
+        }
+        
+        // ==================== 투사체 시스템 ====================
+        function updateProjectiles() {
+            for (let i = game.projectiles.length - 1; i >= 0; i--) {
+                const p = game.projectiles[i];
+                
+                const dx = p.targetX - p.x;
+                const dy = p.targetY - p.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < 10) {
+                    // 적에게 데미지
+                    for (const enemy of game.enemies) {
+                        if (!enemy.alive) continue;
+                        
+                        const ex = enemy.x - p.targetX;
+                        const ey = enemy.y - p.targetY;
+                        if (Math.sqrt(ex * ex + ey * ey) < enemy.radius + 10) {
+                            enemy.health -= p.damage;
+                            
+                            if (p.slow) {
+                                enemy.slowed = 2000;
+                            }
+                            
+                            if (enemy.health <= 0) {
+                                enemy.alive = false;
+                                game.score += enemy.gold * 2;
+                                game.energy += enemy.gold;
+                                game.kills++;
+                                playKill();
+                                
+                                // 처치 파티클
+                                for (let j = 0; j < 8; j++) {
+                                    game.particles.push({
+                                        x: enemy.x,
+                                        y: enemy.y,
+                                        vx: (Math.random() - 0.5) * 6,
+                                        vy: (Math.random() - 0.5) * 6,
+                                        color: enemy.color,
+                                        life: 25,
+                                        radius: 5
+                                    });
+                                }
+                            }
+                            break;
+                        }
+                    }
+                    
+                    game.projectiles.splice(i, 1);
+                } else {
+                    p.x += (dx / dist) * p.speed;
+                    p.y += (dy / dist) * p.speed;
+                }
+            }
+        }
+        
+        // ==================== 파티클 시스템 ====================
+        function updateParticles() {
+            for (let i = game.particles.length - 1; i >= 0; i--) {
+                const p = game.particles[i];
+                p.x += p.vx || 0;
+                p.y += p.vy || 0;
+                p.life--;
+                
+                if (p.life <= 0) {
+                    game.particles.splice(i, 1);
+                }
+            }
+        }
+        
+        // ==================== 웨이브 시스템 ====================
+        function startWave() {
+            game.waveInProgress = true;
+            game.waveEnemies = [];
+            
+            // 웨이브별 적 구성
+            const baseCount = 3 + game.wave;
+            
+            for (let i = 0; i < baseCount; i++) {
+                const type = game.wave < 3 ? 0 : 
+                             game.wave < 5 ? Math.random() < 0.7 ? 0 : 1 :
+                             game.wave < 8 ? Math.floor(Math.random() * 3) :
+                             Math.floor(Math.random() * 3);
+                
+                game.waveEnemies.push({ type, delay: i * 1500 });
+            }
+            
+            // 보스 웨이브
+            if (game.wave % 5 === 0) {
+                game.waveEnemies.push({ type: 3, delay: baseCount * 1500 });
+            }
+            
+            spawnWaveEnemies();
+        }
+        
+        function spawnWaveEnemies() {
+            if (game.waveEnemies.length === 0) return;
+            
+            const next = game.waveEnemies.shift();
+            game.enemies.push(createEnemy(next.type));
+            
+            if (game.waveEnemies.length > 0) {
+                setTimeout(spawnWaveEnemies, 1200);
+            }
+        }
+        
+        function checkWaveComplete() {
+            if (!game.waveInProgress) return;
+            
+            const aliveEnemies = game.enemies.filter(e => e.alive).length;
+            const pendingEnemies = game.waveEnemies.length;
+            
+            if (aliveEnemies === 0 && pendingEnemies === 0) {
+                game.waveInProgress = false;
+                playWaveComplete();
+                
+                if (game.wave >= CONFIG.TOTAL_WAVES) {
+                    // 승리
+                    showWinScreen();
+                } else {
+                    game.wave++;
+                    game.energy += 50;  // 웨이브 클리어 보너스
+                    
+                    // 다음 웨이브 시작
+                    setTimeout(startWave, 2000);
+                }
+            }
+        }
+        
+        // ==================== 입력 처리 ====================
+        function handleInput() {
+            const rect = canvas.getBoundingClientRect();
+            
+            function getPos(e) {
+                const touch = e.touches ? e.touches[0] : e;
+                return {
+                    x: touch.clientX - rect.left,
+                    y: touch.clientY - rect.top
+                };
+            }
+            
+            function onStart(e) {
+                e.preventDefault();
+                initAudio();
+                
+                const pos = getPos(e);
+                
+                // 타워 선택 UI 체크
+                const towerUIY = canvasSize.height - 45;
+                if (pos.y > towerUIY - 30 && pos.y < towerUIY + 30) {
+                    const towerWidth = canvasSize.width / 4;
+                    const towerIndex = Math.floor(pos.x / towerWidth);
+                    
+                    if (towerIndex >= 0 && towerIndex < 4) {
+                        const towerType = TOWER_TYPES[towerIndex];
+                        if (game.energy >= towerType.cost) {
+                            // 이미 해당 슬롯에 타워가 있는지 확인
+                            const existingTower = game.towers.find(t => {
+                                const slotWidth = canvasSize.width / CONFIG.TOWER_SLOTS;
+                                const slotX = slotWidth * towerIndex + slotWidth / 2;
+                                return Math.abs(t.x - slotX) < 10;
+                            });
+                            
+                            if (!existingTower) {
+                                game.energy -= towerType.cost;
+                                game.towers.push(createTower(towerIndex, towerIndex));
+                            }
+                        }
+                        return;
+                    }
+                }
+                
+                game.isDragging = true;
+                updateAim(pos);
+            }
+            
+            function onMove(e) {
+                e.preventDefault();
+                if (!game.isDragging) return;
+                updateAim(getPos(e));
+            }
+            
+            function onEnd(e) {
+                e.preventDefault();
+                if (game.isDragging) {
+                    shootBubble();
+                }
+                game.isDragging = false;
+            }
+            
+            function updateAim(pos) {
+                const shooterX = canvasSize.width / 2;
+                const shooterY = canvasSize.height - 80;
+                
+                const dx = pos.x - shooterX;
+                const dy = pos.y - shooterY;
+                
+                game.aimAngle = Math.atan2(dy, dx);
+                
+                // 각도 제한 (위쪽만)
+                if (game.aimAngle > -0.1) game.aimAngle = -0.1;
+                if (game.aimAngle < -Math.PI + 0.1) game.aimAngle = -Math.PI + 0.1;
+            }
+            
+            canvas.addEventListener('mousedown', onStart);
+            canvas.addEventListener('mousemove', onMove);
+            canvas.addEventListener('mouseup', onEnd);
+            canvas.addEventListener('touchstart', onStart);
+            canvas.addEventListener('touchmove', onMove);
+            canvas.addEventListener('touchend', onEnd);
+        }
+        
+        // ==================== 렌더링 ====================
+        function render() {
+            ctx.clearRect(0, 0, canvasSize.width, canvasSize.height);
+            
+            // 배경
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvasSize.height);
+            gradient.addColorStop(0, '#1a1a3e');
+            gradient.addColorStop(0.5, '#2a2a5e');
+            gradient.addColorStop(1, '#1a1a3e');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvasSize.width, canvasSize.height);
+            
+            // 버블 영역 배경
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.fillRect(0, 40, canvasSize.width, canvasSize.height * 0.35);
+            
+            // 경로 표시
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 30;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            const path = getEnemyPath();
+            ctx.beginPath();
+            ctx.moveTo(path[0].x, path[0].y);
+            for (let i = 1; i < path.length; i++) {
+                ctx.lineTo(path[i].x, path[i].y);
+            }
+            ctx.stroke();
+            
+            // 타워 슬롯
+            const slotWidth = canvasSize.width / CONFIG.TOWER_SLOTS;
+            for (let i = 0; i < CONFIG.TOWER_SLOTS; i++) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                ctx.fillRect(i * slotWidth + 5, canvasSize.height - 175, slotWidth - 10, 40);
+            }
+            
+            // 버블 그리드
+            for (const bubble of game.bubbles) {
+                if (!bubble.active) continue;
+                
+                const grad = ctx.createRadialGradient(
+                    bubble.x - 5, bubble.y - 5, 0,
+                    bubble.x, bubble.y, bubble.radius
+                );
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(0.3, bubble.color);
+                grad.addColorStop(1, shadeColor(bubble.color, -30));
+                
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(bubble.x, bubble.y, bubble.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 광택
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.beginPath();
+                ctx.arc(bubble.x - 5, bubble.y - 5, bubble.radius * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // 타워
+            for (const tower of game.towers) {
+                // 범위 표시
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(tower.x, tower.y, tower.range, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // 타워 본체
+                ctx.fillStyle = tower.color;
+                ctx.beginPath();
+                ctx.moveTo(tower.x, tower.y - 20);
+                ctx.lineTo(tower.x + 15, tower.y + 10);
+                ctx.lineTo(tower.x - 15, tower.y + 10);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.fillStyle = '#fff';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(tower.icon, tower.x, tower.y + 5);
+            }
+            
+            // 적
+            for (const enemy of game.enemies) {
+                if (!enemy.alive) continue;
+                
+                // 슬로우 효과
+                if (enemy.slowed > 0) {
+                    ctx.fillStyle = 'rgba(100, 200, 255, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(enemy.x, enemy.y, enemy.radius + 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // 적 본체 (슬라임 형태)
+                ctx.fillStyle = enemy.color;
+                ctx.beginPath();
+                ctx.ellipse(enemy.x, enemy.y + 3, enemy.radius, enemy.radius * 0.8, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 눈
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(enemy.x - 4, enemy.y - 2, 4, 0, Math.PI * 2);
+                ctx.arc(enemy.x + 4, enemy.y - 2, 4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(enemy.x - 3, enemy.y - 1, 2, 0, Math.PI * 2);
+                ctx.arc(enemy.x + 5, enemy.y - 1, 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 체력바
+                const hpRatio = enemy.health / enemy.maxHealth;
+                ctx.fillStyle = '#333';
+                ctx.fillRect(enemy.x - 15, enemy.y - enemy.radius - 8, 30, 4);
+                ctx.fillStyle = hpRatio > 0.5 ? '#4f4' : hpRatio > 0.25 ? '#ff4' : '#f44';
+                ctx.fillRect(enemy.x - 15, enemy.y - enemy.radius - 8, 30 * hpRatio, 4);
+            }
+            
+            // 투사체
+            for (const p of game.projectiles) {
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // 파티클
+            for (const p of game.particles) {
+                if (p.text) {
+                    ctx.fillStyle = p.color;
+                    ctx.font = 'bold 14px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.globalAlpha = p.life / 40;
+                    ctx.fillText(p.text, p.x, p.y);
+                    ctx.globalAlpha = 1;
+                } else {
+                    ctx.globalAlpha = p.life / 30;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+            }
+            
+            // 발사대
+            const shooterX = canvasSize.width / 2;
+            const shooterY = canvasSize.height - 80;
+            
+            // 조준선
+            if (game.isDragging) {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(shooterX, shooterY);
+                ctx.lineTo(
+                    shooterX + Math.cos(game.aimAngle) * 200,
+                    shooterY + Math.sin(game.aimAngle) * 200
+                );
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            // 현재 버블
+            if (game.shootingBubble) {
+                const b = game.shootingBubble;
+                const grad = ctx.createRadialGradient(
+                    b.x - 5, b.y - 5, 0,
+                    b.x, b.y, b.radius
+                );
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(0.3, b.color);
+                grad.addColorStop(1, shadeColor(b.color, -30));
+                
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // 다음 버블
+            if (game.nextBubble) {
+                const b = game.nextBubble;
+                ctx.globalAlpha = 0.5;
+                ctx.fillStyle = b.color;
+                ctx.beginPath();
+                ctx.arc(shooterX + 50, shooterY, b.radius * 0.7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+            
+            // 타워 UI (하단)
+            const towerUIY = canvasSize.height - 45;
+            for (let i = 0; i < 4; i++) {
+                const towerType = TOWER_TYPES[i];
+                const x = (canvasSize.width / 4) * i + canvasSize.width / 8;
+                
+                const canAfford = game.energy >= towerType.cost;
+                
+                ctx.fillStyle = canAfford ? 'rgba(255, 255, 255, 0.2)' : 'rgba(100, 100, 100, 0.2)';
+                ctx.beginPath();
+                ctx.roundRect(x - 35, towerUIY - 25, 70, 50, 8);
+                ctx.fill();
+                
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(towerType.icon, x, towerUIY - 2);
+                
+                ctx.font = '12px Arial';
+                ctx.fillStyle = canAfford ? '#fff' : '#888';
+                ctx.fillText(`${towerType.cost}⚡`, x, towerUIY + 18);
+            }
+            
+            // HUD
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, canvasSize.width, 40);
+            
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#ff6666';
+            ctx.fillText(`❤️ ${game.health}`, 10, 26);
+            
+            ctx.fillStyle = '#ffff66';
+            ctx.fillText(`⚡ ${game.energy}`, 80, 26);
+            
+            ctx.fillStyle = '#66ff66';
+            ctx.fillText(`🏆 ${game.score}`, 160, 26);
+            
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#fff';
+            ctx.fillText(`Wave ${game.wave}/${CONFIG.TOTAL_WAVES}`, canvasSize.width - 10, 26);
+        }
+        
+        function shadeColor(color, percent) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return '#' + (
+                0x1000000 +
+                (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                (B < 255 ? B < 1 ? 0 : B : 255)
+            ).toString(16).slice(1);
+        }
+        
+        // ==================== 게임 루프 ====================
+        let lastTime = 0;
+        
+        function gameLoop(timestamp) {
+            if (!game.running) return;
+            
+            const deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+            
+            // 업데이트
+            updateShootingBubble();
+            updateTowers(deltaTime);
+            updateEnemies(deltaTime);
+            updateProjectiles();
+            updateParticles();
+            checkWaveComplete();
+            
+            // 게임 오버 체크
+            if (game.health <= 0) {
+                showGameOverScreen();
+                return;
+            }
+            
+            // 버블이 너무 내려왔는지 체크
+            const lowestBubble = game.bubbles.filter(b => b.active).reduce((max, b) => Math.max(max, b.y), 0);
+            if (lowestBubble > canvasSize.height * 0.4) {
+                game.health -= 1;
+            }
+            
+            // 렌더
+            render();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // ==================== 게임 시작/종료 ====================
+        function startGame() {
+            game = {
+                running: true,
+                health: CONFIG.INITIAL_HEALTH,
+                energy: 100,
+                score: 0,
+                kills: 0,
+                wave: 1,
+                waveEnemies: [],
+                waveInProgress: false,
+                
+                bubbles: createBubbleGrid(),
+                shootingBubble: createShootingBubble(),
+                nextBubble: createShootingBubble(),
+                
+                towers: [],
+                enemies: [],
+                projectiles: [],
+                particles: [],
+                
+                aimAngle: -Math.PI / 2,
+                isDragging: false
+            };
+            
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('winScreen').classList.add('hidden');
+            
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+            
+            // 첫 웨이브 시작
+            setTimeout(startWave, 1000);
+        }
+        
+        function showGameOverScreen() {
+            game.running = false;
+            document.getElementById('finalWave').textContent = game.wave;
+            document.getElementById('finalScore').textContent = game.score;
+            document.getElementById('finalKills').textContent = game.kills;
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+        }
+        
+        function showWinScreen() {
+            game.running = false;
+            document.getElementById('winScore').textContent = game.score;
+            document.getElementById('winKills').textContent = game.kills;
+            document.getElementById('winScreen').classList.remove('hidden');
+        }
+        
+        // ==================== 초기화 ====================
+        handleInput();
+        
+        // roundRect polyfill
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+                if (w < 2 * r) r = w / 2;
+                if (h < 2 * r) r = h / 2;
+                this.beginPath();
+                this.moveTo(x + r, y);
+                this.arcTo(x + w, y, x + w, y + h, r);
+                this.arcTo(x + w, y + h, x, y + h, r);
+                this.arcTo(x, y + h, x, y, r);
+                this.arcTo(x, y, x + w, y, r);
+                this.closePath();
+                return this;
+            };
+        }
+    </script>
+</body>
+</html>
