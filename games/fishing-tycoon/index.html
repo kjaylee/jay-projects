@@ -373,7 +373,7 @@
             
             gameState.phase = 'casting';
             gameState.bobberX = x;
-            gameState.bobberY = Math.min(y, height * 0.4);
+            gameState.bobberY = height * 0.52; // 물 표면(0.5) 바로 아래에 찌 배치
             gameState.hookDepth = 0;
             
             setTimeout(() => {

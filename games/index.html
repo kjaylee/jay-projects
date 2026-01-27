@@ -14,7 +14,7 @@
             padding: 20px;
         }
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
         }
         h1 {
@@ -28,15 +28,21 @@
             opacity: 0.7;
             margin-bottom: 40px;
         }
+        .game-count {
+            text-align: center;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            color: #0ff;
+        }
         .games-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 20px;
         }
         .game-card {
             background: rgba(255,255,255,0.05);
             border-radius: 20px;
-            padding: 25px;
+            padding: 20px;
             text-decoration: none;
             color: #fff;
             transition: transform 0.3s, box-shadow 0.3s;
@@ -48,27 +54,27 @@
             border-color: rgba(0,255,200,0.3);
         }
         .game-emoji {
-            font-size: 3em;
+            font-size: 2.5em;
             display: block;
-            margin-bottom: 15px;
-        }
-        .game-title {
-            font-size: 1.3em;
-            font-weight: bold;
             margin-bottom: 10px;
         }
+        .game-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
         .game-desc {
-            font-size: 0.9em;
+            font-size: 0.85em;
             opacity: 0.7;
-            line-height: 1.5;
+            line-height: 1.4;
         }
         .game-tag {
             display: inline-block;
             background: rgba(0,255,200,0.2);
-            padding: 3px 10px;
+            padding: 2px 8px;
             border-radius: 10px;
-            font-size: 0.75em;
-            margin-top: 10px;
+            font-size: 0.7em;
+            margin-top: 8px;
         }
         .new-badge {
             background: rgba(255,100,100,0.3);
@@ -86,57 +92,87 @@
     <div class="container">
         <h1>🎮 Jay's 게임 아케이드</h1>
         <p class="subtitle">웹 브라우저에서 바로 플레이! 모바일 지원 📱</p>
+        <p class="game-count">🕹️ 총 11개 게임</p>
         
         <div class="games-grid">
             <a href="slime-survivor/" class="game-card">
                 <span class="game-emoji">🟢</span>
                 <div class="game-title">슬라임 서바이버</div>
-                <div class="game-desc">몰려오는 적들을 피하고 살아남아라! 뱀서라이크 캐주얼 게임.</div>
+                <div class="game-desc">뱀서라이크! 몰려오는 적들을 피하고 살아남아라.</div>
                 <span class="game-tag">🎯 액션</span>
             </a>
             
             <a href="jump-physics/" class="game-card">
                 <span class="game-emoji">🦘</span>
                 <div class="game-title">점프 피직스</div>
-                <div class="game-desc">파워를 충전하고 하늘 끝까지 점프! 물리 기반 점프 게임.</div>
+                <div class="game-desc">파워 충전하고 하늘 끝까지 점프!</div>
                 <span class="game-tag">🚀 아케이드</span>
             </a>
             
             <a href="merge-tower/" class="game-card">
                 <span class="game-emoji">🗼</span>
                 <div class="game-title">머지 몬스터 타워</div>
-                <div class="game-desc">같은 몬스터를 합쳐서 진화! 수박게임 스타일 머지 퍼즐.</div>
+                <div class="game-desc">같은 몬스터 합쳐서 진화! 수박게임 스타일.</div>
                 <span class="game-tag">🧩 퍼즐</span>
             </a>
             
             <a href="single-tap-golf/" class="game-card">
                 <span class="game-emoji">⛳</span>
                 <div class="game-title">싱글탭 골프</div>
-                <div class="game-desc">원터치로 즐기는 9홀 미니 골프. 간단하지만 중독성 있는!</div>
+                <div class="game-desc">드래그로 조준! 9홀 미니 골프.</div>
                 <span class="game-tag">🏌️ 스포츠</span>
             </a>
             
             <a href="dungeon-run/" class="game-card">
                 <span class="game-emoji">🏃</span>
                 <div class="game-title">포켓 던전 런</div>
-                <div class="game-desc">끝없이 달리는 던전 러너. 트랩을 피하고 보물을 모아라!</div>
+                <div class="game-desc">끝없이 달려! 트랩 피하고 보물 수집.</div>
                 <span class="game-tag">🏃 러너</span>
-                <span class="game-tag new-badge">🆕 NEW</span>
             </a>
             
             <a href="rhythm-runner/" class="game-card">
                 <span class="game-emoji">🎵</span>
                 <div class="game-title">리듬 러너</div>
-                <div class="game-desc">비트에 맞춰 노트를 터치! 3레인 리듬 액션 게임.</div>
+                <div class="game-desc">비트에 맞춰 노트 터치! 3레인 리듬 게임.</div>
                 <span class="game-tag">🎵 리듬</span>
-                <span class="game-tag new-badge">🆕 NEW</span>
             </a>
             
             <a href="stack-kingdom/" class="game-card">
                 <span class="game-emoji">🏗️</span>
                 <div class="game-title">스택 킹덤</div>
-                <div class="game-desc">타이밍 맞춰 블록을 쌓아라! Perfect 보너스를 노려봐.</div>
+                <div class="game-desc">타이밍 맞춰 블록 쌓기! Perfect 노려봐.</div>
                 <span class="game-tag">🏗️ 캐주얼</span>
+            </a>
+            
+            <a href="pet-simulator/" class="game-card">
+                <span class="game-emoji">🐾</span>
+                <div class="game-title">AI 펫 시뮬레이터</div>
+                <div class="game-desc">다마고치 스타일! 펫을 키우고 진화시켜.</div>
+                <span class="game-tag">🐕 육성</span>
+                <span class="game-tag new-badge">🆕 NEW</span>
+            </a>
+            
+            <a href="zombie-survivor/" class="game-card">
+                <span class="game-emoji">🧟</span>
+                <div class="game-title">좀비 서바이버</div>
+                <div class="game-desc">탑다운 생존! 좀비 웨이브에서 살아남아라.</div>
+                <span class="game-tag">🧟 생존</span>
+                <span class="game-tag new-badge">🆕 NEW</span>
+            </a>
+            
+            <a href="fishing-tycoon/" class="game-card">
+                <span class="game-emoji">🎣</span>
+                <div class="game-title">낚시 타이쿤</div>
+                <div class="game-desc">12종 물고기 수집! 낚싯대 업그레이드.</div>
+                <span class="game-tag">🎣 수집</span>
+                <span class="game-tag new-badge">🆕 NEW</span>
+            </a>
+            
+            <a href="dice-master/" class="game-card">
+                <span class="game-emoji">🎲</span>
+                <div class="game-title">럭키 다이스</div>
+                <div class="game-desc">야찌 스타일! 주사위 족보로 고득점.</div>
+                <span class="game-tag">🎲 보드</span>
                 <span class="game-tag new-badge">🆕 NEW</span>
             </a>
         </div>
