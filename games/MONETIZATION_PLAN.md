@@ -29,16 +29,16 @@
 4. 애널리틱스 설치
 
 ### Do
-- [ ] 매시간 게임 생산 (크론잡 가동중)
-- [ ] Google Analytics 설치
-- [ ] 메타 태그, OG 이미지 최적화
-- [ ] sitemap.xml 생성
+- [x] 매시간 게임 생산 (크론잡 가동중) ✅
+- [x] GoatCounter 애널리틱스 설치 ✅
+- [x] 메타 태그, OG 이미지 최적화 ✅
+- [x] sitemap.xml 생성 ✅
 - [ ] AdSense 신청 (콘텐츠 충분해지면)
 
 ### See
-- 게임 수: 0/20
-- 일일 방문자: 측정 필요
-- AdSense 상태: 미신청
+- 게임 수: 11/20
+- 일일 방문자: https://jaygames.goatcounter.com
+- AdSense 상태: 미신청 (20개 도달 시 진행)
 
 ---
 
