@@ -511,8 +511,10 @@
         });
         
         document.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            jump();
+            if (e.target.tagName !== 'BUTTON') {
+                e.preventDefault();
+                jump();
+            }
         }, { passive: false });
         
         document.addEventListener('mousedown', (e) => {
