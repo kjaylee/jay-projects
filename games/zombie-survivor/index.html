@@ -793,7 +793,7 @@
             
             ctx.save();
             ctx.translate(x, y);
-            ctx.rotate(angle + Math.PI / 2); // 스프라이트가 위를 향하도록 보정
+            ctx.rotate(angle - Math.PI / 2); // 스프라이트가 이동 방향을 향하도록 보정
             
             const scale = (size * 2) / Math.max(sprite.width, sprite.height);
             const w = sprite.width * scale;
