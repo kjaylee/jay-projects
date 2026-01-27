@@ -237,7 +237,7 @@
 
             draw(offsetY) {
                 const colors = COLORS[this.colorIndex];
-                const drawY = this.y - offsetY;
+                const drawY = this.y + offsetY;
                 
                 // Main block
                 const gradient = ctx.createLinearGradient(this.x, drawY, this.x, drawY + this.height);
@@ -311,7 +311,7 @@
                 ctx.save();
                 ctx.globalAlpha = this.alpha;
                 ctx.fillStyle = this.color;
-                ctx.fillRect(this.x, this.y - offsetY, this.size, this.size);
+                ctx.fillRect(this.x, this.y + offsetY, this.size, this.size);
                 ctx.restore();
             }
         }
