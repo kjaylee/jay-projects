@@ -83,6 +83,33 @@
     .build-btn.delete { border-color: #ff4444; }
     .build-btn.delete:hover { background: #ff4444; }
     
+    /* Conveyor Direction Buttons */
+    .conveyor-dirs {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .conveyor-dirs.hidden { display: none; }
+    .dir-btn {
+      width: 36px;
+      height: 36px;
+      border: 2px solid #4a4a6a;
+      border-radius: 6px;
+      background: #2a2a4a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 20px;
+      color: #888;
+      transition: all 0.2s;
+    }
+    .dir-btn:hover, .dir-btn.active {
+      border-color: #00ff88;
+      color: #00ff88;
+      background: #3a3a5a;
+    }
+    
     /* Info Panel */
     .info-panel {
       position: fixed;
@@ -209,9 +236,15 @@
       <span class="icon">⛏️</span>
       <span class="cost">50</span>
     </div>
-    <div class="build-btn" data-type="conveyor" onclick="selectBuild('conveyor')">
+    <div class="build-btn conveyor-group" data-type="conveyor" onclick="selectBuild('conveyor')">
       <span class="icon">➡️</span>
       <span class="cost">10</span>
+    </div>
+    <div class="conveyor-dirs hidden" id="conveyorDirs">
+      <div class="dir-btn" onclick="setConveyorDir(0)">→</div>
+      <div class="dir-btn" onclick="setConveyorDir(1)">↓</div>
+      <div class="dir-btn" onclick="setConveyorDir(2)">←</div>
+      <div class="dir-btn" onclick="setConveyorDir(3)">↑</div>
     </div>
     <div class="build-btn" data-type="smelter" onclick="selectBuild('smelter')">
       <span class="icon">🔥</span>
@@ -667,13 +700,35 @@
     // ============== BUILD SYSTEM ==============
     function selectBuild(type) {
       document.querySelectorAll('.build-btn').forEach(btn => btn.classList.remove('selected'));
+      const conveyorDirs = document.getElementById('conveyorDirs');
       
       if (state.selectedBuild === type) {
         state.selectedBuild = null;
+        conveyorDirs.classList.add('hidden');
       } else {
         state.selectedBuild = type;
         document.querySelector(`[data-type="${type}"]`).classList.add('selected');
+        
+        // Show direction buttons for conveyor
+        if (type === 'conveyor') {
+          conveyorDirs.classList.remove('hidden');
+          updateDirButtons();
+        } else {
+          conveyorDirs.classList.add('hidden');
+        }
       }
+    }
+    
+    function setConveyorDir(dir) {
+      state.conveyorDir = dir;
+      updateDirButtons();
+      AudioEngine.play('place');
+    }
+    
+    function updateDirButtons() {
+      document.querySelectorAll('.dir-btn').forEach((btn, idx) => {
+        btn.classList.toggle('active', idx === state.conveyorDir);
+      });
     }
     
     function placeMachine(cellIdx) {
