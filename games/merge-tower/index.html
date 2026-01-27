@@ -269,8 +269,10 @@
                         } else {
                             // 밀어내기
                             const overlap = minDist - dist;
-                            const nx = dx / dist;
-                            const ny = dy / dist;
+                            // dist가 0이면 임의 방향으로 밀어내기 (division by zero 방지)
+                            const safeDist = dist || 0.1;
+                            const nx = dx / safeDist;
+                            const ny = dy / safeDist;
                             
                             m1.x -= nx * overlap / 2;
                             m1.y -= ny * overlap / 2;
