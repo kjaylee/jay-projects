@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Jay's Project Hub</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta name="description" content="Jay의 게임 개발 & 앱 기획 허브">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+  <style>
+    :root {
+      --theme-color: #3f51b5;
+      --sidebar-width: 280px;
+    }
+    .sidebar-nav > ul > li > a {
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+    .markdown-section h1 {
+      border-bottom: 2px solid var(--theme-color);
+      padding-bottom: 10px;
+    }
+    .cover-main {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+    /* 이모지 카테고리 스타일 */
+    .sidebar-nav li a[href*="game-proposals"]::before { content: "🎮 "; }
+    .sidebar-nav li a[href*="camera-app"]::before { content: "📸 "; }
+    .sidebar-nav li a[href*="new-ideas"]::before { content: "🤖 "; }
+    .sidebar-nav li a[href*="daily-reports"]::before { content: "📊 "; }
+    .sidebar-nav li a[href*="unity-assets"]::before { content: "📦 "; }
+    .sidebar-nav li a[href*="dev-specs"]::before { content: "📋 "; }
+  </style>
+</head>
+<body>
+  <div id="app">로딩중...</div>
+  <script>
+    window.$docsify = {
+      name: "🎮 Jay's Hub",
+      repo: '',
+      loadSidebar: true,
+      subMaxLevel: 3,
+      auto2top: true,
+      search: {
+        maxAge: 86400000,
+        paths: 'auto',
+        placeholder: '검색...',
+        noData: '결과 없음',
+        depth: 3
+      },
+      pagination: {
+        previousText: '← 이전',
+        nextText: '다음 →',
+        crossChapter: true,
+        crossChapterText: true
+      },
+      copyCode: {
+        buttonText: '복사',
+        errorText: '실패',
+        successText: '완료!'
+      },
+      themeColor: '#3f51b5',
+      formatUpdated: '{YYYY}-{MM}-{DD} {HH}:{mm}',
+      alias: {
+        '/.*/_sidebar.md': '/_sidebar.md'
+      }
+    }
+  </script>
+  <!-- Docsify core -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4"></script>
+  <!-- Plugins -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-copy-code"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-pagination/dist/docsify-pagination.min.js"></script>
+  <!-- Syntax highlighting -->
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-csharp.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+</body>
+</html>
