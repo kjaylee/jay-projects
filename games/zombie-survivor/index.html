@@ -771,7 +771,8 @@
                 const btn = document.createElement('button');
                 btn.className = 'btn upgrade-btn';
                 btn.innerHTML = `${upgrade.name}<br><small>${upgrade.desc}</small>`;
-                btn.onclick = () => {
+                
+                const selectUpgrade = () => {
                     upgrade.apply();
                     document.getElementById('levelUpScreen').style.display = 'none';
                     gamePaused = false;
@@ -780,6 +781,13 @@
                         setTimeout(() => levelUp(), 100);
                     }
                 };
+                
+                btn.onclick = selectUpgrade;
+                btn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    selectUpgrade();
+                });
+                
                 container.appendChild(btn);
             });
             
