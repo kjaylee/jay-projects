@@ -325,9 +325,9 @@
             joystickThumb.style.transform = 'translate(-50%, -50%)';
         }
         
-        joystickArea.addEventListener('touchstart', handleJoystickStart);
-        joystickArea.addEventListener('touchmove', handleJoystickMove);
-        joystickArea.addEventListener('touchend', handleJoystickEnd);
+        joystickArea.addEventListener('touchstart', handleJoystickStart, { passive: false });
+        document.addEventListener('touchmove', handleJoystickMove, { passive: false });
+        document.addEventListener('touchend', handleJoystickEnd, { passive: false });
         joystickArea.addEventListener('mousedown', handleJoystickStart);
         document.addEventListener('mousemove', handleJoystickMove);
         document.addEventListener('mouseup', handleJoystickEnd);
@@ -427,7 +427,7 @@
         function showDamage(x, y, damage, color = '#fff') {
             damageNumbers.push({
                 x, y,
-                text: Math.floor(damage).toString(),
+                text: typeof damage === 'number' ? Math.floor(damage).toString() : damage,
                 color,
                 life: 40,
                 vy: -2
@@ -536,7 +536,7 @@
                 // 좀비 충돌
                 for (let j = zombies.length - 1; j >= 0; j--) {
                     const zombie = zombies[j];
-                    if (bullet.hit.includes(j)) continue;
+                    if (bullet.hit.includes(zombie)) continue;
                     
                     const dist = Math.hypot(bullet.x - zombie.x, bullet.y - zombie.y);
                     if (dist < zombie.size + 8) {
@@ -544,7 +544,7 @@
                         showDamage(zombie.x, zombie.y - zombie.size, bullet.damage, '#fff');
                         createParticles(zombie.x, zombie.y, zombie.color, 3);
                         
-                        bullet.hit.push(j);
+                        bullet.hit.push(zombie);
                         bullet.pierce--;
                         
                         if (bullet.pierce <= 0) {
@@ -559,8 +559,8 @@
                             createParticles(zombie.x, zombie.y, zombie.color, 10);
                             zombies.splice(j, 1);
                             
-                            // 레벨업 체크
-                            if (player.exp >= player.expToLevel) {
+                            // 레벨업 체크 (중복 호출 방지)
+                            if (player.exp >= player.expToLevel && !gamePaused) {
                                 levelUp();
                             }
                         }
@@ -583,7 +583,7 @@
                     } else if (item.type === 'exp') {
                         player.exp += item.value;
                         showDamage(player.x, player.y - 30, '+' + item.value + ' XP', '#3498db');
-                        if (player.exp >= player.expToLevel) {
+                        if (player.exp >= player.expToLevel && !gamePaused) {
                             levelUp();
                         }
                     }
@@ -670,6 +670,10 @@
                     upgrade.apply();
                     document.getElementById('levelUpScreen').style.display = 'none';
                     gamePaused = false;
+                    // 연속 레벨업 체크
+                    if (player.exp >= player.expToLevel) {
+                        setTimeout(() => levelUp(), 100);
+                    }
                 };
                 container.appendChild(btn);
             });
@@ -883,6 +887,7 @@
             player.expToLevel = 50;
             player.kills = 0;
             player.invincible = false;
+            player.lastAttack = 0;
             
             zombies = [];
             bullets = [];
