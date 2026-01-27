@@ -534,15 +534,22 @@
         }
 
         // Event listeners
+        let lastInputTime = 0;
         function handleInput(e) {
             e.preventDefault();
+            
+            // Prevent duplicate events (touch + click firing together)
+            const now = Date.now();
+            if (now - lastInputTime < 100) return;
+            lastInputTime = now;
+            
             if (gameState === 'playing') {
                 placeBlock();
             }
         }
 
         canvas.addEventListener('click', handleInput);
-        canvas.addEventListener('touchstart', handleInput);
+        canvas.addEventListener('touchstart', handleInput, { passive: false });
 
         startBtn.addEventListener('click', () => {
             gameState = 'playing';
