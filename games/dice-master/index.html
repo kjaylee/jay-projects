@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🎲 럭키 다이스 마스터</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+        #gameCanvas {
+            display: block;
+            touch-action: manipulation;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Responsive sizing
+        function resize() {
+            const maxWidth = 420;
+            const maxHeight = 750;
+            const ratio = maxWidth / maxHeight;
+            
+            let w = window.innerWidth;
+            let h = window.innerHeight;
+            
+            if (w / h > ratio) {
+                w = h * ratio;
+            } else {
+                h = w / ratio;
+            }
+            
+            canvas.width = maxWidth;
+            canvas.height = maxHeight;
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
+        }
+        resize();
+        window.addEventListener('resize', resize);
+        
+        // Game State
+        const game = {
+            dice: [1, 1, 1, 1, 1],
+            held: [false, false, false, false, false],
+            rollsLeft: 3,
+            round: 1,
+            maxRounds: 13,
+            totalScore: 0,
+            highScore: parseInt(localStorage.getItem('diceHighScore')) || 0,
+            rolling: false,
+            animFrame: 0,
+            scoreCard: {},
+            categories: [
+                { id: 'ones', name: '1️⃣ 원스', desc: '1의 합계' },
+                { id: 'twos', name: '2️⃣ 투스', desc: '2의 합계' },
+                { id: 'threes', name: '3️⃣ 쓰리스', desc: '3의 합계' },
+                { id: 'fours', name: '4️⃣ 포스', desc: '4의 합계' },
+                { id: 'fives', name: '5️⃣ 파이브스', desc: '5의 합계' },
+                { id: 'sixes', name: '6️⃣ 식스', desc: '6의 합계' },
+                { id: 'threeKind', name: '🎯 트리플', desc: '같은 눈 3개+' },
+                { id: 'fourKind', name: '🎯 포카드', desc: '같은 눈 4개+' },
+                { id: 'fullHouse', name: '🏠 풀하우스', desc: '3+2 조합' },
+                { id: 'smallStr', name: '📈 스몰 스트레이트', desc: '연속 4개' },
+                { id: 'largeStr', name: '📈 라지 스트레이트', desc: '연속 5개' },
+                { id: 'yahtzee', name: '🌟 야찌!', desc: '모두 같은 눈' },
+                { id: 'chance', name: '🎰 찬스', desc: '모든 눈 합계' }
+            ],
+            scrollOffset: 0,
+            gameOver: false,
+            showBonus: false,
+            bonusEarned: 0
+        };
+        
+        // Dice dot positions
+        const dotPositions = {
+            1: [[0.5, 0.5]],
+            2: [[0.25, 0.25], [0.75, 0.75]],
+            3: [[0.25, 0.25], [0.5, 0.5], [0.75, 0.75]],
+            4: [[0.25, 0.25], [0.75, 0.25], [0.25, 0.75], [0.75, 0.75]],
+            5: [[0.25, 0.25], [0.75, 0.25], [0.5, 0.5], [0.25, 0.75], [0.75, 0.75]],
+            6: [[0.25, 0.25], [0.75, 0.25], [0.25, 0.5], [0.75, 0.5], [0.25, 0.75], [0.75, 0.75]]
+        };
+        
+        // Calculate score for a category
+        function calcScore(category, dice) {
+            const counts = [0, 0, 0, 0, 0, 0, 0];
+            dice.forEach(d => counts[d]++);
+            const sum = dice.reduce((a, b) => a + b, 0);
+            const sorted = [...dice].sort().join('');
+            
+            switch(category) {
+                case 'ones': return counts[1] * 1;
+                case 'twos': return counts[2] * 2;
+                case 'threes': return counts[3] * 3;
+                case 'fours': return counts[4] * 4;
+                case 'fives': return counts[5] * 5;
+                case 'sixes': return counts[6] * 6;
+                case 'threeKind': return counts.some(c => c >= 3) ? sum : 0;
+                case 'fourKind': return counts.some(c => c >= 4) ? sum : 0;
+                case 'fullHouse': return (counts.includes(3) && counts.includes(2)) ? 25 : 0;
+                case 'smallStr': return ['1234', '2345', '3456'].some(s => 
+                    s.split('').every(n => dice.includes(parseInt(n)))) ? 30 : 0;
+                case 'largeStr': return ['12345', '23456'].includes(sorted) ? 40 : 0;
+                case 'yahtzee': return counts.some(c => c === 5) ? 50 : 0;
+                case 'chance': return sum;
+                default: return 0;
+            }
+        }
+        
+        // Calculate upper section bonus
+        function calcBonus() {
+            const upperIds = ['ones', 'twos', 'threes', 'fours', 'fives', 'sixes'];
+            let upperSum = 0;
+            upperIds.forEach(id => {
+                if (game.scoreCard[id] !== undefined) {
+                    upperSum += game.scoreCard[id];
+                }
+            });
+            return upperSum >= 63 ? 35 : 0;
+        }
+        
+        // Draw dice with animation
+        function drawDice(x, y, size, value, held, animating) {
+            const padding = 8;
+            const innerSize = size - padding * 2;
+            
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.roundRect(x + 4, y + 4, size, size, 12);
+            ctx.fill();
+            
+            // Dice body
+            const gradient = ctx.createLinearGradient(x, y, x + size, y + size);
+            if (held) {
+                gradient.addColorStop(0, '#ffd700');
+                gradient.addColorStop(1, '#ff8c00');
+            } else if (animating) {
+                gradient.addColorStop(0, '#fff');
+                gradient.addColorStop(1, '#ddd');
+            } else {
+                gradient.addColorStop(0, '#ffffff');
+                gradient.addColorStop(1, '#e8e8e8');
+            }
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.roundRect(x, y, size, size, 12);
+            ctx.fill();
+            
+            // Border
+            ctx.strokeStyle = held ? '#ff6b00' : '#ccc';
+            ctx.lineWidth = held ? 3 : 2;
+            ctx.stroke();
+            
+            // Dots
+            const dotRadius = innerSize * 0.12;
+            ctx.fillStyle = held ? '#8b0000' : '#1a1a2e';
+            
+            const displayValue = animating ? Math.ceil(Math.random() * 6) : value;
+            dotPositions[displayValue].forEach(([px, py]) => {
+                ctx.beginPath();
+                ctx.arc(
+                    x + padding + innerSize * px,
+                    y + padding + innerSize * py,
+                    dotRadius, 0, Math.PI * 2
+                );
+                ctx.fill();
+            });
+            
+            // Hold indicator
+            if (held) {
+                ctx.fillStyle = '#ff6b00';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('HOLD', x + size/2, y + size + 16);
+            }
+        }
+        
+        // Draw button
+        function drawButton(x, y, w, h, text, enabled, highlight = false) {
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.roundRect(x + 3, y + 3, w, h, 10);
+            ctx.fill();
+            
+            const gradient = ctx.createLinearGradient(x, y, x, y + h);
+            if (!enabled) {
+                gradient.addColorStop(0, '#555');
+                gradient.addColorStop(1, '#333');
+            } else if (highlight) {
+                gradient.addColorStop(0, '#ffd700');
+                gradient.addColorStop(1, '#ff8c00');
+            } else {
+                gradient.addColorStop(0, '#4CAF50');
+                gradient.addColorStop(1, '#2E7D32');
+            }
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.roundRect(x, y, w, h, 10);
+            ctx.fill();
+            
+            ctx.fillStyle = enabled ? '#fff' : '#888';
+            ctx.font = 'bold 18px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, x + w/2, y + h/2);
+        }
+        
+        // Draw score category
+        function drawCategory(cat, y, potentialScore) {
+            const isUsed = game.scoreCard[cat.id] !== undefined;
+            const score = isUsed ? game.scoreCard[cat.id] : potentialScore;
+            
+            // Background
+            ctx.fillStyle = isUsed ? 'rgba(76, 175, 80, 0.2)' : 'rgba(255,255,255,0.1)';
+            ctx.beginPath();
+            ctx.roundRect(20, y, canvas.width - 40, 40, 8);
+            ctx.fill();
+            
+            if (!isUsed && potentialScore > 0) {
+                ctx.strokeStyle = '#ffd700';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+            
+            // Name
+            ctx.fillStyle = isUsed ? '#888' : '#fff';
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(cat.name, 30, y + 20);
+            
+            // Score
+            ctx.fillStyle = isUsed ? '#4CAF50' : (potentialScore > 0 ? '#ffd700' : '#666');
+            ctx.font = 'bold 18px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(score.toString(), canvas.width - 30, y + 20);
+        }
+        
+        // Main draw function
+        function draw() {
+            // Background
+            const bgGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            bgGrad.addColorStop(0, '#1a1a2e');
+            bgGrad.addColorStop(0.5, '#16213e');
+            bgGrad.addColorStop(1, '#0f3460');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Header
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillRect(0, 0, canvas.width, 80);
+            
+            // Title
+            ctx.fillStyle = '#ffd700';
+            ctx.font = 'bold 24px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('🎲 럭키 다이스 마스터', canvas.width/2, 30);
+            
+            // Score & Round
+            ctx.fillStyle = '#fff';
+            ctx.font = '16px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(`라운드: ${game.round}/${game.maxRounds}`, 20, 60);
+            ctx.textAlign = 'right';
+            ctx.fillText(`점수: ${game.totalScore}`, canvas.width - 20, 60);
+            
+            // High Score
+            ctx.fillStyle = '#ffd700';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`🏆 최고: ${game.highScore}`, canvas.width/2, 60);
+            
+            // Dice area
+            const diceY = 100;
+            const diceSize = 60;
+            const diceSpacing = 12;
+            const totalDiceWidth = 5 * diceSize + 4 * diceSpacing;
+            const startX = (canvas.width - totalDiceWidth) / 2;
+            
+            // Dice area background
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.beginPath();
+            ctx.roundRect(startX - 15, diceY - 15, totalDiceWidth + 30, diceSize + 55, 15);
+            ctx.fill();
+            
+            // Draw dice
+            for (let i = 0; i < 5; i++) {
+                const x = startX + i * (diceSize + diceSpacing);
+                drawDice(x, diceY, diceSize, game.dice[i], game.held[i], game.rolling);
+            }
+            
+            // Rolls left indicator
+            ctx.fillStyle = '#fff';
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`남은 굴림: ${'🎲'.repeat(game.rollsLeft)}${'⬜'.repeat(3-game.rollsLeft)}`, 
+                canvas.width/2, diceY + diceSize + 40);
+            
+            // Roll button
+            const btnY = diceY + diceSize + 55;
+            drawButton(canvas.width/2 - 80, btnY, 160, 45, 
+                game.rollsLeft === 3 ? '🎲 굴리기!' : `🎲 다시 굴리기 (${game.rollsLeft})`,
+                game.rollsLeft > 0 && !game.rolling && !game.gameOver);
+            
+            // Score categories
+            const catStartY = btnY + 65;
+            const catHeight = 45;
+            
+            // Category title
+            ctx.fillStyle = '#ffd700';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('📋 점수판 (터치하여 선택)', 20, catStartY - 10);
+            
+            // Draw categories
+            game.categories.forEach((cat, i) => {
+                const y = catStartY + i * catHeight;
+                if (y < canvas.height - 10) {
+                    const potential = calcScore(cat.id, game.dice);
+                    drawCategory(cat, y, game.rollsLeft < 3 ? potential : 0);
+                }
+            });
+            
+            // Bonus indicator
+            if (game.showBonus) {
+                ctx.fillStyle = 'rgba(0,0,0,0.8)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#ffd700';
+                ctx.font = 'bold 32px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('🎉 보너스!', canvas.width/2, canvas.height/2 - 30);
+                ctx.font = '24px sans-serif';
+                ctx.fillText(`+${game.bonusEarned}점`, canvas.width/2, canvas.height/2 + 20);
+                
+                setTimeout(() => { game.showBonus = false; }, 1500);
+            }
+            
+            // Game Over screen
+            if (game.gameOver) {
+                ctx.fillStyle = 'rgba(0,0,0,0.85)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#ffd700';
+                ctx.font = 'bold 36px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('🎊 게임 종료!', canvas.width/2, canvas.height/2 - 80);
+                
+                ctx.fillStyle = '#fff';
+                ctx.font = '24px sans-serif';
+                ctx.fillText(`최종 점수: ${game.totalScore}`, canvas.width/2, canvas.height/2 - 20);
+                
+                if (game.totalScore >= game.highScore) {
+                    ctx.fillStyle = '#ffd700';
+                    ctx.font = 'bold 20px sans-serif';
+                    ctx.fillText('🏆 새로운 최고 기록!', canvas.width/2, canvas.height/2 + 20);
+                }
+                
+                drawButton(canvas.width/2 - 80, canvas.height/2 + 60, 160, 50, '🔄 다시 하기', true, true);
+            }
+        }
+        
+        // Roll dice animation
+        function rollDice() {
+            if (game.rollsLeft <= 0 || game.rolling || game.gameOver) return;
+            
+            game.rolling = true;
+            game.rollsLeft--;
+            
+            let frames = 0;
+            const maxFrames = 20;
+            
+            function animate() {
+                frames++;
+                for (let i = 0; i < 5; i++) {
+                    if (!game.held[i]) {
+                        game.dice[i] = Math.ceil(Math.random() * 6);
+                    }
+                }
+                
+                if (frames < maxFrames) {
+                    game.animFrame = requestAnimationFrame(animate);
+                } else {
+                    game.rolling = false;
+                }
+            }
+            animate();
+        }
+        
+        // Select category
+        function selectCategory(catId) {
+            if (game.scoreCard[catId] !== undefined || game.rollsLeft === 3 || game.rolling) return;
+            
+            const score = calcScore(catId, game.dice);
+            game.scoreCard[catId] = score;
+            game.totalScore += score;
+            
+            // Check for upper section bonus
+            const upperIds = ['ones', 'twos', 'threes', 'fours', 'fives', 'sixes'];
+            const allUpperUsed = upperIds.every(id => game.scoreCard[id] !== undefined);
+            if (allUpperUsed && !game.bonusChecked) {
+                game.bonusChecked = true;
+                const bonus = calcBonus();
+                if (bonus > 0) {
+                    game.bonusEarned = bonus;
+                    game.totalScore += bonus;
+                    game.showBonus = true;
+                }
+            }
+            
+            // Next round
+            game.round++;
+            game.rollsLeft = 3;
+            game.held = [false, false, false, false, false];
+            
+            // Check game over
+            if (game.round > game.maxRounds) {
+                game.gameOver = true;
+                if (game.totalScore > game.highScore) {
+                    game.highScore = game.totalScore;
+                    localStorage.setItem('diceHighScore', game.highScore);
+                }
+            }
+        }
+        
+        // Reset game
+        function resetGame() {
+            game.dice = [1, 1, 1, 1, 1];
+            game.held = [false, false, false, false, false];
+            game.rollsLeft = 3;
+            game.round = 1;
+            game.totalScore = 0;
+            game.rolling = false;
+            game.scoreCard = {};
+            game.gameOver = false;
+            game.bonusChecked = false;
+        }
+        
+        // Handle input
+        function handleInput(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (clientX - rect.left) * scaleX;
+            const y = (clientY - rect.top) * scaleY;
+            
+            // Game over - restart button
+            if (game.gameOver) {
+                if (x >= canvas.width/2 - 80 && x <= canvas.width/2 + 80 &&
+                    y >= canvas.height/2 + 60 && y <= canvas.height/2 + 110) {
+                    resetGame();
+                }
+                return;
+            }
+            
+            // Dice clicks
+            const diceY = 100;
+            const diceSize = 60;
+            const diceSpacing = 12;
+            const totalDiceWidth = 5 * diceSize + 4 * diceSpacing;
+            const startX = (canvas.width - totalDiceWidth) / 2;
+            
+            for (let i = 0; i < 5; i++) {
+                const dx = startX + i * (diceSize + diceSpacing);
+                if (x >= dx && x <= dx + diceSize && y >= diceY && y <= diceY + diceSize) {
+                    if (game.rollsLeft < 3 && !game.rolling) {
+                        game.held[i] = !game.held[i];
+                    }
+                    return;
+                }
+            }
+            
+            // Roll button
+            const btnY = diceY + diceSize + 55;
+            if (x >= canvas.width/2 - 80 && x <= canvas.width/2 + 80 &&
+                y >= btnY && y <= btnY + 45) {
+                rollDice();
+                return;
+            }
+            
+            // Category selection
+            const catStartY = btnY + 65;
+            const catHeight = 45;
+            
+            game.categories.forEach((cat, i) => {
+                const cy = catStartY + i * catHeight;
+                if (x >= 20 && x <= canvas.width - 20 && y >= cy && y <= cy + 40) {
+                    selectCategory(cat.id);
+                }
+            });
+        }
+        
+        // Event listeners
+        canvas.addEventListener('click', e => handleInput(e.clientX, e.clientY));
+        canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            handleInput(touch.clientX, touch.clientY);
+        }, { passive: false });
+        
+        // Game loop
+        function gameLoop() {
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        gameLoop();
+    </script>
+</body>
+</html>
