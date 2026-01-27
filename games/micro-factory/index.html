@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>마이크로 팩토리 | Micro Factory</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow: hidden;
+      color: #fff;
+      touch-action: none;
+    }
+    
+    /* Header */
+    .header {
+      width: 100%;
+      max-width: 600px;
+      padding: 10px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0,0,0,0.3);
+    }
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 14px;
+    }
+    .stat-icon { font-size: 18px; }
+    .gold { color: #ffd700; }
+    .level { color: #00ff88; }
+    
+    /* Game Canvas */
+    #gameCanvas {
+      background: #1a1a2e;
+      border: 2px solid #4a4a6a;
+      border-radius: 8px;
+      touch-action: none;
+    }
+    
+    /* Build Bar */
+    .build-bar {
+      width: 100%;
+      max-width: 600px;
+      padding: 10px;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      background: rgba(0,0,0,0.4);
+      border-radius: 0 0 12px 12px;
+    }
+    .build-btn {
+      width: 60px;
+      height: 60px;
+      border: 2px solid #4a4a6a;
+      border-radius: 8px;
+      background: #2a2a4a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #fff;
+    }
+    .build-btn:hover, .build-btn.selected {
+      border-color: #e94560;
+      background: #3a3a5a;
+      transform: scale(1.05);
+    }
+    .build-btn .icon { font-size: 24px; }
+    .build-btn .cost { font-size: 10px; color: #ffd700; }
+    .build-btn.delete { border-color: #ff4444; }
+    .build-btn.delete:hover { background: #ff4444; }
+    
+    /* Info Panel */
+    .info-panel {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      text-align: center;
+    }
+    .info-panel.show { opacity: 1; }
+    
+    /* Tutorial */
+    .tutorial {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.95);
+      padding: 25px;
+      border-radius: 12px;
+      border: 2px solid #e94560;
+      max-width: 90%;
+      width: 350px;
+      z-index: 100;
+      text-align: center;
+    }
+    .tutorial h2 { color: #e94560; margin-bottom: 15px; font-size: 18px; }
+    .tutorial p { font-size: 12px; margin-bottom: 10px; line-height: 1.6; color: #ccc; }
+    .tutorial button {
+      margin-top: 15px;
+      padding: 12px 30px;
+      font-family: inherit;
+      font-size: 14px;
+      background: #e94560;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .hidden { display: none !important; }
+    
+    /* Notifications */
+    .notification {
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(90deg, #e94560, #ff6b6b);
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 12px;
+      animation: slideDown 0.3s ease, fadeOut 0.3s ease 2s forwards;
+      z-index: 50;
+    }
+    @keyframes slideDown {
+      from { top: 0; opacity: 0; }
+      to { top: 60px; opacity: 1; }
+    }
+    @keyframes fadeOut {
+      to { opacity: 0; transform: translate(-50%, -20px); }
+    }
+    
+    /* Level Up Effect */
+    .level-up {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 48px;
+      color: #ffd700;
+      text-shadow: 0 0 20px #ffd700;
+      animation: levelUp 1.5s ease forwards;
+      pointer-events: none;
+      z-index: 100;
+    }
+    @keyframes levelUp {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+      30% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Tutorial -->
+  <div class="tutorial" id="tutorial">
+    <h2>🏭 마이크로 팩토리</h2>
+    <p>미니멀 공장 자동화 시뮬레이터!</p>
+    <p>⛏️ <strong>채굴기</strong>를 광석 위에 배치<br>
+       ➡️ <strong>컨베이어</strong>로 자원 이동<br>
+       🔥 <strong>제련소</strong>로 광석을 주괴로<br>
+       💰 <strong>판매소</strong>에서 골드 획득!</p>
+    <p style="color:#ffd700;">자동화 라인을 최적화하세요!</p>
+    <button onclick="startGame()">▶ 게임 시작</button>
+  </div>
+  
+  <!-- Header -->
+  <div class="header">
+    <div class="stat gold">
+      <span class="stat-icon">💰</span>
+      <span id="goldDisplay">200</span>
+    </div>
+    <div class="stat level">
+      <span class="stat-icon">⭐</span>
+      <span>Lv.<span id="levelDisplay">1</span></span>
+    </div>
+    <div class="stat">
+      <span class="stat-icon">📦</span>
+      <span id="productionDisplay">0/분</span>
+    </div>
+  </div>
+  
+  <!-- Game Canvas -->
+  <canvas id="gameCanvas"></canvas>
+  
+  <!-- Build Bar -->
+  <div class="build-bar">
+    <div class="build-btn" data-type="miner" onclick="selectBuild('miner')">
+      <span class="icon">⛏️</span>
+      <span class="cost">50</span>
+    </div>
+    <div class="build-btn" data-type="conveyor" onclick="selectBuild('conveyor')">
+      <span class="icon">➡️</span>
+      <span class="cost">10</span>
+    </div>
+    <div class="build-btn" data-type="smelter" onclick="selectBuild('smelter')">
+      <span class="icon">🔥</span>
+      <span class="cost">100</span>
+    </div>
+    <div class="build-btn" data-type="assembler" onclick="selectBuild('assembler')">
+      <span class="icon">⚙️</span>
+      <span class="cost">200</span>
+    </div>
+    <div class="build-btn" data-type="seller" onclick="selectBuild('seller')">
+      <span class="icon">💰</span>
+      <span class="cost">FREE</span>
+    </div>
+    <div class="build-btn delete" data-type="delete" onclick="selectBuild('delete')">
+      <span class="icon">🗑️</span>
+      <span class="cost">-</span>
+    </div>
+  </div>
+  
+  <!-- Info Panel -->
+  <div class="info-panel" id="infoPanel"></div>
+
+  <script>
+    // ============== AUDIO ENGINE ==============
+    // Sound effects using Web Audio API
+    // Credits: Procedurally generated sounds
+    const AudioEngine = {
+      ctx: null,
+      init() {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      },
+      play(type) {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        switch(type) {
+          case 'place':
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now);
+            osc.stop(now + 0.1);
+            break;
+          case 'mine':
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(200, now);
+            osc.frequency.exponentialRampToValueAtTime(100, now + 0.15);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.start(now);
+            osc.stop(now + 0.15);
+            break;
+          case 'smelt':
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, now);
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+            break;
+          case 'sell':
+            osc.frequency.setValueAtTime(800, now);
+            osc.frequency.setValueAtTime(1000, now + 0.05);
+            osc.frequency.setValueAtTime(1200, now + 0.1);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.start(now);
+            osc.stop(now + 0.15);
+            break;
+          case 'levelup':
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.exponentialRampToValueAtTime(800, now + 0.2);
+            osc.frequency.exponentialRampToValueAtTime(1200, now + 0.4);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+            osc.start(now);
+            osc.stop(now + 0.5);
+            break;
+          case 'error':
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(150, now);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            osc.start(now);
+            osc.stop(now + 0.2);
+            break;
+        }
+      }
+    };
+    
+    // ============== GAME CONFIG ==============
+    const CONFIG = {
+      GRID_COLS: 10,
+      GRID_ROWS: 7,
+      CELL_SIZE: 50,
+      ITEMS: {
+        ironOre: { color: '#8a8a8a', name: '철광석', value: 1 },
+        copperOre: { color: '#cd7f32', name: '구리광석', value: 1 },
+        ironIngot: { color: '#c0c0c0', name: '철주괴', value: 5 },
+        copperIngot: { color: '#b87333', name: '구리주괴', value: 5 },
+        gear: { color: '#606080', name: '톱니바퀴', value: 15 },
+        circuit: { color: '#00aa00', name: '회로', value: 30 }
+      },
+      MACHINES: {
+        miner: { cost: 50, color: '#4a90d9', name: '채굴기' },
+        conveyor: { cost: 10, color: '#3a3a5a', name: '컨베이어' },
+        smelter: { cost: 100, color: '#d94a4a', name: '제련소' },
+        assembler: { cost: 200, color: '#9a4ad9', name: '조립기' },
+        seller: { cost: 0, color: '#d9c04a', name: '판매소' }
+      },
+      RECIPES: {
+        smelter: {
+          ironOre: 'ironIngot',
+          copperOre: 'copperIngot'
+        },
+        assembler: {
+          ironIngot: 'gear',
+          copperIngot: 'circuit'
+        }
+      }
+    };
+    
+    // ============== GAME STATE ==============
+    let state = {
+      gold: 200,
+      level: 1,
+      exp: 0,
+      expToLevel: 100,
+      totalSold: 0,
+      grid: [],
+      items: [],
+      selectedBuild: null,
+      conveyorDir: 0, // 0:right, 1:down, 2:left, 3:up
+      gameStarted: false
+    };
+    
+    // ============== CANVAS SETUP ==============
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    function resizeCanvas() {
+      const maxWidth = Math.min(window.innerWidth - 20, 600);
+      const cellSize = Math.floor(maxWidth / CONFIG.GRID_COLS);
+      CONFIG.CELL_SIZE = cellSize;
+      canvas.width = cellSize * CONFIG.GRID_COLS;
+      canvas.height = cellSize * CONFIG.GRID_ROWS;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    
+    // ============== GRID INITIALIZATION ==============
+    function initGrid() {
+      state.grid = [];
+      for (let y = 0; y < CONFIG.GRID_ROWS; y++) {
+        for (let x = 0; x < CONFIG.GRID_COLS; x++) {
+          state.grid.push({ type: null, machine: null, direction: 0, progress: 0, inputItem: null });
+        }
+      }
+      
+      // Place resource nodes
+      const ironNodes = [[1,1], [1,2], [2,1]];
+      const copperNodes = [[1,5], [2,5], [1,6]];
+      
+      ironNodes.forEach(([x,y]) => {
+        const idx = y * CONFIG.GRID_COLS + x;
+        if (idx < state.grid.length) state.grid[idx].type = 'ironOre';
+      });
+      
+      copperNodes.forEach(([x,y]) => {
+        const idx = y * CONFIG.GRID_COLS + x;
+        if (idx < state.grid.length) state.grid[idx].type = 'copperOre';
+      });
+    }
+    
+    // ============== RENDERING ==============
+    function render() {
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      const cellSize = CONFIG.CELL_SIZE;
+      
+      // Draw grid
+      ctx.strokeStyle = '#2a2a4a';
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= CONFIG.GRID_COLS; x++) {
+        ctx.beginPath();
+        ctx.moveTo(x * cellSize, 0);
+        ctx.lineTo(x * cellSize, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= CONFIG.GRID_ROWS; y++) {
+        ctx.beginPath();
+        ctx.moveTo(0, y * cellSize);
+        ctx.lineTo(canvas.width, y * cellSize);
+        ctx.stroke();
+      }
+      
+      // Draw cells
+      state.grid.forEach((cell, idx) => {
+        const x = idx % CONFIG.GRID_COLS;
+        const y = Math.floor(idx / CONFIG.GRID_COLS);
+        const px = x * cellSize;
+        const py = y * cellSize;
+        
+        // Resource node
+        if (cell.type === 'ironOre' || cell.type === 'copperOre') {
+          const itemConfig = CONFIG.ITEMS[cell.type];
+          ctx.fillStyle = cell.machine ? 'rgba(138,138,138,0.3)' : itemConfig.color + '40';
+          ctx.fillRect(px + 2, py + 2, cellSize - 4, cellSize - 4);
+          
+          if (!cell.machine) {
+            ctx.fillStyle = itemConfig.color;
+            ctx.beginPath();
+            ctx.arc(px + cellSize/2, py + cellSize/2, cellSize/4, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        
+        // Machine
+        if (cell.machine) {
+          const machineConfig = CONFIG.MACHINES[cell.machine];
+          
+          // Machine body
+          ctx.fillStyle = machineConfig.color;
+          ctx.fillRect(px + 4, py + 4, cellSize - 8, cellSize - 8);
+          
+          // Machine icon
+          ctx.font = `${cellSize * 0.5}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const icons = { miner: '⛏️', smelter: '🔥', assembler: '⚙️', seller: '💰', conveyor: '' };
+          if (icons[cell.machine]) {
+            ctx.fillText(icons[cell.machine], px + cellSize/2, py + cellSize/2);
+          }
+          
+          // Conveyor arrow
+          if (cell.machine === 'conveyor') {
+            ctx.fillStyle = '#888';
+            ctx.font = `${cellSize * 0.6}px Arial`;
+            const arrows = ['→', '↓', '←', '↑'];
+            ctx.fillText(arrows[cell.direction], px + cellSize/2, py + cellSize/2);
+          }
+          
+          // Progress bar for processing machines
+          if ((cell.machine === 'smelter' || cell.machine === 'assembler' || cell.machine === 'miner') && cell.progress > 0) {
+            const barWidth = cellSize - 12;
+            const barHeight = 6;
+            ctx.fillStyle = '#333';
+            ctx.fillRect(px + 6, py + cellSize - 10, barWidth, barHeight);
+            ctx.fillStyle = '#00ff88';
+            ctx.fillRect(px + 6, py + cellSize - 10, barWidth * cell.progress, barHeight);
+          }
+          
+          // Input item indicator
+          if (cell.inputItem) {
+            const itemConfig = CONFIG.ITEMS[cell.inputItem];
+            ctx.fillStyle = itemConfig.color;
+            ctx.beginPath();
+            ctx.arc(px + cellSize - 10, py + 10, 5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      });
+      
+      // Draw moving items
+      state.items.forEach(item => {
+        const itemConfig = CONFIG.ITEMS[item.type];
+        ctx.fillStyle = itemConfig.color;
+        ctx.shadowColor = itemConfig.color;
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(item.x, item.y, cellSize / 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      });
+      
+      // Highlight selected cell
+      if (state.selectedBuild) {
+        const rect = canvas.getBoundingClientRect();
+        // Hover highlight handled in mouse events
+      }
+    }
+    
+    // ============== GAME LOGIC ==============
+    let lastUpdate = 0;
+    let productionCount = 0;
+    let lastProductionReset = Date.now();
+    
+    function update(timestamp) {
+      if (!state.gameStarted) return;
+      
+      const delta = timestamp - lastUpdate;
+      lastUpdate = timestamp;
+      
+      // Reset production counter every minute
+      if (Date.now() - lastProductionReset > 60000) {
+        document.getElementById('productionDisplay').textContent = productionCount + '/분';
+        productionCount = 0;
+        lastProductionReset = Date.now();
+      }
+      
+      // Update miners
+      state.grid.forEach((cell, idx) => {
+        if (cell.machine === 'miner' && (cell.type === 'ironOre' || cell.type === 'copperOre')) {
+          cell.progress += delta / 2000; // 2 seconds to mine
+          if (cell.progress >= 1) {
+            cell.progress = 0;
+            spawnItem(idx, cell.type);
+            AudioEngine.play('mine');
+          }
+        }
+        
+        // Update smelters/assemblers
+        if ((cell.machine === 'smelter' || cell.machine === 'assembler') && cell.inputItem) {
+          cell.progress += delta / 3000; // 3 seconds to process
+          if (cell.progress >= 1) {
+            cell.progress = 0;
+            const recipe = CONFIG.RECIPES[cell.machine];
+            const output = recipe[cell.inputItem];
+            if (output) {
+              spawnItem(idx, output);
+              cell.inputItem = null;
+              AudioEngine.play('smelt');
+            }
+          }
+        }
+      });
+      
+      // Update moving items
+      state.items = state.items.filter(item => {
+        const cellSize = CONFIG.CELL_SIZE;
+        const cellX = Math.floor(item.x / cellSize);
+        const cellY = Math.floor(item.y / cellSize);
+        const cellIdx = cellY * CONFIG.GRID_COLS + cellX;
+        const cell = state.grid[cellIdx];
+        
+        if (!cell) return false;
+        
+        // Check if item reached center of cell
+        const centerX = cellX * cellSize + cellSize / 2;
+        const centerY = cellY * cellSize + cellSize / 2;
+        const atCenter = Math.abs(item.x - centerX) < 3 && Math.abs(item.y - centerY) < 3;
+        
+        if (atCenter) {
+          // Seller - sell item
+          if (cell.machine === 'seller') {
+            const itemConfig = CONFIG.ITEMS[item.type];
+            addGold(itemConfig.value);
+            state.totalSold++;
+            productionCount++;
+            AudioEngine.play('sell');
+            return false;
+          }
+          
+          // Smelter/Assembler - accept input
+          if ((cell.machine === 'smelter' || cell.machine === 'assembler') && !cell.inputItem) {
+            const recipe = CONFIG.RECIPES[cell.machine];
+            if (recipe[item.type]) {
+              cell.inputItem = item.type;
+              return false;
+            }
+          }
+          
+          // Conveyor - change direction
+          if (cell.machine === 'conveyor') {
+            item.direction = cell.direction;
+          }
+        }
+        
+        // Move item
+        const speed = 0.05 * delta;
+        const dirs = [[1,0], [0,1], [-1,0], [0,-1]];
+        const dir = dirs[item.direction];
+        item.x += dir[0] * speed;
+        item.y += dir[1] * speed;
+        
+        // Remove if out of bounds
+        if (item.x < 0 || item.x > canvas.width || item.y < 0 || item.y > canvas.height) {
+          return false;
+        }
+        
+        return true;
+      });
+    }
+    
+    function spawnItem(cellIdx, type) {
+      const cellSize = CONFIG.CELL_SIZE;
+      const x = (cellIdx % CONFIG.GRID_COLS) * cellSize + cellSize / 2;
+      const y = Math.floor(cellIdx / CONFIG.GRID_COLS) * cellSize + cellSize / 2;
+      
+      const cell = state.grid[cellIdx];
+      let direction = 0; // default right
+      
+      // Find adjacent conveyor or processing machine
+      const adjacents = [
+        cellIdx + 1, // right
+        cellIdx + CONFIG.GRID_COLS, // down
+        cellIdx - 1, // left
+        cellIdx - CONFIG.GRID_COLS // up
+      ];
+      
+      for (let i = 0; i < adjacents.length; i++) {
+        const adjCell = state.grid[adjacents[i]];
+        if (adjCell && (adjCell.machine === 'conveyor' || adjCell.machine === 'smelter' || 
+            adjCell.machine === 'assembler' || adjCell.machine === 'seller')) {
+          direction = i;
+          break;
+        }
+      }
+      
+      state.items.push({ type, x, y, direction });
+    }
+    
+    function addGold(amount) {
+      state.gold += amount;
+      state.exp += amount;
+      document.getElementById('goldDisplay').textContent = state.gold;
+      
+      if (state.exp >= state.expToLevel) {
+        levelUp();
+      }
+    }
+    
+    function levelUp() {
+      state.level++;
+      state.exp = 0;
+      state.expToLevel = Math.floor(state.expToLevel * 1.5);
+      document.getElementById('levelDisplay').textContent = state.level;
+      AudioEngine.play('levelup');
+      
+      const levelUpEl = document.createElement('div');
+      levelUpEl.className = 'level-up';
+      levelUpEl.textContent = `⭐ LEVEL ${state.level}!`;
+      document.body.appendChild(levelUpEl);
+      setTimeout(() => levelUpEl.remove(), 1500);
+      
+      showNotification(`레벨 ${state.level} 달성! 🎉`);
+    }
+    
+    function showNotification(text) {
+      const notif = document.createElement('div');
+      notif.className = 'notification';
+      notif.textContent = text;
+      document.body.appendChild(notif);
+      setTimeout(() => notif.remove(), 2500);
+    }
+    
+    // ============== BUILD SYSTEM ==============
+    function selectBuild(type) {
+      document.querySelectorAll('.build-btn').forEach(btn => btn.classList.remove('selected'));
+      
+      if (state.selectedBuild === type) {
+        state.selectedBuild = null;
+      } else {
+        state.selectedBuild = type;
+        document.querySelector(`[data-type="${type}"]`).classList.add('selected');
+      }
+    }
+    
+    function placeMachine(cellIdx) {
+      if (!state.selectedBuild) return;
+      
+      const cell = state.grid[cellIdx];
+      
+      if (state.selectedBuild === 'delete') {
+        if (cell.machine) {
+          // Refund half cost
+          const refund = Math.floor(CONFIG.MACHINES[cell.machine].cost / 2);
+          state.gold += refund;
+          document.getElementById('goldDisplay').textContent = state.gold;
+          cell.machine = null;
+          cell.direction = 0;
+          cell.progress = 0;
+          cell.inputItem = null;
+          AudioEngine.play('place');
+        }
+        return;
+      }
+      
+      // Check if machine already exists
+      if (cell.machine) {
+        // Rotate conveyor
+        if (cell.machine === 'conveyor' && state.selectedBuild === 'conveyor') {
+          cell.direction = (cell.direction + 1) % 4;
+          AudioEngine.play('place');
+        }
+        return;
+      }
+      
+      // Check for miner on resource
+      if (state.selectedBuild === 'miner' && !cell.type) {
+        showNotification('채굴기는 광석 위에만 설치 가능!');
+        AudioEngine.play('error');
+        return;
+      }
+      
+      // Check cost
+      const cost = CONFIG.MACHINES[state.selectedBuild].cost;
+      if (state.gold < cost) {
+        showNotification('골드가 부족합니다!');
+        AudioEngine.play('error');
+        return;
+      }
+      
+      state.gold -= cost;
+      document.getElementById('goldDisplay').textContent = state.gold;
+      cell.machine = state.selectedBuild;
+      cell.direction = state.conveyorDir;
+      AudioEngine.play('place');
+      
+      saveGame();
+    }
+    
+    // ============== INPUT HANDLING ==============
+    let hoverCell = -1;
+    
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const cellX = Math.floor(x / CONFIG.CELL_SIZE);
+      const cellY = Math.floor(y / CONFIG.CELL_SIZE);
+      const cellIdx = cellY * CONFIG.GRID_COLS + cellX;
+      
+      if (cellIdx >= 0 && cellIdx < state.grid.length) {
+        placeMachine(cellIdx);
+      }
+    });
+    
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      const cellX = Math.floor(x / CONFIG.CELL_SIZE);
+      const cellY = Math.floor(y / CONFIG.CELL_SIZE);
+      const cellIdx = cellY * CONFIG.GRID_COLS + cellX;
+      
+      if (cellIdx >= 0 && cellIdx < state.grid.length) {
+        placeMachine(cellIdx);
+      }
+    });
+    
+    // Keyboard for conveyor direction
+    document.addEventListener('keydown', (e) => {
+      if (state.selectedBuild === 'conveyor') {
+        const dirs = { ArrowRight: 0, ArrowDown: 1, ArrowLeft: 2, ArrowUp: 3 };
+        if (dirs[e.key] !== undefined) {
+          state.conveyorDir = dirs[e.key];
+        }
+      }
+    });
+    
+    // ============== SAVE/LOAD ==============
+    function saveGame() {
+      const saveData = {
+        gold: state.gold,
+        level: state.level,
+        exp: state.exp,
+        expToLevel: state.expToLevel,
+        totalSold: state.totalSold,
+        grid: state.grid.map(c => ({
+          type: c.type,
+          machine: c.machine,
+          direction: c.direction
+        }))
+      };
+      localStorage.setItem('microFactory', JSON.stringify(saveData));
+    }
+    
+    function loadGame() {
+      const saved = localStorage.getItem('microFactory');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          state.gold = data.gold || 200;
+          state.level = data.level || 1;
+          state.exp = data.exp || 0;
+          state.expToLevel = data.expToLevel || 100;
+          state.totalSold = data.totalSold || 0;
+          
+          if (data.grid && data.grid.length === state.grid.length) {
+            data.grid.forEach((saved, idx) => {
+              state.grid[idx].type = saved.type;
+              state.grid[idx].machine = saved.machine;
+              state.grid[idx].direction = saved.direction || 0;
+            });
+          }
+          
+          document.getElementById('goldDisplay').textContent = state.gold;
+          document.getElementById('levelDisplay').textContent = state.level;
+          return true;
+        } catch (e) {
+          console.error('Load failed:', e);
+        }
+      }
+      return false;
+    }
+    
+    // ============== GAME LOOP ==============
+    function gameLoop(timestamp) {
+      update(timestamp);
+      render();
+      requestAnimationFrame(gameLoop);
+    }
+    
+    function startGame() {
+      document.getElementById('tutorial').classList.add('hidden');
+      state.gameStarted = true;
+      AudioEngine.init();
+      
+      if (!loadGame()) {
+        initGrid();
+      }
+      
+      lastUpdate = performance.now();
+      gameLoop(lastUpdate);
+      
+      // Auto-save every 30 seconds
+      setInterval(saveGame, 30000);
+    }
+    
+    // Initialize grid for rendering
+    initGrid();
+    render();
+    
+    // Check if returning player
+    if (localStorage.getItem('microFactory')) {
+      document.querySelector('.tutorial h2').textContent = '🏭 다시 오셨군요!';
+      document.querySelector('.tutorial button').textContent = '▶ 계속하기';
+    }
+  </script>
+  
+  <!--
+  ============================================
+  CREDITS & ASSETS
+  ============================================
+  
+  🎨 Visual Design:
+  - Colors inspired by Kenney.nl industrial palette
+  - Custom CSS-based UI (no external assets required)
+  
+  🔤 Fonts:
+  - Orbitron by Matt McInerney (Google Fonts, OFL)
+    https://fonts.google.com/specimen/Orbitron
+  
+  🔊 Audio:
+  - Procedurally generated using Web Audio API
+  - No external audio files required
+  
+  📦 Game Design:
+  - Original concept by Micro Factory Team
+  - Inspired by: Factorio, Shapez.io, Factory Town Idle
+  
+  ============================================
+  -->
+</body>
+</html>
