@@ -728,8 +728,10 @@
             bgFish.forEach(fish => {
                 ctx.save();
                 ctx.font = `${fish.size}px serif`;
-                ctx.scale(fish.dir, 1);
-                ctx.fillText(fish.emoji, fish.x * fish.dir, fish.y);
+                ctx.translate(fish.x, fish.y);
+                // 물고기 이모지가 기본 왼쪽을 보므로, 이동 방향에 맞게 뒤집기
+                ctx.scale(-fish.dir, 1);
+                ctx.fillText(fish.emoji, 0, 0);
                 ctx.restore();
                 
                 fish.x += fish.speed * fish.dir;
