@@ -90,7 +90,7 @@
         <div id="startScreen">
             <h1>🦘 점프 피직스</h1>
             <p style="margin-bottom: 30px; opacity: 0.8;">하늘 끝까지 점프!</p>
-            <button onclick="startGame()">게임 시작</button>
+            <button id="startBtn">게임 시작</button>
             <div class="controls">
                 📱 터치/클릭 홀드 → 파워 충전<br>
                 놓으면 점프!<br>
@@ -103,7 +103,7 @@
                 <div>도달 높이: <span id="finalHeight">0</span>m</div>
                 <div>획득 점수: <span id="finalScore">0</span></div>
             </div>
-            <button onclick="startGame()">다시 하기</button>
+            <button id="restartBtn">다시 하기</button>
         </div>
     </div>
 
@@ -148,10 +148,21 @@
         document.addEventListener('touchend', handleTouchEnd, { passive: false });
         document.addEventListener('touchcancel', handleTouchEnd, { passive: false });
         
-        // 스크롤 방지
-        document.body.addEventListener('touchmove', (e) => {
-            if (game.running) e.preventDefault();
+        // 스크롤 방지 (캔버스에서만)
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
         }, { passive: false });
+        
+        // 시작/재시작 버튼 이벤트
+        ['startBtn', 'restartBtn'].forEach(id => {
+            const btn = document.getElementById(id);
+            btn.addEventListener('click', startGame);
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                startGame();
+            });
+        });
 
         function handleTouchStart(e) {
             e.preventDefault();
