@@ -181,6 +181,9 @@
             lastFired: 0
         };
 
+        // 스폰 타이머 ID (메모리 누수 방지)
+        let spawnIntervalId = null;
+
         // 입력 처리
         let mousePos = { x: canvas.width / 2, y: canvas.height / 2 };
 
@@ -228,7 +231,10 @@
             mousePos = { x: canvas.width / 2, y: canvas.height / 2 };
             
             requestAnimationFrame(gameLoop);
-            setInterval(spawnEnemy, 1500);
+            
+            // 기존 interval 정리 후 새로 시작 (메모리 누수 방지)
+            if (spawnIntervalId) clearInterval(spawnIntervalId);
+            spawnIntervalId = setInterval(spawnEnemy, 1500);
         }
 
         function restartGame() {
@@ -419,8 +425,11 @@
                 const dy = player.y - e.y;
                 const dist = Math.hypot(dx, dy);
                 
-                e.x += (dx / dist) * e.speed;
-                e.y += (dy / dist) * e.speed;
+                // 0으로 나누기 방지
+                if (dist > 0) {
+                    e.x += (dx / dist) * e.speed;
+                    e.y += (dy / dist) * e.speed;
+                }
                 
                 // 플레이어와 충돌
                 if (dist < player.radius + e.radius) {
@@ -603,6 +612,13 @@
 
         function gameOver() {
             game.running = false;
+            
+            // interval 정리
+            if (spawnIntervalId) {
+                clearInterval(spawnIntervalId);
+                spawnIntervalId = null;
+            }
+            
             document.getElementById('gameOverScreen').style.display = 'flex';
             
             const mins = Math.floor(game.time / 60);
