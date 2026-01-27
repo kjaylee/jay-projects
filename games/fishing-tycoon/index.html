@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🎣 낚시 타이쿤</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(180deg, #87CEEB 0%, #1E90FF 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        .ui-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .stat-box {
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            pointer-events: auto;
+        }
+        .btn {
+            background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%);
+            border: 2px solid #8B4513;
+            border-radius: 10px;
+            padding: 10px 15px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #4a2c00;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: transform 0.1s;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        .modal {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(180deg, #FFF8DC 0%, #FAEBD7 100%);
+            border: 4px solid #8B4513;
+            border-radius: 20px;
+            padding: 20px;
+            max-width: 90%;
+            max-height: 80%;
+            overflow-y: auto;
+            z-index: 100;
+        }
+        .modal.active { display: block; }
+        .modal-backdrop {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 99;
+        }
+        .modal-backdrop.active { display: block; }
+        .modal h2 {
+            text-align: center;
+            color: #4a2c00;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        .fish-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        .fish-item {
+            background: rgba(139,69,19,0.2);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            font-size: 12px;
+        }
+        .fish-item .emoji {
+            font-size: 30px;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .fish-item.locked .emoji {
+            filter: grayscale(1) brightness(0.3);
+        }
+        .shop-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(139,69,19,0.15);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .shop-item-info {
+            flex: 1;
+        }
+        .shop-item-name {
+            font-weight: bold;
+            color: #4a2c00;
+        }
+        .shop-item-desc {
+            font-size: 12px;
+            color: #666;
+        }
+        .shop-btn {
+            background: linear-gradient(180deg, #90EE90 0%, #32CD32 100%);
+            border: 2px solid #228B22;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .shop-btn:disabled {
+            background: #ccc;
+            border-color: #999;
+            cursor: not-allowed;
+        }
+        .shop-btn.owned {
+            background: linear-gradient(180deg, #87CEEB 0%, #4682B4 100%);
+            border-color: #2F4F4F;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .instruction {
+            position: absolute;
+            bottom: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 15px;
+            font-size: 16px;
+            text-align: center;
+            pointer-events: none;
+            z-index: 5;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
+            50% { opacity: 0.8; transform: translateX(-50%) scale(1.02); }
+        }
+        .catch-popup {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(180deg, #FFE4B5 0%, #FFD700 100%);
+            border: 4px solid #DAA520;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            z-index: 50;
+            animation: popIn 0.3s ease-out;
+        }
+        @keyframes popIn {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        .catch-popup .emoji {
+            font-size: 60px;
+        }
+        .catch-popup .name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4a2c00;
+            margin: 10px 0;
+        }
+        .catch-popup .price {
+            font-size: 18px;
+            color: #228B22;
+        }
+        .catch-popup .rarity {
+            font-size: 14px;
+            padding: 5px 10px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-top: 5px;
+        }
+        .rarity-common { background: #90EE90; }
+        .rarity-uncommon { background: #87CEEB; }
+        .rarity-rare { background: #DDA0DD; }
+        .rarity-epic { background: #FFD700; }
+        .rarity-legendary { background: #FF6347; color: white; }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div class="ui-overlay">
+            <div class="stat-box">
+                💰 <span id="money">0</span>원
+            </div>
+            <div style="display: flex; gap: 5px;">
+                <button class="btn" onclick="openModal('collection')">📖 도감</button>
+                <button class="btn" onclick="openModal('shop')">🛒 상점</button>
+            </div>
+        </div>
+        
+        <div id="instruction" class="instruction"></div>
+        
+        <div id="catchPopup" class="catch-popup" style="display:none;"></div>
+        
+        <div id="modalBackdrop" class="modal-backdrop" onclick="closeModal()"></div>
+        
+        <div id="collectionModal" class="modal">
+            <button class="close-btn" onclick="closeModal()">✕</button>
+            <h2>📖 물고기 도감</h2>
+            <div id="fishGrid" class="fish-grid"></div>
+        </div>
+        
+        <div id="shopModal" class="modal">
+            <button class="close-btn" onclick="closeModal()">✕</button>
+            <h2>🛒 낚싯대 상점</h2>
+            <div id="shopList"></div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 게임 상수 ====================
+        const FISH_DATA = [
+            { id: 1, name: '붕어', emoji: '🐟', price: 50, rarity: 'common', weight: 40 },
+            { id: 2, name: '잉어', emoji: '🐟', price: 80, rarity: 'common', weight: 30 },
+            { id: 3, name: '금붕어', emoji: '🐠', price: 150, rarity: 'uncommon', weight: 15 },
+            { id: 4, name: '열대어', emoji: '🐠', price: 200, rarity: 'uncommon', weight: 10 },
+            { id: 5, name: '복어', emoji: '🐡', price: 300, rarity: 'rare', weight: 5 },
+            { id: 6, name: '해파리', emoji: '🪼', price: 250, rarity: 'rare', weight: 6 },
+            { id: 7, name: '문어', emoji: '🐙', price: 400, rarity: 'rare', weight: 4 },
+            { id: 8, name: '오징어', emoji: '🦑', price: 350, rarity: 'rare', weight: 5 },
+            { id: 9, name: '돌고래', emoji: '🐬', price: 800, rarity: 'epic', weight: 2 },
+            { id: 10, name: '고래', emoji: '🐋', price: 1500, rarity: 'epic', weight: 1 },
+            { id: 11, name: '상어', emoji: '🦈', price: 2000, rarity: 'legendary', weight: 0.5 },
+            { id: 12, name: '범고래', emoji: '🐳', price: 3000, rarity: 'legendary', weight: 0.3 },
+        ];
+
+        const ROD_DATA = [
+            { id: 1, name: '나무 낚싯대', desc: '기본 낚싯대', price: 0, catchBonus: 1, speedBonus: 1 },
+            { id: 2, name: '대나무 낚싯대', desc: '속도 10% 증가', price: 500, catchBonus: 1, speedBonus: 1.1 },
+            { id: 3, name: '카본 낚싯대', desc: '희귀 확률 20% 증가', price: 1500, catchBonus: 1.2, speedBonus: 1.15 },
+            { id: 4, name: '티타늄 낚싯대', desc: '희귀 확률 50% 증가', price: 4000, catchBonus: 1.5, speedBonus: 1.2 },
+            { id: 5, name: '황금 낚싯대', desc: '희귀 확률 100% 증가', price: 10000, catchBonus: 2, speedBonus: 1.3 },
+            { id: 6, name: '전설의 낚싯대', desc: '전설 물고기 확률 UP!', price: 30000, catchBonus: 3, speedBonus: 1.5 },
+        ];
+
+        const RARITY_NAMES = {
+            common: '일반',
+            uncommon: '고급',
+            rare: '희귀',
+            epic: '영웅',
+            legendary: '전설'
+        };
+
+        // ==================== 게임 상태 ====================
+        let gameState = {
+            money: 0,
+            currentRod: 1,
+            ownedRods: [1],
+            collection: [],
+            phase: 'idle', // idle, casting, waiting, biting, reeling, caught
+            bobberX: 0,
+            bobberY: 0,
+            hookDepth: 0,
+            biteTimer: 0,
+            reelProgress: 0,
+            currentFish: null,
+            missTimer: 0,
+        };
+
+        // ==================== 캔버스 초기화 ====================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function resize() {
+            const container = document.getElementById('gameContainer');
+            width = canvas.width = container.clientWidth;
+            height = canvas.height = container.clientHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // ==================== 저장/불러오기 ====================
+        function saveGame() {
+            localStorage.setItem('fishingTycoon', JSON.stringify(gameState));
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('fishingTycoon');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                gameState = { ...gameState, ...parsed };
+            }
+            updateUI();
+        }
+
+        // ==================== 물고기 선택 ====================
+        function selectFish() {
+            const rod = ROD_DATA.find(r => r.id === gameState.currentRod);
+            const bonus = rod ? rod.catchBonus : 1;
+            
+            // 가중치 계산
+            let totalWeight = 0;
+            const weights = FISH_DATA.map(fish => {
+                let w = fish.weight;
+                if (fish.rarity === 'rare' || fish.rarity === 'epic' || fish.rarity === 'legendary') {
+                    w *= bonus;
+                }
+                totalWeight += w;
+                return w;
+            });
+            
+            // 랜덤 선택
+            let rand = Math.random() * totalWeight;
+            for (let i = 0; i < FISH_DATA.length; i++) {
+                rand -= weights[i];
+                if (rand <= 0) return FISH_DATA[i];
+            }
+            return FISH_DATA[0];
+        }
+
+        // ==================== 게임 로직 ====================
+        function startCasting(x, y) {
+            if (gameState.phase !== 'idle') return;
+            
+            gameState.phase = 'casting';
+            gameState.bobberX = x;
+            gameState.bobberY = Math.min(y, height * 0.4);
+            gameState.hookDepth = 0;
+            
+            setTimeout(() => {
+                if (gameState.phase === 'casting') {
+                    gameState.phase = 'waiting';
+                    const rod = ROD_DATA.find(r => r.id === gameState.currentRod);
+                    const speedBonus = rod ? rod.speedBonus : 1;
+                    const waitTime = (2000 + Math.random() * 4000) / speedBonus;
+                    
+                    setTimeout(() => {
+                        if (gameState.phase === 'waiting') {
+                            gameState.phase = 'biting';
+                            gameState.currentFish = selectFish();
+                            gameState.biteTimer = 0;
+                            gameState.missTimer = 1500 + Math.random() * 1000;
+                        }
+                    }, waitTime);
+                }
+            }, 500);
+            
+            updateInstruction();
+        }
+
+        function tryReel() {
+            if (gameState.phase === 'biting') {
+                gameState.phase = 'reeling';
+                gameState.reelProgress = 0;
+                updateInstruction();
+            } else if (gameState.phase === 'waiting') {
+                // 너무 빨리 당김 - 실패
+                resetToIdle();
+            } else if (gameState.phase === 'reeling') {
+                // 릴 당기기
+                gameState.reelProgress += 15 + Math.random() * 10;
+                if (gameState.reelProgress >= 100) {
+                    catchFish();
+                }
+            }
+        }
+
+        function catchFish() {
+            gameState.phase = 'caught';
+            const fish = gameState.currentFish;
+            
+            // 컬렉션에 추가
+            if (!gameState.collection.includes(fish.id)) {
+                gameState.collection.push(fish.id);
+            }
+            
+            // 돈 추가
+            gameState.money += fish.price;
+            
+            // 팝업 표시
+            showCatchPopup(fish);
+            
+            saveGame();
+            updateUI();
+            
+            setTimeout(() => {
+                hideCatchPopup();
+                resetToIdle();
+            }, 2000);
+        }
+
+        function resetToIdle() {
+            gameState.phase = 'idle';
+            gameState.currentFish = null;
+            gameState.reelProgress = 0;
+            updateInstruction();
+        }
+
+        function showCatchPopup(fish) {
+            const popup = document.getElementById('catchPopup');
+            popup.innerHTML = `
+                <div class="emoji">${fish.emoji}</div>
+                <div class="name">${fish.name}</div>
+                <div class="price">+${fish.price}원</div>
+                <div class="rarity rarity-${fish.rarity}">${RARITY_NAMES[fish.rarity]}</div>
+            `;
+            popup.style.display = 'block';
+        }
+
+        function hideCatchPopup() {
+            document.getElementById('catchPopup').style.display = 'none';
+        }
+
+        // ==================== UI 업데이트 ====================
+        function updateUI() {
+            document.getElementById('money').textContent = gameState.money.toLocaleString();
+        }
+
+        function updateInstruction() {
+            const el = document.getElementById('instruction');
+            switch (gameState.phase) {
+                case 'idle':
+                    el.textContent = '🎣 터치해서 캐스팅하세요!';
+                    el.style.display = 'block';
+                    break;
+                case 'casting':
+                    el.style.display = 'none';
+                    break;
+                case 'waiting':
+                    el.textContent = '⏳ 물고기를 기다리는 중...';
+                    el.style.display = 'block';
+                    break;
+                case 'biting':
+                    el.textContent = '🔔 지금이다! 터치!';
+                    el.style.display = 'block';
+                    break;
+                case 'reeling':
+                    el.textContent = '💪 계속 터치해서 당겨!';
+                    el.style.display = 'block';
+                    break;
+                default:
+                    el.style.display = 'none';
+            }
+        }
+
+        // ==================== 모달 ====================
+        function openModal(type) {
+            document.getElementById('modalBackdrop').classList.add('active');
+            
+            if (type === 'collection') {
+                renderCollection();
+                document.getElementById('collectionModal').classList.add('active');
+            } else if (type === 'shop') {
+                renderShop();
+                document.getElementById('shopModal').classList.add('active');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modalBackdrop').classList.remove('active');
+            document.getElementById('collectionModal').classList.remove('active');
+            document.getElementById('shopModal').classList.remove('active');
+        }
+
+        function renderCollection() {
+            const grid = document.getElementById('fishGrid');
+            grid.innerHTML = FISH_DATA.map(fish => {
+                const unlocked = gameState.collection.includes(fish.id);
+                return `
+                    <div class="fish-item ${unlocked ? '' : 'locked'}">
+                        <span class="emoji">${fish.emoji}</span>
+                        <div>${unlocked ? fish.name : '???'}</div>
+                        <div style="font-size:10px;color:#888;">${unlocked ? fish.price + '원' : ''}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderShop() {
+            const list = document.getElementById('shopList');
+            list.innerHTML = ROD_DATA.map(rod => {
+                const owned = gameState.ownedRods.includes(rod.id);
+                const equipped = gameState.currentRod === rod.id;
+                const canBuy = gameState.money >= rod.price;
+                
+                let btnText = owned ? (equipped ? '✓ 장착됨' : '장착하기') : `${rod.price.toLocaleString()}원`;
+                let btnClass = owned ? 'shop-btn owned' : 'shop-btn';
+                let disabled = !owned && !canBuy;
+                
+                return `
+                    <div class="shop-item">
+                        <div class="shop-item-info">
+                            <div class="shop-item-name">🎣 ${rod.name}</div>
+                            <div class="shop-item-desc">${rod.desc}</div>
+                        </div>
+                        <button class="${btnClass}" ${disabled ? 'disabled' : ''} onclick="shopAction(${rod.id})">
+                            ${btnText}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function shopAction(rodId) {
+            const rod = ROD_DATA.find(r => r.id === rodId);
+            if (!rod) return;
+            
+            if (gameState.ownedRods.includes(rodId)) {
+                // 장착
+                gameState.currentRod = rodId;
+            } else if (gameState.money >= rod.price) {
+                // 구매
+                gameState.money -= rod.price;
+                gameState.ownedRods.push(rodId);
+                gameState.currentRod = rodId;
+            }
+            
+            saveGame();
+            updateUI();
+            renderShop();
+        }
+
+        // ==================== 그리기 ====================
+        let waveOffset = 0;
+        let bobberBounce = 0;
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            
+            // 하늘
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, height * 0.5);
+            skyGrad.addColorStop(0, '#87CEEB');
+            skyGrad.addColorStop(1, '#1E90FF');
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, width, height * 0.5);
+            
+            // 태양
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(width * 0.85, height * 0.12, 35, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 구름
+            drawCloud(width * 0.2, height * 0.1, 0.8);
+            drawCloud(width * 0.6, height * 0.15, 1);
+            
+            // 물 (파도)
+            const waterY = height * 0.5;
+            ctx.fillStyle = '#1E90FF';
+            ctx.beginPath();
+            ctx.moveTo(0, waterY);
+            for (let x = 0; x <= width; x += 10) {
+                const y = waterY + Math.sin((x + waveOffset) * 0.02) * 8;
+                ctx.lineTo(x, y);
+            }
+            ctx.lineTo(width, height);
+            ctx.lineTo(0, height);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 물 속 그라데이션
+            const waterGrad = ctx.createLinearGradient(0, waterY, 0, height);
+            waterGrad.addColorStop(0, 'rgba(0,100,180,0.3)');
+            waterGrad.addColorStop(1, 'rgba(0,50,100,0.8)');
+            ctx.fillStyle = waterGrad;
+            ctx.fillRect(0, waterY + 10, width, height - waterY);
+            
+            // 낚시꾼 (화면 하단)
+            drawFisherman();
+            
+            // 낚싯줄과 찌
+            if (gameState.phase !== 'idle') {
+                drawFishingLine();
+            }
+            
+            // 물고기 애니메이션 (물속)
+            drawSwimmingFish();
+            
+            waveOffset += 2;
+        }
+
+        function drawCloud(x, y, scale) {
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.beginPath();
+            ctx.arc(x, y, 20 * scale, 0, Math.PI * 2);
+            ctx.arc(x + 25 * scale, y - 5 * scale, 25 * scale, 0, Math.PI * 2);
+            ctx.arc(x + 50 * scale, y, 20 * scale, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawFisherman() {
+            const x = width * 0.15;
+            const y = height * 0.85;
+            
+            // 몸
+            ctx.fillStyle = '#4a4a4a';
+            ctx.fillRect(x - 15, y - 40, 30, 50);
+            
+            // 머리
+            ctx.fillStyle = '#FFE4C4';
+            ctx.beginPath();
+            ctx.arc(x, y - 55, 15, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 모자
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(x - 20, y - 75, 40, 10);
+            ctx.fillRect(x - 12, y - 85, 24, 15);
+            
+            // 낚싯대
+            ctx.strokeStyle = '#8B4513';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(x + 10, y - 30);
+            ctx.lineTo(x + 80, y - 100);
+            ctx.stroke();
+        }
+
+        function drawFishingLine() {
+            const rodTipX = width * 0.15 + 80;
+            const rodTipY = height * 0.85 - 100;
+            
+            // 낚싯줄
+            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(rodTipX, rodTipY);
+            ctx.lineTo(gameState.bobberX, gameState.bobberY);
+            ctx.stroke();
+            
+            // 물속 줄
+            if (gameState.phase !== 'casting') {
+                ctx.beginPath();
+                ctx.moveTo(gameState.bobberX, gameState.bobberY);
+                ctx.lineTo(gameState.bobberX, gameState.bobberY + 50 + gameState.hookDepth);
+                ctx.stroke();
+            }
+            
+            // 찌
+            const bobberY = gameState.bobberY + (gameState.phase === 'biting' ? Math.sin(Date.now() * 0.03) * 10 : 0);
+            
+            ctx.fillStyle = '#FF4500';
+            ctx.beginPath();
+            ctx.ellipse(gameState.bobberX, bobberY, 8, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.ellipse(gameState.bobberX, bobberY - 6, 8, 6, 0, 0, Math.PI);
+            ctx.fill();
+            
+            // 릴링 진행 표시
+            if (gameState.phase === 'reeling') {
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(width * 0.2, height * 0.6, width * 0.6, 20);
+                ctx.fillStyle = '#32CD32';
+                ctx.fillRect(width * 0.2, height * 0.6, width * 0.6 * (gameState.reelProgress / 100), 20);
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(width * 0.2, height * 0.6, width * 0.6, 20);
+            }
+        }
+
+        let bgFish = [];
+        function initBgFish() {
+            for (let i = 0; i < 8; i++) {
+                bgFish.push({
+                    x: Math.random() * width,
+                    y: height * 0.55 + Math.random() * height * 0.35,
+                    speed: 0.5 + Math.random() * 1.5,
+                    emoji: ['🐟', '🐠', '🐡'][Math.floor(Math.random() * 3)],
+                    size: 15 + Math.random() * 15,
+                    dir: Math.random() > 0.5 ? 1 : -1
+                });
+            }
+        }
+
+        function drawSwimmingFish() {
+            bgFish.forEach(fish => {
+                ctx.save();
+                ctx.font = `${fish.size}px serif`;
+                ctx.scale(fish.dir, 1);
+                ctx.fillText(fish.emoji, fish.x * fish.dir, fish.y);
+                ctx.restore();
+                
+                fish.x += fish.speed * fish.dir;
+                if (fish.x > width + 30) fish.x = -30;
+                if (fish.x < -30) fish.x = width + 30;
+            });
+        }
+
+        // ==================== 입력 처리 ====================
+        function handleInput(x, y) {
+            if (gameState.phase === 'idle') {
+                // 물 위에 캐스팅
+                if (y > height * 0.5 && y < height * 0.75) {
+                    startCasting(x, y);
+                }
+            } else if (gameState.phase === 'biting' || gameState.phase === 'reeling') {
+                tryReel();
+            } else if (gameState.phase === 'waiting') {
+                // 너무 일찍 당기면 실패
+                resetToIdle();
+            }
+        }
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (width / rect.width);
+            const y = (e.clientY - rect.top) * (height / rect.height);
+            handleInput(x, y);
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const x = (touch.clientX - rect.left) * (width / rect.width);
+            const y = (touch.clientY - rect.top) * (height / rect.height);
+            handleInput(x, y);
+        }, { passive: false });
+
+        // ==================== 게임 루프 ====================
+        function gameLoop() {
+            // 물고기가 물었을 때 타이머
+            if (gameState.phase === 'biting') {
+                gameState.missTimer -= 16;
+                if (gameState.missTimer <= 0) {
+                    // 놓침
+                    resetToIdle();
+                }
+            }
+            
+            // 물속에서 훅이 내려감
+            if (gameState.phase === 'waiting' || gameState.phase === 'biting') {
+                if (gameState.hookDepth < 80) {
+                    gameState.hookDepth += 1;
+                }
+            }
+            
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ==================== 초기화 ====================
+        loadGame();
+        initBgFish();
+        updateInstruction();
+        gameLoop();
+    </script>
+</body>
+</html>
