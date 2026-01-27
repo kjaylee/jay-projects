@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🗼 머지 몬스터 타워</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(180deg, #2c3e50 0%, #1a252f 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+        #gameContainer { position: relative; }
+        #gameCanvas {
+            background: linear-gradient(180deg, #3d5a73 0%, #2c3e50 100%);
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(255, 200, 100, 0.3);
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            font-size: 14px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        #nextMonster {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #fff;
+            font-size: 14px;
+            text-align: center;
+        }
+        #startScreen, #gameOverScreen {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            border-radius: 10px;
+        }
+        #gameOverScreen { display: none; }
+        h1 { font-size: 2em; margin-bottom: 20px; text-shadow: 0 0 20px #ffaa00; }
+        button {
+            padding: 15px 40px;
+            font-size: 1.2em;
+            background: linear-gradient(135deg, #ffaa00, #ff6600);
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            color: #fff;
+            font-weight: bold;
+        }
+        .guide {
+            margin-top: 20px;
+            font-size: 0.85em;
+            opacity: 0.8;
+            text-align: center;
+            line-height: 1.6;
+        }
+        .monster-preview {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .monster-preview span {
+            font-size: 1.5em;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui">
+            <div>🏆 점수: <span id="score">0</span></div>
+            <div>⭐ 최고 Lv: <span id="maxLevel">1</span></div>
+        </div>
+        <div id="nextMonster">
+            다음<br>
+            <span id="nextEmoji" style="font-size: 2em;">🟢</span>
+        </div>
+        <div id="startScreen">
+            <h1>🗼 머지 몬스터 타워</h1>
+            <div class="monster-preview">
+                <span>🟢</span><span>🔵</span><span>🟣</span><span>🟠</span><span>🔴</span><span>⭐</span><span>👑</span>
+            </div>
+            <p style="opacity: 0.8;">같은 몬스터를 합쳐서 진화시켜라!</p>
+            <button onclick="startGame()">게임 시작</button>
+            <div class="guide">
+                터치/클릭으로 몬스터 드롭<br>
+                같은 레벨끼리 합치면 진화!<br>
+                화면 위로 넘치면 게임오버
+            </div>
+        </div>
+        <div id="gameOverScreen">
+            <h1>💀 게임 오버</h1>
+            <div style="margin: 20px 0;">
+                <div>최종 점수: <span id="finalScore">0</span></div>
+                <div>최고 레벨: <span id="finalLevel">1</span></div>
+            </div>
+            <button onclick="startGame()">다시 하기</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = Math.min(window.innerWidth - 20, 400);
+            canvas.height = Math.min(window.innerHeight - 20, 600);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // 몬스터 타입
+        const monsterTypes = [
+            { level: 1, emoji: '🟢', color: '#4ade80', radius: 20 },
+            { level: 2, emoji: '🔵', color: '#60a5fa', radius: 25 },
+            { level: 3, emoji: '🟣', color: '#c084fc', radius: 30 },
+            { level: 4, emoji: '🟠', color: '#fb923c', radius: 35 },
+            { level: 5, emoji: '🔴', color: '#f87171', radius: 40 },
+            { level: 6, emoji: '⭐', color: '#fbbf24', radius: 45 },
+            { level: 7, emoji: '👑', color: '#f59e0b', radius: 50 },
+            { level: 8, emoji: '💎', color: '#22d3ee', radius: 55 },
+            { level: 9, emoji: '🌟', color: '#a78bfa', radius: 60 },
+            { level: 10, emoji: '🏆', color: '#fcd34d', radius: 65 }
+        ];
+
+        let game = { running: false, score: 0, maxLevel: 1 };
+        let monsters = [];
+        let nextMonster = null;
+        let dropX = 0;
+        let canDrop = true;
+        let dangerZone = 80;
+        let dangerTimer = 0;
+
+        // 물리 상수
+        const gravity = 0.3;
+        const friction = 0.8;
+        const bounce = 0.5;
+
+        // 입력
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            dropX = e.clientX - rect.left;
+        });
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            dropX = e.touches[0].clientX - rect.left;
+        });
+        canvas.addEventListener('click', dropMonster);
+        canvas.addEventListener('touchend', (e) => { e.preventDefault(); dropMonster(); });
+
+        function dropMonster() {
+            if (!game.running || !canDrop || !nextMonster) return;
+            
+            const type = monsterTypes[nextMonster - 1];
+            const x = Math.max(type.radius, Math.min(canvas.width - type.radius, dropX));
+            
+            monsters.push({
+                x: x,
+                y: type.radius + 10,
+                vx: 0,
+                vy: 0,
+                level: nextMonster,
+                radius: type.radius,
+                color: type.color,
+                emoji: type.emoji,
+                merging: false
+            });
+            
+            canDrop = false;
+            setTimeout(() => {
+                canDrop = true;
+                prepareNext();
+            }, 500);
+        }
+
+        function prepareNext() {
+            // 레벨 1~3 중 랜덤
+            nextMonster = Math.floor(Math.random() * 3) + 1;
+            document.getElementById('nextEmoji').textContent = monsterTypes[nextMonster - 1].emoji;
+        }
+
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('gameOverScreen').style.display = 'none';
+            
+            game = { running: true, score: 0, maxLevel: 1 };
+            monsters = [];
+            canDrop = true;
+            dangerTimer = 0;
+            dropX = canvas.width / 2;
+            
+            prepareNext();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameLoop() {
+            if (!game.running) return;
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function update() {
+            // 물리 업데이트
+            for (let m of monsters) {
+                if (m.merging) continue;
+                
+                // 중력
+                m.vy += gravity;
+                
+                // 이동
+                m.x += m.vx;
+                m.y += m.vy;
+                
+                // 마찰
+                m.vx *= 0.99;
+                
+                // 바닥 충돌
+                if (m.y + m.radius > canvas.height - 10) {
+                    m.y = canvas.height - 10 - m.radius;
+                    m.vy *= -bounce;
+                    m.vx *= friction;
+                }
+                
+                // 벽 충돌
+                if (m.x - m.radius < 0) {
+                    m.x = m.radius;
+                    m.vx *= -bounce;
+                }
+                if (m.x + m.radius > canvas.width) {
+                    m.x = canvas.width - m.radius;
+                    m.vx *= -bounce;
+                }
+            }
+            
+            // 몬스터 간 충돌
+            for (let i = 0; i < monsters.length; i++) {
+                for (let j = i + 1; j < monsters.length; j++) {
+                    const m1 = monsters[i];
+                    const m2 = monsters[j];
+                    if (m1.merging || m2.merging) continue;
+                    
+                    const dx = m2.x - m1.x;
+                    const dy = m2.y - m1.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const minDist = m1.radius + m2.radius;
+                    
+                    if (dist < minDist) {
+                        // 같은 레벨이면 합체
+                        if (m1.level === m2.level && m1.level < 10) {
+                            merge(m1, m2);
+                        } else {
+                            // 밀어내기
+                            const overlap = minDist - dist;
+                            const nx = dx / dist;
+                            const ny = dy / dist;
+                            
+                            m1.x -= nx * overlap / 2;
+                            m1.y -= ny * overlap / 2;
+                            m2.x += nx * overlap / 2;
+                            m2.y += ny * overlap / 2;
+                            
+                            // 속도 교환
+                            const dvx = m1.vx - m2.vx;
+                            const dvy = m1.vy - m2.vy;
+                            const dvn = dvx * nx + dvy * ny;
+                            
+                            m1.vx -= dvn * nx * 0.5;
+                            m1.vy -= dvn * ny * 0.5;
+                            m2.vx += dvn * nx * 0.5;
+                            m2.vy += dvn * ny * 0.5;
+                        }
+                    }
+                }
+            }
+            
+            // 합체 중인 몬스터 제거
+            monsters = monsters.filter(m => !m.merging);
+            
+            // 위험 구역 체크
+            let inDanger = false;
+            for (let m of monsters) {
+                if (m.y - m.radius < dangerZone && Math.abs(m.vy) < 1) {
+                    inDanger = true;
+                    break;
+                }
+            }
+            
+            if (inDanger) {
+                dangerTimer++;
+                if (dangerTimer > 120) { // 2초
+                    gameOver();
+                }
+            } else {
+                dangerTimer = Math.max(0, dangerTimer - 2);
+            }
+            
+            // UI 업데이트
+            document.getElementById('score').textContent = game.score;
+            document.getElementById('maxLevel').textContent = game.maxLevel;
+        }
+
+        function merge(m1, m2) {
+            m1.merging = true;
+            m2.merging = true;
+            
+            const newLevel = m1.level + 1;
+            const type = monsterTypes[newLevel - 1];
+            
+            // 점수
+            game.score += newLevel * 10;
+            if (newLevel > game.maxLevel) {
+                game.maxLevel = newLevel;
+            }
+            
+            // 새 몬스터 생성
+            monsters.push({
+                x: (m1.x + m2.x) / 2,
+                y: (m1.y + m2.y) / 2,
+                vx: (m1.vx + m2.vx) / 2,
+                vy: Math.min(-3, (m1.vy + m2.vy) / 2 - 2), // 살짝 튀어오름
+                level: newLevel,
+                radius: type.radius,
+                color: type.color,
+                emoji: type.emoji,
+                merging: false
+            });
+        }
+
+        function render() {
+            // 배경
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#3d5a73');
+            gradient.addColorStop(1, '#2c3e50');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 위험 구역
+            const dangerAlpha = 0.1 + (dangerTimer / 120) * 0.3;
+            ctx.fillStyle = `rgba(255, 0, 0, ${dangerAlpha})`;
+            ctx.fillRect(0, 0, canvas.width, dangerZone);
+            
+            ctx.strokeStyle = '#ff4444';
+            ctx.setLineDash([10, 5]);
+            ctx.beginPath();
+            ctx.moveTo(0, dangerZone);
+            ctx.lineTo(canvas.width, dangerZone);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // 바닥
+            ctx.fillStyle = '#1a252f';
+            ctx.fillRect(0, canvas.height - 10, canvas.width, 10);
+            
+            // 드롭 가이드
+            if (canDrop && nextMonster) {
+                const type = monsterTypes[nextMonster - 1];
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(dropX, dangerZone);
+                ctx.lineTo(dropX, canvas.height - 10);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // 미리보기
+                ctx.globalAlpha = 0.5;
+                ctx.beginPath();
+                ctx.arc(dropX, type.radius + 10, type.radius, 0, Math.PI * 2);
+                ctx.fillStyle = type.color;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+            
+            // 몬스터
+            for (let m of monsters) {
+                // 그림자
+                ctx.beginPath();
+                ctx.ellipse(m.x, canvas.height - 8, m.radius * 0.7, 5, 0, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fill();
+                
+                // 본체
+                const gradient = ctx.createRadialGradient(
+                    m.x - m.radius * 0.3, m.y - m.radius * 0.3, 0,
+                    m.x, m.y, m.radius
+                );
+                gradient.addColorStop(0, lightenColor(m.color, 30));
+                gradient.addColorStop(1, m.color);
+                
+                ctx.beginPath();
+                ctx.arc(m.x, m.y, m.radius, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                
+                // 테두리
+                ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // 이모지
+                ctx.font = `${m.radius}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(m.emoji, m.x, m.y);
+                
+                // 레벨 표시
+                ctx.font = 'bold 12px Arial';
+                ctx.fillStyle = '#fff';
+                ctx.fillText(`Lv.${m.level}`, m.x, m.y + m.radius + 12);
+            }
+        }
+
+        function lightenColor(color, percent) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.min(255, (num >> 16) + amt);
+            const G = Math.min(255, ((num >> 8) & 0x00FF) + amt);
+            const B = Math.min(255, (num & 0x0000FF) + amt);
+            return `rgb(${R},${G},${B})`;
+        }
+
+        function gameOver() {
+            game.running = false;
+            document.getElementById('gameOverScreen').style.display = 'flex';
+            document.getElementById('finalScore').textContent = game.score;
+            document.getElementById('finalLevel').textContent = game.maxLevel;
+        }
+    </script>
+</body>
+</html>

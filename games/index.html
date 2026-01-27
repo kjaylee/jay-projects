@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 Jay's 게임 아케이드</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+            color: #fff;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(255,100,200,0.5);
+        }
+        .subtitle {
+            text-align: center;
+            opacity: 0.7;
+            margin-bottom: 40px;
+        }
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .game-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 25px;
+            text-decoration: none;
+            color: #fff;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0,255,200,0.2);
+            border-color: rgba(0,255,200,0.3);
+        }
+        .game-emoji {
+            font-size: 3em;
+            display: block;
+            margin-bottom: 15px;
+        }
+        .game-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .game-desc {
+            font-size: 0.9em;
+            opacity: 0.7;
+            line-height: 1.5;
+        }
+        .game-tag {
+            display: inline-block;
+            background: rgba(0,255,200,0.2);
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            margin-top: 10px;
+        }
+        .coming-soon {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        .coming-soon .game-tag {
+            background: rgba(255,255,255,0.1);
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            opacity: 0.5;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Jay's 게임 아케이드</h1>
+        <p class="subtitle">웹 브라우저에서 바로 플레이! 모바일 지원 📱</p>
+        
+        <div class="games-grid">
+            <a href="slime-survivor/" class="game-card">
+                <span class="game-emoji">🟢</span>
+                <div class="game-title">슬라임 서바이버</div>
+                <div class="game-desc">몰려오는 적들을 피하고 살아남아라! 뱀서라이크 캐주얼 게임.</div>
+                <span class="game-tag">🎯 액션</span>
+            </a>
+            
+            <a href="jump-physics/" class="game-card">
+                <span class="game-emoji">🦘</span>
+                <div class="game-title">점프 피직스</div>
+                <div class="game-desc">파워를 충전하고 하늘 끝까지 점프! 물리 기반 점프 게임.</div>
+                <span class="game-tag">🚀 아케이드</span>
+            </a>
+            
+            <a href="merge-tower/" class="game-card">
+                <span class="game-emoji">🗼</span>
+                <div class="game-title">머지 몬스터 타워</div>
+                <div class="game-desc">같은 몬스터를 합쳐서 진화! 수박게임 스타일 머지 퍼즐.</div>
+                <span class="game-tag">🧩 퍼즐</span>
+            </a>
+            
+            <a href="single-tap-golf/" class="game-card">
+                <span class="game-emoji">⛳</span>
+                <div class="game-title">싱글탭 골프</div>
+                <div class="game-desc">원터치로 즐기는 9홀 미니 골프. 간단하지만 중독성 있는!</div>
+                <span class="game-tag">🏌️ 스포츠</span>
+            </a>
+            
+            <div class="game-card coming-soon">
+                <span class="game-emoji">🏃</span>
+                <div class="game-title">포켓 던전 런</div>
+                <div class="game-desc">끝없이 달리는 던전 러너. 트랩을 피하고 보물을 모아라!</div>
+                <span class="game-tag">🔜 준비 중</span>
+            </div>
+            
+            <div class="game-card coming-soon">
+                <span class="game-emoji">🎵</span>
+                <div class="game-title">리듬 러너</div>
+                <div class="game-desc">음악에 맞춰 점프하고 슬라이드! 리듬 액션 게임.</div>
+                <span class="game-tag">🔜 준비 중</span>
+            </div>
+        </div>
+        
+        <footer>
+            Made with 🦊 by Jay & 똑이<br>
+            <a href="../" style="color: #0ff; text-decoration: none;">← 프로젝트 홈으로</a>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🦘 점프 피직스</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+        #gameContainer { position: relative; }
+        #gameCanvas {
+            background: linear-gradient(180deg, #87CEEB 0%, #E0F6FF 100%);
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 150, 255, 0.3);
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #333;
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+        }
+        #powerBar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 20px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+        }
+        #powerFill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff00, #ffff00, #ff0000);
+            width: 0%;
+            transition: width 0.05s;
+        }
+        #startScreen, #gameOverScreen {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            border-radius: 10px;
+        }
+        #gameOverScreen { display: none; }
+        h1 { font-size: 2.5em; margin-bottom: 20px; text-shadow: 0 0 20px #00aaff; }
+        button {
+            padding: 15px 40px;
+            font-size: 1.2em;
+            background: linear-gradient(135deg, #00aaff, #00ffaa);
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            color: #1a1a2e;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        button:hover { transform: scale(1.05); }
+        .controls { margin-top: 20px; font-size: 0.9em; opacity: 0.7; text-align: center; }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui">
+            <div>🏆 점수: <span id="score">0</span></div>
+            <div>📏 높이: <span id="height">0</span>m</div>
+            <div>🎯 최고: <span id="best">0</span>m</div>
+        </div>
+        <div id="powerBar"><div id="powerFill"></div></div>
+        <div id="startScreen">
+            <h1>🦘 점프 피직스</h1>
+            <p style="margin-bottom: 30px; opacity: 0.8;">하늘 끝까지 점프!</p>
+            <button onclick="startGame()">게임 시작</button>
+            <div class="controls">
+                📱 터치/클릭 홀드 → 파워 충전<br>
+                놓으면 점프!<br>
+                플랫폼을 밟고 올라가세요
+            </div>
+        </div>
+        <div id="gameOverScreen">
+            <h1>🎮 게임 오버</h1>
+            <div style="margin: 20px 0; font-size: 1.2em;">
+                <div>도달 높이: <span id="finalHeight">0</span>m</div>
+                <div>획득 점수: <span id="finalScore">0</span></div>
+            </div>
+            <button onclick="startGame()">다시 하기</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            canvas.width = Math.min(window.innerWidth - 20, 500);
+            canvas.height = Math.min(window.innerHeight - 20, 700);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        let game = { running: false, score: 0, maxHeight: 0, bestHeight: 0 };
+        let camera = { y: 0 };
+        
+        let player = {
+            x: 0, y: 0,
+            vx: 0, vy: 0,
+            width: 30, height: 30,
+            onGround: false,
+            charging: false,
+            power: 0
+        };
+
+        let platforms = [];
+        const gravity = 0.4;
+        const maxPower = 20;
+        
+        // 입력 처리
+        let isHolding = false;
+        
+        canvas.addEventListener('mousedown', startCharge);
+        canvas.addEventListener('mouseup', releaseJump);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startCharge(e); });
+        canvas.addEventListener('touchend', (e) => { e.preventDefault(); releaseJump(e); });
+
+        function startCharge(e) {
+            if (!game.running) return;
+            if (player.onGround) {
+                isHolding = true;
+                player.charging = true;
+                player.power = 0;
+                document.getElementById('powerBar').style.display = 'block';
+            }
+        }
+
+        function releaseJump(e) {
+            if (!game.running) return;
+            if (player.charging && player.onGround) {
+                // 점프 방향 계산 (터치/클릭 위치 기반)
+                let targetX = canvas.width / 2;
+                if (e.changedTouches) {
+                    const rect = canvas.getBoundingClientRect();
+                    targetX = e.changedTouches[0].clientX - rect.left;
+                } else if (e.clientX) {
+                    const rect = canvas.getBoundingClientRect();
+                    targetX = e.clientX - rect.left;
+                }
+                
+                const dx = targetX - player.x;
+                const angle = Math.atan2(-1, dx / 100); // 위쪽으로 점프
+                
+                player.vy = -player.power * 0.9;
+                player.vx = (targetX - player.x) * 0.02 * (player.power / maxPower);
+                player.onGround = false;
+            }
+            isHolding = false;
+            player.charging = false;
+            player.power = 0;
+            document.getElementById('powerBar').style.display = 'none';
+        }
+
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('gameOverScreen').style.display = 'none';
+            
+            game = { running: true, score: 0, maxHeight: 0, bestHeight: parseInt(localStorage.getItem('jumpBest') || '0') };
+            camera = { y: 0 };
+            
+            player = {
+                x: canvas.width / 2,
+                y: canvas.height - 100,
+                vx: 0, vy: 0,
+                width: 30, height: 30,
+                onGround: false,
+                charging: false,
+                power: 0
+            };
+            
+            // 플랫폼 생성
+            platforms = [];
+            
+            // 시작 플랫폼
+            platforms.push({
+                x: canvas.width / 2 - 60,
+                y: canvas.height - 50,
+                width: 120,
+                height: 20,
+                type: 'normal'
+            });
+            
+            // 랜덤 플랫폼 생성
+            for (let i = 1; i < 100; i++) {
+                generatePlatform(canvas.height - 50 - i * 80);
+            }
+            
+            document.getElementById('best').textContent = game.bestHeight;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function generatePlatform(y) {
+            const types = ['normal', 'normal', 'normal', 'bounce', 'moving', 'break'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            
+            let width = 60 + Math.random() * 40;
+            if (type === 'bounce') width = 50;
+            if (type === 'break') width = 70;
+            
+            platforms.push({
+                x: Math.random() * (canvas.width - width),
+                y: y,
+                width: width,
+                height: 15,
+                type: type,
+                vx: type === 'moving' ? (Math.random() > 0.5 ? 2 : -2) : 0,
+                broken: false
+            });
+        }
+
+        function gameLoop() {
+            if (!game.running) return;
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function update() {
+            // 파워 충전
+            if (player.charging && player.onGround) {
+                player.power = Math.min(player.power + 0.5, maxPower);
+                document.getElementById('powerFill').style.width = `${(player.power / maxPower) * 100}%`;
+            }
+            
+            // 물리
+            if (!player.onGround) {
+                player.vy += gravity;
+                player.vx *= 0.99; // 공기 저항
+            }
+            
+            player.x += player.vx;
+            player.y += player.vy;
+            
+            // 벽 충돌
+            if (player.x < 0) { player.x = 0; player.vx *= -0.5; }
+            if (player.x > canvas.width - player.width) { 
+                player.x = canvas.width - player.width; 
+                player.vx *= -0.5; 
+            }
+            
+            // 플랫폼 충돌
+            player.onGround = false;
+            for (let p of platforms) {
+                if (p.broken) continue;
+                
+                // 이동 플랫폼
+                if (p.type === 'moving') {
+                    p.x += p.vx;
+                    if (p.x < 0 || p.x > canvas.width - p.width) p.vx *= -1;
+                }
+                
+                // 충돌 체크 (아래로 떨어질 때만)
+                if (player.vy > 0 &&
+                    player.x + player.width > p.x &&
+                    player.x < p.x + p.width &&
+                    player.y + player.height > p.y &&
+                    player.y + player.height < p.y + p.height + player.vy + 5) {
+                    
+                    player.y = p.y - player.height;
+                    player.vy = 0;
+                    player.onGround = true;
+                    
+                    if (p.type === 'bounce') {
+                        player.vy = -15;
+                        player.onGround = false;
+                    } else if (p.type === 'break') {
+                        p.broken = true;
+                        setTimeout(() => {
+                            player.onGround = false;
+                        }, 100);
+                    } else if (p.type === 'moving') {
+                        player.x += p.vx;
+                    }
+                    
+                    break;
+                }
+            }
+            
+            // 카메라 따라가기
+            const targetCameraY = player.y - canvas.height * 0.6;
+            if (targetCameraY < camera.y) {
+                camera.y += (targetCameraY - camera.y) * 0.1;
+            }
+            
+            // 높이 계산
+            const currentHeight = Math.floor((canvas.height - 100 - player.y) / 10);
+            if (currentHeight > game.maxHeight) {
+                game.maxHeight = currentHeight;
+                game.score = game.maxHeight * 10;
+            }
+            
+            // 새 플랫폼 생성
+            const highestPlatform = Math.min(...platforms.map(p => p.y));
+            if (highestPlatform > camera.y - 200) {
+                generatePlatform(highestPlatform - 80 - Math.random() * 30);
+            }
+            
+            // 화면 아래로 떨어지면 게임오버
+            if (player.y > camera.y + canvas.height + 100) {
+                gameOver();
+            }
+            
+            // UI 업데이트
+            document.getElementById('score').textContent = game.score;
+            document.getElementById('height').textContent = Math.max(0, Math.floor((canvas.height - 100 - player.y) / 10));
+        }
+
+        function render() {
+            // 배경 그라디언트 (높이에 따라 변화)
+            const heightRatio = Math.min(1, game.maxHeight / 500);
+            const skyColor1 = lerpColor('#87CEEB', '#1a0033', heightRatio);
+            const skyColor2 = lerpColor('#E0F6FF', '#000022', heightRatio);
+            
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, skyColor1);
+            gradient.addColorStop(1, skyColor2);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 별 (높이 올라가면 나타남)
+            if (heightRatio > 0.3) {
+                ctx.fillStyle = `rgba(255,255,255,${heightRatio * 0.8})`;
+                for (let i = 0; i < 50; i++) {
+                    const x = (i * 137) % canvas.width;
+                    const y = ((i * 251 - camera.y * 0.1) % canvas.height + canvas.height) % canvas.height;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 1 + Math.random(), 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            ctx.save();
+            ctx.translate(0, -camera.y);
+            
+            // 플랫폼
+            for (let p of platforms) {
+                if (p.y < camera.y - 50 || p.y > camera.y + canvas.height + 50) continue;
+                if (p.broken) continue;
+                
+                let color = '#4a7c59';
+                if (p.type === 'bounce') color = '#ff6b6b';
+                if (p.type === 'moving') color = '#4ecdc4';
+                if (p.type === 'break') color = '#c9b037';
+                
+                // 플랫폼 그림자
+                ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                ctx.fillRect(p.x + 3, p.y + 3, p.width, p.height);
+                
+                // 플랫폼
+                ctx.fillStyle = color;
+                ctx.fillRect(p.x, p.y, p.width, p.height);
+                
+                // 플랫폼 하이라이트
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.fillRect(p.x, p.y, p.width, 4);
+                
+                // 바운스 플랫폼 스프링
+                if (p.type === 'bounce') {
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    for (let i = 0; i < 3; i++) {
+                        ctx.moveTo(p.x + 10 + i * 15, p.y);
+                        ctx.lineTo(p.x + 15 + i * 15, p.y - 8);
+                        ctx.lineTo(p.x + 20 + i * 15, p.y);
+                    }
+                    ctx.stroke();
+                }
+            }
+            
+            // 플레이어
+            const px = player.x;
+            const py = player.y;
+            const pw = player.width;
+            const ph = player.height;
+            
+            // 그림자
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(px + pw/2, py + ph + 5, pw/2, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 캐릭터 몸통
+            const squish = player.charging ? 1 + player.power / maxPower * 0.3 : 1;
+            const stretch = player.vy < -5 ? 1.3 : (player.vy > 5 ? 0.8 : 1);
+            
+            ctx.fillStyle = '#ff8c42';
+            ctx.beginPath();
+            ctx.ellipse(px + pw/2, py + ph/2, (pw/2) / squish, (ph/2) * squish * stretch, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 눈
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(px + pw/2 - 6, py + ph/3, 6, 0, Math.PI * 2);
+            ctx.arc(px + pw/2 + 6, py + ph/3, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#000';
+            const eyeOffsetY = player.vy < 0 ? -2 : (player.vy > 0 ? 2 : 0);
+            ctx.beginPath();
+            ctx.arc(px + pw/2 - 5, py + ph/3 + eyeOffsetY, 3, 0, Math.PI * 2);
+            ctx.arc(px + pw/2 + 7, py + ph/3 + eyeOffsetY, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 충전 이펙트
+            if (player.charging) {
+                ctx.strokeStyle = `rgba(255, ${255 - player.power * 10}, 0, 0.8)`;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(px + pw/2, py + ph/2, pw/2 + 10 + player.power/2, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            ctx.restore();
+        }
+
+        function lerpColor(color1, color2, t) {
+            const c1 = hexToRgb(color1);
+            const c2 = hexToRgb(color2);
+            const r = Math.round(c1.r + (c2.r - c1.r) * t);
+            const g = Math.round(c1.g + (c2.g - c1.g) * t);
+            const b = Math.round(c1.b + (c2.b - c1.b) * t);
+            return `rgb(${r},${g},${b})`;
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : {r:0,g:0,b:0};
+        }
+
+        function gameOver() {
+            game.running = false;
+            
+            if (game.maxHeight > game.bestHeight) {
+                game.bestHeight = game.maxHeight;
+                localStorage.setItem('jumpBest', game.bestHeight.toString());
+            }
+            
+            document.getElementById('gameOverScreen').style.display = 'flex';
+            document.getElementById('finalHeight').textContent = game.maxHeight;
+            document.getElementById('finalScore').textContent = game.score;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>⛳ 싱글탭 골프</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #1a472a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+        #gameContainer { position: relative; }
+        #gameCanvas {
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 100, 0, 0.5);
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            font-size: 16px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        #holeInfo {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #fff;
+            text-align: right;
+            font-size: 14px;
+        }
+        #powerMeter {
+            position: absolute;
+            left: 10px;
+            bottom: 10px;
+            width: 30px;
+            height: 150px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        #powerFill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(0deg, #00ff00, #ffff00, #ff0000);
+            height: 0%;
+            transition: height 0.05s;
+        }
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 2em;
+            font-weight: bold;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #startScreen, #endScreen {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            border-radius: 10px;
+        }
+        #endScreen { display: none; }
+        h1 { font-size: 2.5em; margin-bottom: 20px; }
+        button {
+            padding: 15px 40px;
+            font-size: 1.2em;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            color: #fff;
+            font-weight: bold;
+            margin: 10px;
+        }
+        .guide { margin-top: 20px; font-size: 0.9em; opacity: 0.7; text-align: center; }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui">
+            <div>🏌️ 스트로크: <span id="strokes">0</span></div>
+            <div>📊 총 타수: <span id="totalStrokes">0</span></div>
+        </div>
+        <div id="holeInfo">
+            <div>홀 <span id="holeNum">1</span>/9</div>
+            <div>Par <span id="par">3</span></div>
+        </div>
+        <div id="powerMeter"><div id="powerFill"></div></div>
+        <div id="message"></div>
+        <div id="startScreen">
+            <h1>⛳ 싱글탭 골프</h1>
+            <p style="margin-bottom: 20px; opacity: 0.8;">9홀 미니 골프</p>
+            <button onclick="startGame()">게임 시작</button>
+            <div class="guide">
+                1️⃣ 터치/클릭 홀드로 파워 충전<br>
+                2️⃣ 손 떼면 공이 날아감!<br>
+                3️⃣ 방향은 자동 조준 (홀 방향)
+            </div>
+        </div>
+        <div id="endScreen">
+            <h1>🏆 라운드 완료!</h1>
+            <div style="margin: 20px 0; font-size: 1.3em;">
+                <div>총 타수: <span id="finalStrokes">0</span></div>
+                <div id="scoreText"></div>
+            </div>
+            <button onclick="startGame()">다시 플레이</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = Math.min(window.innerWidth - 20, 600);
+            canvas.height = Math.min(window.innerHeight - 20, 500);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // 홀 데이터
+        const holes = [
+            { par: 2, ballStart: {x: 0.15, y: 0.5}, hole: {x: 0.85, y: 0.5}, obstacles: [] },
+            { par: 3, ballStart: {x: 0.1, y: 0.8}, hole: {x: 0.9, y: 0.2}, obstacles: [
+                { type: 'rect', x: 0.4, y: 0.3, w: 0.05, h: 0.5 }
+            ]},
+            { par: 3, ballStart: {x: 0.1, y: 0.5}, hole: {x: 0.9, y: 0.5}, obstacles: [
+                { type: 'water', x: 0.4, y: 0.2, w: 0.2, h: 0.6 }
+            ]},
+            { par: 4, ballStart: {x: 0.1, y: 0.2}, hole: {x: 0.9, y: 0.8}, obstacles: [
+                { type: 'rect', x: 0.3, y: 0, w: 0.05, h: 0.5 },
+                { type: 'rect', x: 0.6, y: 0.5, w: 0.05, h: 0.5 }
+            ]},
+            { par: 3, ballStart: {x: 0.5, y: 0.9}, hole: {x: 0.5, y: 0.15}, obstacles: [
+                { type: 'sand', x: 0.3, y: 0.4, w: 0.4, h: 0.2 }
+            ]},
+            { par: 4, ballStart: {x: 0.1, y: 0.5}, hole: {x: 0.9, y: 0.5}, obstacles: [
+                { type: 'rect', x: 0.4, y: 0.1, w: 0.2, h: 0.3 },
+                { type: 'rect', x: 0.4, y: 0.6, w: 0.2, h: 0.3 }
+            ]},
+            { par: 3, ballStart: {x: 0.15, y: 0.85}, hole: {x: 0.85, y: 0.15}, obstacles: [
+                { type: 'water', x: 0.35, y: 0.35, w: 0.3, h: 0.3 }
+            ]},
+            { par: 4, ballStart: {x: 0.1, y: 0.5}, hole: {x: 0.9, y: 0.5}, obstacles: [
+                { type: 'rect', x: 0.25, y: 0.2, w: 0.03, h: 0.6 },
+                { type: 'rect', x: 0.5, y: 0, w: 0.03, h: 0.4 },
+                { type: 'rect', x: 0.5, y: 0.6, w: 0.03, h: 0.4 },
+                { type: 'rect', x: 0.75, y: 0.2, w: 0.03, h: 0.6 }
+            ]},
+            { par: 5, ballStart: {x: 0.1, y: 0.9}, hole: {x: 0.9, y: 0.1}, obstacles: [
+                { type: 'sand', x: 0.2, y: 0.5, w: 0.15, h: 0.15 },
+                { type: 'water', x: 0.5, y: 0.3, w: 0.2, h: 0.15 },
+                { type: 'rect', x: 0.7, y: 0.4, w: 0.03, h: 0.4 }
+            ]}
+        ];
+
+        let game = { running: false, currentHole: 0, strokes: 0, totalStrokes: 0 };
+        let ball = { x: 0, y: 0, vx: 0, vy: 0, radius: 8 };
+        let holePos = { x: 0, y: 0, radius: 12 };
+        let power = 0;
+        let isCharging = false;
+        let isMoving = false;
+
+        // 입력
+        canvas.addEventListener('mousedown', startCharge);
+        canvas.addEventListener('mouseup', shoot);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startCharge(e); });
+        canvas.addEventListener('touchend', (e) => { e.preventDefault(); shoot(e); });
+
+        function startCharge(e) {
+            if (!game.running || isMoving) return;
+            isCharging = true;
+            power = 0;
+        }
+
+        function shoot(e) {
+            if (!game.running || !isCharging || isMoving) return;
+            isCharging = false;
+            
+            const dx = holePos.x - ball.x;
+            const dy = holePos.y - ball.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            const speed = power * 0.2;
+            ball.vx = (dx / dist) * speed;
+            ball.vy = (dy / dist) * speed;
+            
+            game.strokes++;
+            isMoving = true;
+            power = 0;
+            document.getElementById('powerFill').style.height = '0%';
+        }
+
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('endScreen').style.display = 'none';
+            
+            game = { running: true, currentHole: 0, strokes: 0, totalStrokes: 0 };
+            loadHole(0);
+            requestAnimationFrame(gameLoop);
+        }
+
+        function loadHole(index) {
+            const hole = holes[index];
+            ball.x = hole.ballStart.x * canvas.width;
+            ball.y = hole.ballStart.y * canvas.height;
+            ball.vx = 0;
+            ball.vy = 0;
+            
+            holePos.x = hole.hole.x * canvas.width;
+            holePos.y = hole.hole.y * canvas.height;
+            
+            game.strokes = 0;
+            isMoving = false;
+            
+            document.getElementById('holeNum').textContent = index + 1;
+            document.getElementById('par').textContent = hole.par;
+            document.getElementById('strokes').textContent = 0;
+        }
+
+        function gameLoop() {
+            if (!game.running) return;
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function update() {
+            // 파워 충전
+            if (isCharging && !isMoving) {
+                power = Math.min(power + 1.5, 100);
+                document.getElementById('powerFill').style.height = power + '%';
+            }
+            
+            if (!isMoving) return;
+            
+            const hole = holes[game.currentHole];
+            const friction = 0.98;
+            let inSand = false;
+            
+            // 장애물 체크
+            for (let obs of hole.obstacles) {
+                const ox = obs.x * canvas.width;
+                const oy = obs.y * canvas.height;
+                const ow = obs.w * canvas.width;
+                const oh = obs.h * canvas.height;
+                
+                if (ball.x > ox && ball.x < ox + ow && ball.y > oy && ball.y < oy + oh) {
+                    if (obs.type === 'water') {
+                        // 물에 빠짐 - 리셋
+                        showMessage('💦 워터!');
+                        ball.x = hole.ballStart.x * canvas.width;
+                        ball.y = hole.ballStart.y * canvas.height;
+                        ball.vx = 0;
+                        ball.vy = 0;
+                        game.strokes++;
+                        isMoving = false;
+                        return;
+                    } else if (obs.type === 'sand') {
+                        inSand = true;
+                    } else if (obs.type === 'rect') {
+                        // 벽 충돌
+                        const prevX = ball.x - ball.vx;
+                        const prevY = ball.y - ball.vy;
+                        
+                        if (prevX <= ox || prevX >= ox + ow) {
+                            ball.vx *= -0.7;
+                            ball.x = prevX;
+                        }
+                        if (prevY <= oy || prevY >= oy + oh) {
+                            ball.vy *= -0.7;
+                            ball.y = prevY;
+                        }
+                    }
+                }
+            }
+            
+            // 이동
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+            
+            // 마찰
+            const f = inSand ? 0.92 : friction;
+            ball.vx *= f;
+            ball.vy *= f;
+            
+            // 벽 충돌
+            if (ball.x < ball.radius) { ball.x = ball.radius; ball.vx *= -0.8; }
+            if (ball.x > canvas.width - ball.radius) { ball.x = canvas.width - ball.radius; ball.vx *= -0.8; }
+            if (ball.y < ball.radius) { ball.y = ball.radius; ball.vy *= -0.8; }
+            if (ball.y > canvas.height - ball.radius) { ball.y = canvas.height - ball.radius; ball.vy *= -0.8; }
+            
+            // 홀인 체크
+            const dx = holePos.x - ball.x;
+            const dy = holePos.y - ball.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+            
+            if (dist < holePos.radius && speed < 5) {
+                // 홀인!
+                holeIn();
+                return;
+            }
+            
+            // 멈춤 체크
+            if (speed < 0.1) {
+                ball.vx = 0;
+                ball.vy = 0;
+                isMoving = false;
+            }
+            
+            // UI 업데이트
+            document.getElementById('strokes').textContent = game.strokes;
+            document.getElementById('totalStrokes').textContent = game.totalStrokes + game.strokes;
+        }
+
+        function holeIn() {
+            const hole = holes[game.currentHole];
+            const diff = game.strokes - hole.par;
+            
+            let msg = '';
+            if (game.strokes === 1) msg = '🎉 홀인원!!!';
+            else if (diff <= -2) msg = '🦅 이글!';
+            else if (diff === -1) msg = '🐦 버디!';
+            else if (diff === 0) msg = '👍 파!';
+            else if (diff === 1) msg = '😅 보기';
+            else msg = '😓 +' + diff;
+            
+            showMessage(msg);
+            
+            game.totalStrokes += game.strokes;
+            
+            setTimeout(() => {
+                game.currentHole++;
+                if (game.currentHole >= holes.length) {
+                    endGame();
+                } else {
+                    loadHole(game.currentHole);
+                }
+            }, 1500);
+            
+            isMoving = false;
+        }
+
+        function showMessage(text) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.style.opacity = 1;
+            setTimeout(() => { msg.style.opacity = 0; }, 1200);
+        }
+
+        function endGame() {
+            game.running = false;
+            
+            const totalPar = holes.reduce((sum, h) => sum + h.par, 0);
+            const diff = game.totalStrokes - totalPar;
+            
+            let scoreText = '';
+            if (diff < 0) scoreText = `🏆 ${Math.abs(diff)} 언더파!`;
+            else if (diff === 0) scoreText = '👍 이븐파!';
+            else scoreText = `📊 ${diff} 오버파`;
+            
+            document.getElementById('finalStrokes').textContent = game.totalStrokes;
+            document.getElementById('scoreText').textContent = scoreText;
+            document.getElementById('endScreen').style.display = 'flex';
+        }
+
+        function render() {
+            const hole = holes[game.currentHole];
+            
+            // 잔디 배경
+            ctx.fillStyle = '#228b22';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 잔디 패턴
+            ctx.strokeStyle = '#1e7b1e';
+            ctx.lineWidth = 1;
+            for (let y = 0; y < canvas.height; y += 15) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            
+            // 장애물
+            for (let obs of hole.obstacles) {
+                const ox = obs.x * canvas.width;
+                const oy = obs.y * canvas.height;
+                const ow = obs.w * canvas.width;
+                const oh = obs.h * canvas.height;
+                
+                if (obs.type === 'water') {
+                    ctx.fillStyle = '#3b82f6';
+                    ctx.fillRect(ox, oy, ow, oh);
+                    // 물결
+                    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                    ctx.lineWidth = 2;
+                    for (let i = 0; i < 3; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(ox + 10, oy + oh * (0.3 + i * 0.25));
+                        ctx.quadraticCurveTo(ox + ow/2, oy + oh * (0.2 + i * 0.25), ox + ow - 10, oy + oh * (0.3 + i * 0.25));
+                        ctx.stroke();
+                    }
+                } else if (obs.type === 'sand') {
+                    ctx.fillStyle = '#f4d03f';
+                    ctx.fillRect(ox, oy, ow, oh);
+                    // 점
+                    ctx.fillStyle = '#d4b130';
+                    for (let i = 0; i < 20; i++) {
+                        ctx.beginPath();
+                        ctx.arc(ox + Math.random() * ow, oy + Math.random() * oh, 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                } else if (obs.type === 'rect') {
+                    ctx.fillStyle = '#5d4e37';
+                    ctx.fillRect(ox, oy, ow, oh);
+                    ctx.strokeStyle = '#3d2e17';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(ox, oy, ow, oh);
+                }
+            }
+            
+            // 홀
+            ctx.beginPath();
+            ctx.arc(holePos.x, holePos.y, holePos.radius + 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#1a472a';
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(holePos.x, holePos.y, holePos.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#000';
+            ctx.fill();
+            
+            // 깃발
+            ctx.fillStyle = '#dc2626';
+            ctx.beginPath();
+            ctx.moveTo(holePos.x, holePos.y - 50);
+            ctx.lineTo(holePos.x + 20, holePos.y - 40);
+            ctx.lineTo(holePos.x, holePos.y - 30);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(holePos.x, holePos.y);
+            ctx.lineTo(holePos.x, holePos.y - 50);
+            ctx.stroke();
+            
+            // 조준선 (충전 중)
+            if (isCharging && !isMoving) {
+                ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 + power/200})`;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(ball.x, ball.y);
+                ctx.lineTo(holePos.x, holePos.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // 파워 미리보기
+                const dx = holePos.x - ball.x;
+                const dy = holePos.y - ball.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const previewDist = Math.min(power * 2, dist);
+                
+                ctx.beginPath();
+                ctx.arc(
+                    ball.x + (dx / dist) * previewDist,
+                    ball.y + (dy / dist) * previewDist,
+                    6, 0, Math.PI * 2
+                );
+                ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                ctx.fill();
+            }
+            
+            // 공
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            const ballGradient = ctx.createRadialGradient(ball.x - 2, ball.y - 2, 0, ball.x, ball.y, ball.radius);
+            ballGradient.addColorStop(0, '#fff');
+            ballGradient.addColorStop(1, '#ddd');
+            ctx.fillStyle = ballGradient;
+            ctx.fill();
+            ctx.strokeStyle = '#bbb';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+    </script>
+</body>
+</html>
