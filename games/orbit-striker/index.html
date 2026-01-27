@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Orbit Striker - 궤도 슈터</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a1a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      overflow: hidden;
+      touch-action: none;
+    }
+    #gameContainer {
+      position: relative;
+      width: 100vmin;
+      height: 100vmin;
+      max-width: 600px;
+      max-height: 600px;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+    }
+    .overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: rgba(10, 10, 26, 0.9);
+      color: white;
+      text-align: center;
+      padding: 20px;
+      transition: opacity 0.3s;
+    }
+    .overlay.hidden { opacity: 0; pointer-events: none; }
+    .title {
+      font-size: 2.5em;
+      font-weight: bold;
+      background: linear-gradient(135deg, #6bb3ff, #00ffcc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+    }
+    .subtitle { font-size: 1.1em; color: #8899aa; margin-bottom: 30px; }
+    .btn {
+      padding: 15px 40px;
+      font-size: 1.2em;
+      font-weight: bold;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      margin: 10px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn:hover { transform: scale(1.05); }
+    .btn-primary {
+      background: linear-gradient(135deg, #4a90d9, #6bb3ff);
+      color: white;
+      box-shadow: 0 4px 20px rgba(74, 144, 217, 0.4);
+    }
+    .instructions {
+      margin-top: 30px;
+      font-size: 0.9em;
+      color: #667788;
+      line-height: 1.6;
+    }
+    .score-display {
+      font-size: 1.8em;
+      margin: 20px 0;
+      color: #ffdd44;
+    }
+    .powerup-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .powerup-btn {
+      padding: 15px 20px;
+      font-size: 1em;
+      border: 2px solid #4a90d9;
+      border-radius: 10px;
+      background: rgba(74, 144, 217, 0.2);
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-width: 120px;
+    }
+    .powerup-btn:hover {
+      background: rgba(74, 144, 217, 0.4);
+      transform: scale(1.05);
+    }
+    .powerup-icon { font-size: 1.5em; display: block; margin-bottom: 5px; }
+    .new-record { color: #00ffcc; font-size: 1.2em; margin-top: 10px; }
+    /* Credits - Asset attribution */
+    /* Graphics: Procedural Canvas rendering (no external assets) */
+    /* Audio: Web Audio API synthesized sounds */
+    /* Font: System UI fonts */
+  </style>
+</head>
+<body>
+  <div id="gameContainer">
+    <canvas id="game"></canvas>
+    
+    <!-- Menu Overlay -->
+    <div class="overlay" id="menuOverlay">
+      <div class="title">🌍 ORBIT STRIKER</div>
+      <div class="subtitle">중력을 무기로, 우주를 지켜라</div>
+      <button class="btn btn-primary" onclick="startGame()">▶ 게임 시작</button>
+      <div class="instructions">
+        드래그하여 조준 → 놓아서 발사<br>
+        궤도를 도는 적들을 모두 처치하세요!
+      </div>
+    </div>
+    
+    <!-- Game Over Overlay -->
+    <div class="overlay hidden" id="gameOverOverlay">
+      <div class="title">GAME OVER</div>
+      <div class="score-display">SCORE: <span id="finalScore">0</span></div>
+      <div id="newRecord" class="new-record" style="display:none">🏆 NEW RECORD!</div>
+      <div style="color:#8899aa;margin:10px 0">WAVE: <span id="finalWave">1</span></div>
+      <button class="btn btn-primary" onclick="startGame()">다시 시작</button>
+      <button class="btn" style="background:#334;color:#fff" onclick="showMenu()">메뉴로</button>
+    </div>
+    
+    <!-- Powerup Select Overlay -->
+    <div class="overlay hidden" id="powerupOverlay">
+      <div class="title" style="font-size:1.5em">⚡ 파워업 선택</div>
+      <div class="subtitle">WAVE <span id="clearedWave">1</span> CLEAR!</div>
+      <div class="powerup-container" id="powerupContainer"></div>
+    </div>
+  </div>
+
+  <script>
+    // ============ CONFIG ============
+    const CONFIG = {
+      GRAVITY_CONSTANT: 15000,
+      PLANET_RADIUS: 40,
+      BULLET_SPEED: 350,
+      FIRE_COOLDOWN: 0.4,
+      ORBIT_RADII: [100, 150, 200],
+      MAX_AIM_POWER: 1.5
+    };
+
+    // ============ GAME STATE ============
+    const GameState = { MENU: 0, PLAYING: 1, WAVE_CLEAR: 2, POWERUP: 3, GAME_OVER: 4 };
+    
+    let canvas, ctx, W, H, centerX, centerY;
+    let gameState = GameState.MENU;
+    let score = 0, highScore = 0, wave = 1, combo = 0;
+    let bullets = [], enemies = [], particles = [];
+    let lastFireTime = 0;
+    let aiming = false, aimStart = {x:0,y:0}, aimEnd = {x:0,y:0};
+    let audioCtx = null;
+    
+    const playerStats = {
+      fireRate: 0.4,
+      bulletSpeed: 350,
+      bulletDamage: 1,
+      bulletSize: 6,
+      multishot: 1,
+      piercing: false,
+      homing: 0
+    };
+
+    const POWERUPS = [
+      { id: 'multishot', name: '멀티샷', icon: '🔱', desc: '3방향 발사', apply: () => playerStats.multishot = 3 },
+      { id: 'piercing', name: '관통탄', icon: '🗡️', desc: '적 관통', apply: () => playerStats.piercing = true },
+      { id: 'homing', name: '유도탄', icon: '🎯', desc: '적 추적', apply: () => playerStats.homing = 0.5 },
+      { id: 'bigshot', name: '대형탄', icon: '💣', desc: '탄환 2배', apply: () => playerStats.bulletSize *= 1.5 },
+      { id: 'rapidfire', name: '속사', icon: '⚡', desc: '발사속도↑', apply: () => playerStats.fireRate *= 0.7 }
+    ];
+
+    const ENEMY_TYPES = {
+      drifter: { hp: 1, speed: 0.3, size: 12, color: '#ff6677', score: 10 },
+      orbiter: { hp: 2, speed: 0.5, size: 15, color: '#ff9944', score: 25 },
+      swooper: { hp: 1, speed: 0.8, size: 10, color: '#ff44aa', score: 30 },
+      tank: { hp: 5, speed: 0.2, size: 25, color: '#aa44ff', score: 100 }
+    };
+
+    // ============ INIT ============
+    function init() {
+      canvas = document.getElementById('game');
+      ctx = canvas.getContext('2d');
+      
+      resize();
+      window.addEventListener('resize', resize);
+      
+      canvas.addEventListener('mousedown', onPointerDown);
+      canvas.addEventListener('mousemove', onPointerMove);
+      canvas.addEventListener('mouseup', onPointerUp);
+      canvas.addEventListener('touchstart', e => { e.preventDefault(); onPointerDown(e.touches[0]); });
+      canvas.addEventListener('touchmove', e => { e.preventDefault(); onPointerMove(e.touches[0]); });
+      canvas.addEventListener('touchend', e => { e.preventDefault(); onPointerUp(e.changedTouches[0]); });
+      
+      highScore = parseInt(localStorage.getItem('orbitStriker_highScore')) || 0;
+      
+      requestAnimationFrame(gameLoop);
+    }
+
+    function resize() {
+      const container = document.getElementById('gameContainer');
+      const rect = container.getBoundingClientRect();
+      const size = Math.min(rect.width, rect.height);
+      canvas.width = size * window.devicePixelRatio;
+      canvas.height = size * window.devicePixelRatio;
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      W = H = size;
+      centerX = W / 2;
+      centerY = H / 2;
+    }
+
+    // ============ AUDIO ============
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playSound(type) {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      
+      switch(type) {
+        case 'shoot':
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(880, now);
+          osc.frequency.exponentialRampToValueAtTime(220, now + 0.08);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          osc.start(now);
+          osc.stop(now + 0.08);
+          break;
+        case 'hit':
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(110, now + 0.1);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+          osc.start(now);
+          osc.stop(now + 0.1);
+          break;
+        case 'destroy':
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(200, now);
+          osc.frequency.exponentialRampToValueAtTime(50, now + 0.2);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+          osc.start(now);
+          osc.stop(now + 0.2);
+          break;
+        case 'powerup':
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523, now);
+          osc.frequency.setValueAtTime(659, now + 0.1);
+          osc.frequency.setValueAtTime(784, now + 0.2);
+          osc.frequency.setValueAtTime(1047, now + 0.3);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+          osc.start(now);
+          osc.stop(now + 0.4);
+          break;
+        case 'gameover':
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(110, now + 0.5);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+          osc.start(now);
+          osc.stop(now + 0.5);
+          break;
+      }
+    }
+
+    // ============ INPUT ============
+    function getCanvasPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - rect.left) * (W / rect.width),
+        y: (e.clientY - rect.top) * (H / rect.height)
+      };
+    }
+
+    function onPointerDown(e) {
+      if (gameState !== GameState.PLAYING) return;
+      const pos = getCanvasPos(e);
+      aiming = true;
+      aimStart = pos;
+      aimEnd = pos;
+    }
+
+    function onPointerMove(e) {
+      if (!aiming) return;
+      aimEnd = getCanvasPos(e);
+    }
+
+    function onPointerUp(e) {
+      if (!aiming) return;
+      aiming = false;
+      fire();
+    }
+
+    // ============ GAME LOGIC ============
+    function startGame() {
+      initAudio();
+      gameState = GameState.PLAYING;
+      score = 0;
+      wave = 1;
+      combo = 0;
+      bullets = [];
+      enemies = [];
+      particles = [];
+      
+      // Reset stats
+      playerStats.fireRate = 0.4;
+      playerStats.bulletSpeed = 350;
+      playerStats.bulletDamage = 1;
+      playerStats.bulletSize = 6;
+      playerStats.multishot = 1;
+      playerStats.piercing = false;
+      playerStats.homing = 0;
+      
+      spawnWave();
+      hideAllOverlays();
+    }
+
+    function showMenu() {
+      gameState = GameState.MENU;
+      hideAllOverlays();
+      document.getElementById('menuOverlay').classList.remove('hidden');
+    }
+
+    function hideAllOverlays() {
+      document.querySelectorAll('.overlay').forEach(o => o.classList.add('hidden'));
+    }
+
+    function spawnWave() {
+      const enemyCount = Math.min(3 + wave * 2, 25);
+      const types = ['drifter'];
+      if (wave >= 3) types.push('orbiter');
+      if (wave >= 5) types.push('swooper');
+      if (wave >= 8) types.push('tank');
+      
+      for (let i = 0; i < enemyCount; i++) {
+        const type = types[Math.floor(Math.random() * types.length)];
+        const template = ENEMY_TYPES[type];
+        const orbitRadius = CONFIG.ORBIT_RADII[Math.floor(Math.random() * CONFIG.ORBIT_RADII.length)];
+        const angle = Math.random() * Math.PI * 2;
+        
+        enemies.push({
+          type,
+          x: centerX + Math.cos(angle) * orbitRadius,
+          y: centerY + Math.sin(angle) * orbitRadius,
+          angle,
+          orbitRadius,
+          angularSpeed: template.speed * (Math.random() > 0.5 ? 1 : -1),
+          hp: template.hp * (1 + (wave - 1) * 0.1),
+          maxHp: template.hp * (1 + (wave - 1) * 0.1),
+          size: template.size,
+          color: template.color,
+          score: template.score
+        });
+      }
+    }
+
+    function fire() {
+      const now = performance.now() / 1000;
+      if (now - lastFireTime < playerStats.fireRate) return;
+      lastFireTime = now;
+      
+      const dx = aimStart.x - aimEnd.x;
+      const dy = aimStart.y - aimEnd.y;
+      const power = Math.min(Math.sqrt(dx*dx + dy*dy) / 100, CONFIG.MAX_AIM_POWER);
+      
+      if (power < 0.1) return;
+      
+      const baseAngle = Math.atan2(dy, dx);
+      const angles = playerStats.multishot === 1 ? [0] : [-0.2, 0, 0.2];
+      
+      angles.forEach(offset => {
+        const angle = baseAngle + offset;
+        bullets.push({
+          x: centerX,
+          y: centerY,
+          vx: Math.cos(angle) * playerStats.bulletSpeed * power,
+          vy: Math.sin(angle) * playerStats.bulletSpeed * power,
+          size: playerStats.bulletSize,
+          damage: playerStats.bulletDamage,
+          piercing: playerStats.piercing,
+          homing: playerStats.homing,
+          hits: 0
+        });
+      });
+      
+      playSound('shoot');
+    }
+
+    function updateBullets(dt) {
+      bullets.forEach(b => {
+        // Gravity towards center
+        const dx = centerX - b.x;
+        const dy = centerY - b.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist > 10) {
+          const force = CONFIG.GRAVITY_CONSTANT / (dist * dist);
+          b.vx += (dx / dist) * force * dt;
+          b.vy += (dy / dist) * force * dt;
+        }
+        
+        // Homing
+        if (b.homing > 0 && enemies.length > 0) {
+          let closest = null, closestDist = Infinity;
+          enemies.forEach(e => {
+            const d = Math.sqrt((e.x-b.x)**2 + (e.y-b.y)**2);
+            if (d < closestDist) { closestDist = d; closest = e; }
+          });
+          if (closest) {
+            const hdx = closest.x - b.x;
+            const hdy = closest.y - b.y;
+            const hd = Math.sqrt(hdx*hdx + hdy*hdy);
+            b.vx += (hdx / hd) * b.homing * 200 * dt;
+            b.vy += (hdy / hd) * b.homing * 200 * dt;
+          }
+        }
+        
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+      });
+      
+      // Remove out of bounds or hit planet
+      bullets = bullets.filter(b => {
+        const distFromCenter = Math.sqrt((b.x-centerX)**2 + (b.y-centerY)**2);
+        return b.x > -50 && b.x < W+50 && b.y > -50 && b.y < H+50 && distFromCenter > CONFIG.PLANET_RADIUS;
+      });
+    }
+
+    function updateEnemies(dt) {
+      enemies.forEach(e => {
+        e.angle += e.angularSpeed * dt;
+        e.x = centerX + Math.cos(e.angle) * e.orbitRadius;
+        e.y = centerY + Math.sin(e.angle) * e.orbitRadius;
+      });
+    }
+
+    function checkCollisions() {
+      bullets.forEach(b => {
+        enemies.forEach(e => {
+          const dx = b.x - e.x;
+          const dy = b.y - e.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          
+          if (dist < b.size + e.size) {
+            e.hp -= b.damage;
+            spawnParticles(e.x, e.y, 5, e.color);
+            playSound('hit');
+            
+            if (!b.piercing || b.hits >= 2) {
+              b.x = -1000; // Mark for removal
+            }
+            b.hits++;
+            
+            if (e.hp <= 0) {
+              score += e.score + combo * 5;
+              combo++;
+              spawnParticles(e.x, e.y, 15, e.color);
+              playSound('destroy');
+            }
+          }
+        });
+      });
+      
+      enemies = enemies.filter(e => e.hp > 0);
+      bullets = bullets.filter(b => b.x > -500);
+      
+      // Check wave clear
+      if (enemies.length === 0 && gameState === GameState.PLAYING) {
+        waveCleared();
+      }
+      
+      // Check game over - enemy too close to planet
+      enemies.forEach(e => {
+        const dist = Math.sqrt((e.x-centerX)**2 + (e.y-centerY)**2);
+        if (dist < CONFIG.PLANET_RADIUS + e.size) {
+          gameOver();
+        }
+      });
+    }
+
+    function waveCleared() {
+      gameState = GameState.POWERUP;
+      combo = 0;
+      
+      document.getElementById('clearedWave').textContent = wave;
+      const container = document.getElementById('powerupContainer');
+      container.innerHTML = '';
+      
+      // Random 3 powerups
+      const available = [...POWERUPS].sort(() => Math.random() - 0.5).slice(0, 3);
+      available.forEach(p => {
+        const btn = document.createElement('button');
+        btn.className = 'powerup-btn';
+        btn.innerHTML = `<span class="powerup-icon">${p.icon}</span>${p.name}<br><small>${p.desc}</small>`;
+        btn.onclick = () => selectPowerup(p);
+        container.appendChild(btn);
+      });
+      
+      document.getElementById('powerupOverlay').classList.remove('hidden');
+      playSound('powerup');
+    }
+
+    function selectPowerup(p) {
+      p.apply();
+      wave++;
+      gameState = GameState.PLAYING;
+      document.getElementById('powerupOverlay').classList.add('hidden');
+      spawnWave();
+    }
+
+    function gameOver() {
+      gameState = GameState.GAME_OVER;
+      playSound('gameover');
+      
+      const isNewRecord = score > highScore;
+      if (isNewRecord) {
+        highScore = score;
+        localStorage.setItem('orbitStriker_highScore', highScore);
+      }
+      
+      document.getElementById('finalScore').textContent = score.toLocaleString();
+      document.getElementById('finalWave').textContent = wave;
+      document.getElementById('newRecord').style.display = isNewRecord ? 'block' : 'none';
+      document.getElementById('gameOverOverlay').classList.remove('hidden');
+    }
+
+    function spawnParticles(x, y, count, color) {
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x, y,
+          vx: (Math.random() - 0.5) * 200,
+          vy: (Math.random() - 0.5) * 200,
+          life: 1,
+          color: color || '#ffdd44',
+          size: 2 + Math.random() * 3
+        });
+      }
+    }
+
+    function updateParticles(dt) {
+      particles.forEach(p => {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt * 2;
+        p.size *= 0.98;
+      });
+      particles = particles.filter(p => p.life > 0);
+    }
+
+    // ============ RENDER ============
+    function render() {
+      // Background
+      ctx.fillStyle = '#0a0a1a';
+      ctx.fillRect(0, 0, W, H);
+      
+      // Stars
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < 50; i++) {
+        const x = (i * 127) % W;
+        const y = (i * 311) % H;
+        const s = (i % 3) + 1;
+        ctx.globalAlpha = 0.3 + (i % 5) * 0.1;
+        ctx.fillRect(x, y, s, s);
+      }
+      ctx.globalAlpha = 1;
+      
+      // Orbit lines
+      ctx.strokeStyle = 'rgba(100, 150, 200, 0.15)';
+      ctx.setLineDash([5, 10]);
+      CONFIG.ORBIT_RADII.forEach(r => {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+      ctx.setLineDash([]);
+      
+      // Planet
+      const planetGrad = ctx.createRadialGradient(centerX-10, centerY-10, 0, centerX, centerY, CONFIG.PLANET_RADIUS);
+      planetGrad.addColorStop(0, '#8bc4ff');
+      planetGrad.addColorStop(0.7, '#4a90d9');
+      planetGrad.addColorStop(1, '#2a5080');
+      ctx.fillStyle = planetGrad;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, CONFIG.PLANET_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Planet glow
+      ctx.shadowColor = '#6bb3ff';
+      ctx.shadowBlur = 30;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, CONFIG.PLANET_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      
+      // Cannon
+      if (gameState === GameState.PLAYING) {
+        const angle = aiming ? Math.atan2(aimStart.y - aimEnd.y, aimStart.x - aimEnd.x) : 0;
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle);
+        ctx.fillStyle = '#ffdd44';
+        ctx.beginPath();
+        ctx.moveTo(CONFIG.PLANET_RADIUS + 15, 0);
+        ctx.lineTo(CONFIG.PLANET_RADIUS - 5, -8);
+        ctx.lineTo(CONFIG.PLANET_RADIUS - 5, 8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+      
+      // Aim line
+      if (aiming && gameState === GameState.PLAYING) {
+        const dx = aimStart.x - aimEnd.x;
+        const dy = aimStart.y - aimEnd.y;
+        const power = Math.min(Math.sqrt(dx*dx + dy*dy) / 100, CONFIG.MAX_AIM_POWER);
+        
+        ctx.strokeStyle = `rgba(255, 221, 68, ${0.3 + power * 0.4})`;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([10, 5]);
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(centerX + dx * 2, centerY + dy * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.lineWidth = 1;
+      }
+      
+      // Bullets
+      bullets.forEach(b => {
+        ctx.fillStyle = '#ffdd44';
+        ctx.shadowColor = '#ffdd44';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      });
+      
+      // Enemies
+      enemies.forEach(e => {
+        ctx.fillStyle = e.color;
+        ctx.shadowColor = e.color;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        
+        // HP bar for high HP enemies
+        if (e.maxHp > 1) {
+          const barWidth = e.size * 2;
+          const hpRatio = e.hp / e.maxHp;
+          ctx.fillStyle = '#333';
+          ctx.fillRect(e.x - barWidth/2, e.y - e.size - 8, barWidth, 4);
+          ctx.fillStyle = hpRatio > 0.5 ? '#44ff88' : hpRatio > 0.25 ? '#ffaa44' : '#ff4466';
+          ctx.fillRect(e.x - barWidth/2, e.y - e.size - 8, barWidth * hpRatio, 4);
+        }
+      });
+      
+      // Particles
+      particles.forEach(p => {
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+      
+      // HUD
+      if (gameState === GameState.PLAYING) {
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px system-ui';
+        ctx.textAlign = 'left';
+        ctx.fillText(`WAVE ${wave}`, 15, 30);
+        ctx.fillStyle = '#ffdd44';
+        ctx.fillText(`SCORE: ${score.toLocaleString()}`, 15, 52);
+        
+        if (combo > 1) {
+          ctx.fillStyle = '#00ffcc';
+          ctx.fillText(`COMBO x${combo}`, 15, 74);
+        }
+        
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#8899aa';
+        ctx.font = '12px system-ui';
+        ctx.fillText(`BEST: ${highScore.toLocaleString()}`, W - 15, 30);
+      }
+    }
+
+    // ============ GAME LOOP ============
+    let lastTime = 0;
+    function gameLoop(timestamp) {
+      const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+      lastTime = timestamp;
+      
+      if (gameState === GameState.PLAYING) {
+        updateBullets(dt);
+        updateEnemies(dt);
+        updateParticles(dt);
+        checkCollisions();
+      } else {
+        updateParticles(dt);
+      }
+      
+      render();
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Start
+    init();
+  </script>
+</body>
+</html>
