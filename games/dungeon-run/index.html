@@ -4,6 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>🏃 포켓 던전 런</title>
+    <!--
+        ============================================
+        포켓 던전 런 (Pocket Dungeon Run)
+        ============================================
+        
+        에셋 출처 및 라이선스:
+        - 모든 스프라이트는 Canvas API로 직접 생성된 픽셀 아트입니다
+        - 영감: Kenney.nl의 Tiny Dungeon & Pixel Platformer (CC0 라이선스)
+        - 원본 코드 및 아트: MIT 라이선스로 자유롭게 사용 가능
+        
+        Asset Credits & License:
+        - All sprites are procedurally generated pixel art using Canvas API
+        - Inspired by: Kenney.nl's Tiny Dungeon & Pixel Platformer (CC0)
+        - Original code and art: Free to use under MIT license
+        ============================================
+    -->
     <style>
         * {
             margin: 0;
@@ -11,7 +27,7 @@
             box-sizing: border-box;
         }
         body {
-            background: #1a1a2e;
+            background: #0a0a12;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -30,7 +46,9 @@
             width: 100%;
             height: auto;
             border-radius: 8px;
-            box-shadow: 0 0 30px rgba(255, 100, 100, 0.3);
+            box-shadow: 0 0 40px rgba(139, 69, 19, 0.4);
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
         }
         #ui {
             position: absolute;
@@ -39,10 +57,12 @@
             right: 10px;
             display: flex;
             justify-content: space-between;
-            color: #fff;
+            color: #ffd700;
             font-size: 18px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.9), 0 0 10px rgba(255,215,0,0.3);
             pointer-events: none;
+            font-family: monospace;
         }
         #startScreen, #gameOverScreen {
             position: absolute;
@@ -54,14 +74,15 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0,0,0,0.9);
             color: #fff;
             border-radius: 8px;
         }
         #startScreen h1, #gameOverScreen h1 {
             font-size: 2.5em;
             margin-bottom: 20px;
-            text-shadow: 0 0 20px #ff6b6b;
+            text-shadow: 0 0 20px #8b4513, 0 0 40px #cd853f;
+            color: #ffd700;
         }
         #startScreen p, #gameOverScreen p {
             font-size: 1.2em;
@@ -72,21 +93,24 @@
             margin-top: 20px;
             padding: 15px 40px;
             font-size: 1.3em;
-            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
-            border: none;
-            border-radius: 30px;
+            background: linear-gradient(135deg, #8b4513, #cd853f);
+            border: 3px solid #ffd700;
+            border-radius: 8px;
             color: #fff;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.4);
+            box-shadow: 0 5px 20px rgba(139, 69, 19, 0.6);
+            font-family: monospace;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
         .btn:hover {
             transform: scale(1.05);
-            box-shadow: 0 8px 30px rgba(255, 107, 107, 0.6);
+            box-shadow: 0 8px 30px rgba(205, 133, 63, 0.8);
         }
         #finalScore {
             font-size: 2em;
-            color: #ffd93d;
+            color: #ffd700;
             margin: 10px 0;
         }
         .hidden { display: none !important; }
@@ -96,23 +120,23 @@
     <div id="gameContainer">
         <canvas id="game"></canvas>
         <div id="ui">
-            <span id="score">🏃 0m</span>
+            <span id="score">⚔️ 0m</span>
             <span id="coins">💎 0</span>
         </div>
         
         <div id="startScreen">
-            <h1>🏃 포켓 던전 런</h1>
-            <p>🎮 터치 또는 클릭으로 점프!</p>
-            <p>⚠️ 장애물을 피하고 보석을 모아라!</p>
-            <button class="btn" id="startBtn">게임 시작</button>
+            <h1>⚔️ 포켓 던전 런</h1>
+            <p>🎮 터치 또는 스페이스바로 점프!</p>
+            <p>💀 함정을 피하고 보석을 모아라!</p>
+            <button class="btn" id="startBtn">모험 시작</button>
         </div>
         
         <div id="gameOverScreen" class="hidden">
-            <h1>💀 게임 오버</h1>
-            <p>최종 거리</p>
+            <h1>💀 사망</h1>
+            <p>도달 거리</p>
             <div id="finalScore">0m</div>
             <p id="finalCoins">💎 0개 수집</p>
-            <button class="btn" id="restartBtn">다시 시작</button>
+            <button class="btn" id="restartBtn">재도전</button>
         </div>
     </div>
 
@@ -126,8 +150,533 @@
         canvas.width = BASE_WIDTH;
         canvas.height = BASE_HEIGHT;
         
+        // 픽셀 스케일 (더 큰 픽셀 룩)
+        const PIXEL_SCALE = 2;
+        
+        // ============================================
+        // 색상 팔레트 (던전 테마)
+        // ============================================
+        const PALETTE = {
+            // 캐릭터
+            skin: '#f4c896',
+            skinDark: '#d4a876',
+            hair: '#4a3728',
+            armor: '#5a7a9a',
+            armorLight: '#7a9aba',
+            armorDark: '#3a5a7a',
+            cape: '#c44', 
+            capeDark: '#922',
+            
+            // 던전
+            stone: '#4a4a5a',
+            stoneDark: '#2a2a3a',
+            stoneLight: '#6a6a7a',
+            brick: '#5a4a3a',
+            brickDark: '#3a2a1a',
+            moss: '#3a5a3a',
+            
+            // 장애물
+            spike: '#8a8a9a',
+            spikeLight: '#aaaabc',
+            monster: '#6a3a6a',
+            monsterLight: '#8a5a8a',
+            monsterEye: '#ff0',
+            bat: '#3a3a4a',
+            batWing: '#5a5a6a',
+            fire: '#f84',
+            fireLight: '#fc6',
+            
+            // 아이템
+            coinGold: '#ffd700',
+            coinLight: '#ffed70',
+            coinDark: '#c9a000',
+            gemBlue: '#4af',
+            gemLight: '#8cf',
+            gemDark: '#28d',
+            gemPurple: '#a4f',
+            gemPurpleLight: '#c8f',
+            
+            // 배경
+            bgDark: '#12121a',
+            bgMid: '#1a1a24',
+            torch: '#f94',
+            torchGlow: 'rgba(255,150,50,0.3)'
+        };
+        
+        // ============================================
+        // 스프라이트 캐시 (오프스크린 캔버스)
+        // ============================================
+        const spriteCache = {};
+        
+        function createSprite(name, width, height, drawFn) {
+            const offscreen = document.createElement('canvas');
+            offscreen.width = width;
+            offscreen.height = height;
+            const octx = offscreen.getContext('2d');
+            octx.imageSmoothingEnabled = false;
+            drawFn(octx, width, height);
+            spriteCache[name] = offscreen;
+            return offscreen;
+        }
+        
+        // 픽셀 그리기 헬퍼
+        function drawPixel(ctx, x, y, color, size = 1) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x * PIXEL_SCALE, y * PIXEL_SCALE, size * PIXEL_SCALE, size * PIXEL_SCALE);
+        }
+        
+        function drawPixelRect(ctx, x, y, w, h, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x * PIXEL_SCALE, y * PIXEL_SCALE, w * PIXEL_SCALE, h * PIXEL_SCALE);
+        }
+        
+        // ============================================
+        // 캐릭터 스프라이트 생성 (달리기 애니메이션)
+        // ============================================
+        function createPlayerSprites() {
+            // 각 프레임 크기: 20x26 픽셀
+            const W = 20, H = 26;
+            
+            // 런 프레임 1
+            createSprite('player_run1', W * PIXEL_SCALE, H * PIXEL_SCALE, (ctx) => {
+                // 망토
+                drawPixelRect(ctx, 5, 8, 4, 12, PALETTE.cape);
+                drawPixelRect(ctx, 4, 10, 2, 8, PALETTE.capeDark);
+                
+                // 몸통 (갑옷)
+                drawPixelRect(ctx, 7, 8, 7, 10, PALETTE.armor);
+                drawPixelRect(ctx, 8, 8, 5, 2, PALETTE.armorLight);
+                drawPixelRect(ctx, 7, 16, 7, 2, PALETTE.armorDark);
+                
+                // 머리
+                drawPixelRect(ctx, 8, 1, 6, 7, PALETTE.skin);
+                drawPixelRect(ctx, 9, 0, 4, 2, PALETTE.hair);
+                drawPixelRect(ctx, 8, 1, 2, 3, PALETTE.hair);
+                
+                // 눈
+                drawPixel(ctx, 12, 3, '#333', 1);
+                drawPixel(ctx, 12, 4, '#fff', 1);
+                
+                // 팔
+                drawPixelRect(ctx, 14, 9, 3, 6, PALETTE.armor);
+                drawPixelRect(ctx, 5, 9, 2, 5, PALETTE.armor);
+                
+                // 다리 (달리기 포즈 1)
+                drawPixelRect(ctx, 8, 18, 3, 6, PALETTE.armorDark);
+                drawPixelRect(ctx, 12, 18, 3, 4, PALETTE.armorDark);
+                
+                // 부츠
+                drawPixelRect(ctx, 7, 23, 4, 3, PALETTE.brickDark);
+                drawPixelRect(ctx, 12, 21, 4, 2, PALETTE.brickDark);
+            });
+            
+            // 런 프레임 2
+            createSprite('player_run2', W * PIXEL_SCALE, H * PIXEL_SCALE, (ctx) => {
+                // 망토 (펄럭임)
+                drawPixelRect(ctx, 4, 8, 4, 10, PALETTE.cape);
+                drawPixelRect(ctx, 3, 9, 2, 7, PALETTE.capeDark);
+                drawPixelRect(ctx, 2, 11, 2, 5, PALETTE.cape);
+                
+                // 몸통
+                drawPixelRect(ctx, 7, 8, 7, 10, PALETTE.armor);
+                drawPixelRect(ctx, 8, 8, 5, 2, PALETTE.armorLight);
+                drawPixelRect(ctx, 7, 16, 7, 2, PALETTE.armorDark);
+                
+                // 머리
+                drawPixelRect(ctx, 8, 1, 6, 7, PALETTE.skin);
+                drawPixelRect(ctx, 9, 0, 4, 2, PALETTE.hair);
+                drawPixelRect(ctx, 8, 1, 2, 3, PALETTE.hair);
+                
+                // 눈
+                drawPixel(ctx, 12, 3, '#333', 1);
+                drawPixel(ctx, 12, 4, '#fff', 1);
+                
+                // 팔 (앞으로)
+                drawPixelRect(ctx, 14, 8, 4, 5, PALETTE.armor);
+                drawPixelRect(ctx, 4, 10, 2, 4, PALETTE.armor);
+                
+                // 다리 (달리기 포즈 2)
+                drawPixelRect(ctx, 9, 18, 3, 4, PALETTE.armorDark);
+                drawPixelRect(ctx, 11, 18, 3, 6, PALETTE.armorDark);
+                
+                // 부츠
+                drawPixelRect(ctx, 8, 21, 4, 2, PALETTE.brickDark);
+                drawPixelRect(ctx, 11, 23, 4, 3, PALETTE.brickDark);
+            });
+            
+            // 런 프레임 3
+            createSprite('player_run3', W * PIXEL_SCALE, H * PIXEL_SCALE, (ctx) => {
+                // 망토
+                drawPixelRect(ctx, 5, 8, 4, 11, PALETTE.cape);
+                drawPixelRect(ctx, 4, 10, 2, 7, PALETTE.capeDark);
+                
+                // 몸통
+                drawPixelRect(ctx, 7, 8, 7, 10, PALETTE.armor);
+                drawPixelRect(ctx, 8, 8, 5, 2, PALETTE.armorLight);
+                drawPixelRect(ctx, 7, 16, 7, 2, PALETTE.armorDark);
+                
+                // 머리
+                drawPixelRect(ctx, 8, 1, 6, 7, PALETTE.skin);
+                drawPixelRect(ctx, 9, 0, 4, 2, PALETTE.hair);
+                drawPixelRect(ctx, 8, 1, 2, 3, PALETTE.hair);
+                
+                // 눈
+                drawPixel(ctx, 12, 3, '#333', 1);
+                drawPixel(ctx, 12, 4, '#fff', 1);
+                
+                // 팔 (중간)
+                drawPixelRect(ctx, 14, 9, 3, 5, PALETTE.armor);
+                drawPixelRect(ctx, 5, 9, 2, 5, PALETTE.armor);
+                
+                // 다리 (중간 포즈)
+                drawPixelRect(ctx, 8, 18, 3, 5, PALETTE.armorDark);
+                drawPixelRect(ctx, 11, 18, 3, 5, PALETTE.armorDark);
+                
+                // 부츠
+                drawPixelRect(ctx, 7, 22, 4, 3, PALETTE.brickDark);
+                drawPixelRect(ctx, 11, 22, 4, 3, PALETTE.brickDark);
+            });
+            
+            // 런 프레임 4
+            createSprite('player_run4', W * PIXEL_SCALE, H * PIXEL_SCALE, (ctx) => {
+                // 망토 (펄럭임 반대)
+                drawPixelRect(ctx, 4, 8, 5, 11, PALETTE.cape);
+                drawPixelRect(ctx, 3, 10, 2, 8, PALETTE.capeDark);
+                drawPixelRect(ctx, 2, 12, 2, 6, PALETTE.cape);
+                
+                // 몸통
+                drawPixelRect(ctx, 7, 8, 7, 10, PALETTE.armor);
+                drawPixelRect(ctx, 8, 8, 5, 2, PALETTE.armorLight);
+                drawPixelRect(ctx, 7, 16, 7, 2, PALETTE.armorDark);
+                
+                // 머리
+                drawPixelRect(ctx, 8, 1, 6, 7, PALETTE.skin);
+                drawPixelRect(ctx, 9, 0, 4, 2, PALETTE.hair);
+                drawPixelRect(ctx, 8, 1, 2, 3, PALETTE.hair);
+                
+                // 눈
+                drawPixel(ctx, 12, 3, '#333', 1);
+                drawPixel(ctx, 12, 4, '#fff', 1);
+                
+                // 팔 (뒤로)
+                drawPixelRect(ctx, 14, 10, 3, 5, PALETTE.armor);
+                drawPixelRect(ctx, 4, 8, 2, 5, PALETTE.armor);
+                
+                // 다리 (반대 달리기)
+                drawPixelRect(ctx, 12, 18, 3, 6, PALETTE.armorDark);
+                drawPixelRect(ctx, 8, 18, 3, 4, PALETTE.armorDark);
+                
+                // 부츠
+                drawPixelRect(ctx, 12, 23, 4, 3, PALETTE.brickDark);
+                drawPixelRect(ctx, 7, 21, 4, 2, PALETTE.brickDark);
+            });
+            
+            // 점프 스프라이트
+            createSprite('player_jump', W * PIXEL_SCALE, H * PIXEL_SCALE, (ctx) => {
+                // 망토 (위로 펄럭임)
+                drawPixelRect(ctx, 4, 10, 4, 14, PALETTE.cape);
+                drawPixelRect(ctx, 3, 12, 2, 10, PALETTE.capeDark);
+                drawPixelRect(ctx, 2, 14, 2, 8, PALETTE.cape);
+                
+                // 몸통
+                drawPixelRect(ctx, 7, 6, 7, 10, PALETTE.armor);
+                drawPixelRect(ctx, 8, 6, 5, 2, PALETTE.armorLight);
+                
+                // 머리
+                drawPixelRect(ctx, 8, 0, 6, 7, PALETTE.skin);
+                drawPixelRect(ctx, 9, 0, 4, 2, PALETTE.hair);
+                drawPixelRect(ctx, 8, 0, 2, 3, PALETTE.hair);
+                
+                // 눈 (위 봄)
+                drawPixel(ctx, 12, 2, '#333', 1);
+                drawPixel(ctx, 12, 3, '#fff', 1);
+                
+                // 팔 (위로)
+                drawPixelRect(ctx, 14, 4, 4, 5, PALETTE.armor);
+                drawPixelRect(ctx, 4, 6, 3, 5, PALETTE.armor);
+                
+                // 다리 (모음)
+                drawPixelRect(ctx, 8, 16, 6, 5, PALETTE.armorDark);
+                
+                // 부츠
+                drawPixelRect(ctx, 8, 20, 3, 3, PALETTE.brickDark);
+                drawPixelRect(ctx, 12, 20, 3, 3, PALETTE.brickDark);
+            });
+        }
+        
+        // ============================================
+        // 장애물 스프라이트 생성
+        // ============================================
+        function createObstacleSprites() {
+            // 가시 (16x16)
+            createSprite('spike', 16 * PIXEL_SCALE, 16 * PIXEL_SCALE, (ctx) => {
+                // 베이스
+                drawPixelRect(ctx, 1, 14, 14, 2, PALETTE.stoneDark);
+                // 가시들
+                for (let i = 0; i < 3; i++) {
+                    const x = 2 + i * 5;
+                    drawPixel(ctx, x + 2, 4 + i % 2, PALETTE.spikeLight, 1);
+                    drawPixel(ctx, x + 1, 6, PALETTE.spike, 1);
+                    drawPixel(ctx, x + 2, 6, PALETTE.spikeLight, 1);
+                    drawPixel(ctx, x + 3, 6, PALETTE.spike, 1);
+                    drawPixelRect(ctx, x, 8, 5, 2, PALETTE.spike);
+                    drawPixelRect(ctx, x, 10, 5, 4, PALETTE.stoneDark);
+                }
+            });
+            
+            // 슬라임 몬스터 (20x16)
+            createSprite('slime', 20 * PIXEL_SCALE, 16 * PIXEL_SCALE, (ctx) => {
+                // 몸체
+                drawPixelRect(ctx, 3, 6, 14, 8, PALETTE.monster);
+                drawPixelRect(ctx, 5, 4, 10, 4, PALETTE.monster);
+                drawPixelRect(ctx, 4, 5, 12, 2, PALETTE.monsterLight);
+                drawPixelRect(ctx, 2, 10, 16, 4, PALETTE.monster);
+                // 하이라이트
+                drawPixelRect(ctx, 6, 5, 3, 2, '#a87aa8');
+                // 눈
+                drawPixelRect(ctx, 6, 7, 3, 3, '#fff');
+                drawPixelRect(ctx, 12, 7, 3, 3, '#fff');
+                drawPixel(ctx, 7, 8, '#000', 2);
+                drawPixel(ctx, 13, 8, '#000', 2);
+                // 입
+                drawPixelRect(ctx, 8, 11, 4, 2, '#000');
+            });
+            
+            // 박쥐 (24x16)
+            createSprite('bat1', 24 * PIXEL_SCALE, 16 * PIXEL_SCALE, (ctx) => {
+                // 날개 펼침
+                drawPixelRect(ctx, 0, 4, 6, 6, PALETTE.batWing);
+                drawPixelRect(ctx, 18, 4, 6, 6, PALETTE.batWing);
+                drawPixelRect(ctx, 2, 2, 4, 4, PALETTE.batWing);
+                drawPixelRect(ctx, 18, 2, 4, 4, PALETTE.batWing);
+                // 몸체
+                drawPixelRect(ctx, 9, 4, 6, 8, PALETTE.bat);
+                drawPixelRect(ctx, 10, 3, 4, 2, PALETTE.bat);
+                // 눈
+                drawPixel(ctx, 10, 5, PALETTE.monsterEye, 2);
+                drawPixel(ctx, 13, 5, PALETTE.monsterEye, 2);
+                // 귀
+                drawPixel(ctx, 9, 2, PALETTE.bat, 1);
+                drawPixel(ctx, 14, 2, PALETTE.bat, 1);
+            });
+            
+            createSprite('bat2', 24 * PIXEL_SCALE, 16 * PIXEL_SCALE, (ctx) => {
+                // 날개 접음
+                drawPixelRect(ctx, 4, 6, 4, 8, PALETTE.batWing);
+                drawPixelRect(ctx, 16, 6, 4, 8, PALETTE.batWing);
+                // 몸체
+                drawPixelRect(ctx, 9, 4, 6, 8, PALETTE.bat);
+                drawPixelRect(ctx, 10, 3, 4, 2, PALETTE.bat);
+                // 눈
+                drawPixel(ctx, 10, 5, PALETTE.monsterEye, 2);
+                drawPixel(ctx, 13, 5, PALETTE.monsterEye, 2);
+                // 귀
+                drawPixel(ctx, 9, 2, PALETTE.bat, 1);
+                drawPixel(ctx, 14, 2, PALETTE.bat, 1);
+            });
+            
+            // 화염 트랩 (16x20)
+            createSprite('fire1', 16 * PIXEL_SCALE, 20 * PIXEL_SCALE, (ctx) => {
+                // 베이스
+                drawPixelRect(ctx, 2, 16, 12, 4, PALETTE.stoneDark);
+                drawPixelRect(ctx, 4, 14, 8, 2, PALETTE.brickDark);
+                // 불꽃
+                drawPixelRect(ctx, 5, 6, 6, 8, PALETTE.fire);
+                drawPixelRect(ctx, 6, 4, 4, 4, PALETTE.fire);
+                drawPixelRect(ctx, 7, 2, 2, 4, PALETTE.fireLight);
+                drawPixelRect(ctx, 6, 8, 4, 4, PALETTE.fireLight);
+                // 불꽃 팁
+                drawPixel(ctx, 4, 10, PALETTE.fire, 2);
+                drawPixel(ctx, 10, 8, PALETTE.fire, 2);
+            });
+            
+            createSprite('fire2', 16 * PIXEL_SCALE, 20 * PIXEL_SCALE, (ctx) => {
+                // 베이스
+                drawPixelRect(ctx, 2, 16, 12, 4, PALETTE.stoneDark);
+                drawPixelRect(ctx, 4, 14, 8, 2, PALETTE.brickDark);
+                // 불꽃 (다른 모양)
+                drawPixelRect(ctx, 5, 4, 6, 10, PALETTE.fire);
+                drawPixelRect(ctx, 6, 2, 4, 4, PALETTE.fire);
+                drawPixelRect(ctx, 7, 0, 2, 4, PALETTE.fireLight);
+                drawPixelRect(ctx, 6, 6, 4, 6, PALETTE.fireLight);
+                // 불꽃 팁
+                drawPixel(ctx, 10, 6, PALETTE.fire, 2);
+                drawPixel(ctx, 3, 8, PALETTE.fire, 2);
+            });
+        }
+        
+        // ============================================
+        // 아이템 스프라이트 생성
+        // ============================================
+        function createItemSprites() {
+            // 코인 (12x12)
+            createSprite('coin1', 12 * PIXEL_SCALE, 12 * PIXEL_SCALE, (ctx) => {
+                drawPixelRect(ctx, 2, 1, 8, 10, PALETTE.coinGold);
+                drawPixelRect(ctx, 3, 0, 6, 1, PALETTE.coinGold);
+                drawPixelRect(ctx, 3, 11, 6, 1, PALETTE.coinGold);
+                drawPixelRect(ctx, 3, 2, 2, 6, PALETTE.coinLight);
+                drawPixelRect(ctx, 7, 4, 2, 4, PALETTE.coinDark);
+                // $ 심볼
+                drawPixelRect(ctx, 5, 2, 2, 8, PALETTE.coinDark);
+            });
+            
+            createSprite('coin2', 12 * PIXEL_SCALE, 12 * PIXEL_SCALE, (ctx) => {
+                drawPixelRect(ctx, 3, 1, 6, 10, PALETTE.coinGold);
+                drawPixelRect(ctx, 4, 0, 4, 1, PALETTE.coinGold);
+                drawPixelRect(ctx, 4, 11, 4, 1, PALETTE.coinGold);
+                drawPixelRect(ctx, 4, 2, 2, 6, PALETTE.coinLight);
+                // 회전 효과
+                drawPixelRect(ctx, 5, 2, 2, 8, PALETTE.coinDark);
+            });
+            
+            createSprite('coin3', 12 * PIXEL_SCALE, 12 * PIXEL_SCALE, (ctx) => {
+                drawPixelRect(ctx, 4, 1, 4, 10, PALETTE.coinGold);
+                drawPixelRect(ctx, 5, 0, 2, 1, PALETTE.coinGold);
+                drawPixelRect(ctx, 5, 11, 2, 1, PALETTE.coinGold);
+                drawPixelRect(ctx, 5, 3, 1, 6, PALETTE.coinLight);
+            });
+            
+            createSprite('coin4', 12 * PIXEL_SCALE, 12 * PIXEL_SCALE, (ctx) => {
+                drawPixelRect(ctx, 5, 1, 2, 10, PALETTE.coinDark);
+                drawPixelRect(ctx, 5, 0, 2, 1, PALETTE.coinDark);
+                drawPixelRect(ctx, 5, 11, 2, 1, PALETTE.coinDark);
+            });
+            
+            // 보석 (14x14)
+            createSprite('gem', 14 * PIXEL_SCALE, 14 * PIXEL_SCALE, (ctx) => {
+                // 다이아몬드 형태
+                drawPixelRect(ctx, 5, 0, 4, 2, PALETTE.gemLight);
+                drawPixelRect(ctx, 3, 2, 8, 3, PALETTE.gemBlue);
+                drawPixelRect(ctx, 4, 2, 2, 2, PALETTE.gemLight);
+                drawPixelRect(ctx, 1, 5, 12, 4, PALETTE.gemBlue);
+                drawPixelRect(ctx, 2, 5, 4, 2, PALETTE.gemLight);
+                drawPixelRect(ctx, 2, 9, 10, 2, PALETTE.gemBlue);
+                drawPixelRect(ctx, 3, 11, 8, 1, PALETTE.gemDark);
+                drawPixelRect(ctx, 4, 12, 6, 1, PALETTE.gemDark);
+                drawPixelRect(ctx, 5, 13, 4, 1, PALETTE.gemDark);
+                // 반짝임
+                drawPixel(ctx, 3, 3, '#fff', 2);
+            });
+            
+            // 스타 (16x16)
+            createSprite('star', 16 * PIXEL_SCALE, 16 * PIXEL_SCALE, (ctx) => {
+                const gold = '#ffd700';
+                const light = '#ffed70';
+                const dark = '#c9a000';
+                // 별 모양
+                drawPixelRect(ctx, 7, 0, 2, 4, light);
+                drawPixelRect(ctx, 6, 4, 4, 2, gold);
+                drawPixelRect(ctx, 0, 6, 16, 4, gold);
+                drawPixelRect(ctx, 2, 6, 3, 2, light);
+                drawPixelRect(ctx, 5, 10, 6, 2, gold);
+                drawPixelRect(ctx, 3, 12, 4, 2, dark);
+                drawPixelRect(ctx, 9, 12, 4, 2, dark);
+                drawPixelRect(ctx, 2, 14, 3, 2, dark);
+                drawPixelRect(ctx, 11, 14, 3, 2, dark);
+                // 반짝임
+                drawPixel(ctx, 7, 1, '#fff', 2);
+            });
+        }
+        
+        // ============================================
+        // 배경 스프라이트 생성
+        // ============================================
+        function createBackgroundSprites() {
+            // 던전 벽돌 타일 (32x32)
+            createSprite('wall', 32 * PIXEL_SCALE, 32 * PIXEL_SCALE, (ctx) => {
+                ctx.fillStyle = PALETTE.brick;
+                ctx.fillRect(0, 0, 32 * PIXEL_SCALE, 32 * PIXEL_SCALE);
+                
+                // 벽돌 패턴
+                for (let row = 0; row < 4; row++) {
+                    const offset = row % 2 === 0 ? 0 : 8;
+                    for (let col = 0; col < 3; col++) {
+                        const x = col * 16 + offset - 8;
+                        const y = row * 8;
+                        // 벽돌 그림자
+                        drawPixelRect(ctx, x, y, 15, 7, PALETTE.brickDark);
+                        drawPixelRect(ctx, x + 1, y + 1, 13, 5, PALETTE.brick);
+                        // 하이라이트
+                        drawPixelRect(ctx, x + 1, y + 1, 6, 2, '#6a5a4a');
+                    }
+                }
+            });
+            
+            // 바닥 타일 (32x16)
+            createSprite('floor', 32 * PIXEL_SCALE, 16 * PIXEL_SCALE, (ctx) => {
+                ctx.fillStyle = PALETTE.stone;
+                ctx.fillRect(0, 0, 32 * PIXEL_SCALE, 16 * PIXEL_SCALE);
+                
+                // 돌 패턴
+                drawPixelRect(ctx, 0, 0, 32, 2, PALETTE.stoneLight);
+                for (let i = 0; i < 4; i++) {
+                    const x = i * 8;
+                    drawPixelRect(ctx, x, 2, 1, 14, PALETTE.stoneDark);
+                    // 균열
+                    if (i % 2 === 0) {
+                        drawPixel(ctx, x + 3, 6, PALETTE.stoneDark, 1);
+                        drawPixel(ctx, x + 4, 7, PALETTE.stoneDark, 1);
+                        drawPixel(ctx, x + 4, 8, PALETTE.stoneDark, 1);
+                    }
+                }
+            });
+            
+            // 횃불 (8x16)
+            createSprite('torch1', 8 * PIXEL_SCALE, 16 * PIXEL_SCALE, (ctx) => {
+                // 손잡이
+                drawPixelRect(ctx, 3, 8, 2, 8, PALETTE.brickDark);
+                // 불꽃
+                drawPixelRect(ctx, 2, 2, 4, 6, PALETTE.fire);
+                drawPixelRect(ctx, 3, 0, 2, 4, PALETTE.fireLight);
+                drawPixel(ctx, 2, 4, PALETTE.fireLight, 2);
+            });
+            
+            createSprite('torch2', 8 * PIXEL_SCALE, 16 * PIXEL_SCALE, (ctx) => {
+                // 손잡이
+                drawPixelRect(ctx, 3, 8, 2, 8, PALETTE.brickDark);
+                // 불꽃 (다른 모양)
+                drawPixelRect(ctx, 2, 3, 4, 5, PALETTE.fire);
+                drawPixelRect(ctx, 3, 1, 2, 4, PALETTE.fireLight);
+                drawPixel(ctx, 5, 3, PALETTE.fireLight, 1);
+                drawPixel(ctx, 1, 5, PALETTE.fire, 1);
+            });
+            
+            // 해골 장식 (12x12)
+            createSprite('skull', 12 * PIXEL_SCALE, 12 * PIXEL_SCALE, (ctx) => {
+                drawPixelRect(ctx, 2, 2, 8, 6, '#eee');
+                drawPixelRect(ctx, 3, 0, 6, 3, '#eee');
+                drawPixelRect(ctx, 3, 8, 6, 2, '#eee');
+                // 눈구멍
+                drawPixelRect(ctx, 3, 3, 2, 2, '#222');
+                drawPixelRect(ctx, 7, 3, 2, 2, '#222');
+                // 코
+                drawPixel(ctx, 5, 5, '#222', 2);
+                // 이빨
+                drawPixel(ctx, 4, 8, '#222', 1);
+                drawPixel(ctx, 6, 8, '#222', 1);
+            });
+            
+            // 사슬 (4x20)
+            createSprite('chain', 4 * PIXEL_SCALE, 20 * PIXEL_SCALE, (ctx) => {
+                for (let i = 0; i < 5; i++) {
+                    const y = i * 4;
+                    drawPixelRect(ctx, 1, y, 2, 3, PALETTE.stoneLight);
+                    drawPixelRect(ctx, 0, y + 1, 1, 1, PALETTE.stoneLight);
+                    drawPixelRect(ctx, 3, y + 1, 1, 1, PALETTE.stoneLight);
+                }
+            });
+        }
+        
+        // 모든 스프라이트 초기화
+        function initSprites() {
+            createPlayerSprites();
+            createObstacleSprites();
+            createItemSprites();
+            createBackgroundSprites();
+        }
+        
         // 게임 상태
-        let gameState = 'start'; // start, playing, over
+        let gameState = 'start';
         let score = 0;
         let coins = 0;
         let speed = 5;
@@ -138,14 +687,14 @@
             x: 100,
             y: 300,
             width: 40,
-            height: 50,
+            height: 52,
             vy: 0,
             jumping: false,
             grounded: true,
-            jumpPower: -15,
-            gravity: 0.7,
-            color: '#ff6b6b',
-            runFrame: 0
+            jumpPower: -14,
+            gravity: 0.6,
+            runFrame: 0,
+            animTimer: 0
         };
         
         // 지면
@@ -159,75 +708,102 @@
         let collectibles = [];
         let particles = [];
         let bgElements = [];
+        let torches = [];
+        let parallaxBg = [];
         
         // 장애물 타입
         const obstacleTypes = [
-            { type: 'spike', emoji: '🔺', width: 30, height: 35, yOffset: -35 },
-            { type: 'monster', emoji: '👾', width: 40, height: 40, yOffset: -40 },
-            { type: 'bat', emoji: '🦇', width: 35, height: 30, yOffset: -80, flying: true },
-            { type: 'pit', emoji: '🕳️', width: 60, height: 30, yOffset: 0, isPit: true }
+            { type: 'spike', sprite: 'spike', width: 32, height: 32, yOffset: -32 },
+            { type: 'slime', sprite: 'slime', width: 40, height: 32, yOffset: -32 },
+            { type: 'bat', sprite: 'bat1', width: 48, height: 32, yOffset: -80, flying: true },
+            { type: 'fire', sprite: 'fire1', width: 32, height: 40, yOffset: -40 }
         ];
         
         // 수집 아이템
         const collectibleTypes = [
-            { type: 'coin', emoji: '💰', value: 1 },
-            { type: 'gem', emoji: '💎', value: 5 },
-            { type: 'star', emoji: '⭐', value: 10 }
+            { type: 'coin', sprite: 'coin1', value: 1, frames: 4 },
+            { type: 'gem', sprite: 'gem', value: 5, frames: 1 },
+            { type: 'star', sprite: 'star', value: 10, frames: 1 }
         ];
         
-        // 배경 생성
+        // 배경 초기화
         function initBackground() {
             bgElements = [];
-            for (let i = 0; i < 20; i++) {
-                bgElements.push({
-                    x: Math.random() * BASE_WIDTH,
-                    y: Math.random() * (ground.y - 100) + 50,
-                    emoji: ['🕯️', '💀', '🗡️', '🛡️', '🔮'][Math.floor(Math.random() * 5)],
-                    speed: 0.5 + Math.random() * 1,
-                    size: 15 + Math.random() * 15
+            torches = [];
+            parallaxBg = [];
+            
+            // 패럴렉스 배경 레이어
+            for (let i = 0; i < 3; i++) {
+                parallaxBg.push({
+                    offset: 0,
+                    speed: 0.5 + i * 0.5,
+                    y: 100 + i * 60,
+                    elements: []
+                });
+                
+                // 각 레이어에 장식 요소 추가
+                for (let j = 0; j < 5; j++) {
+                    parallaxBg[i].elements.push({
+                        x: j * 200 + Math.random() * 100,
+                        type: ['skull', 'chain'][Math.floor(Math.random() * 2)],
+                        scale: 0.5 + i * 0.3
+                    });
+                }
+            }
+            
+            // 횃불 배치
+            for (let i = 0; i < 6; i++) {
+                torches.push({
+                    x: i * 150 + 50,
+                    y: 200,
+                    frame: Math.random() > 0.5 ? 0 : 1,
+                    timer: Math.random() * 10
                 });
             }
         }
         
         // 장애물 생성
         function spawnObstacle() {
-            const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
-            const y = type.flying ? ground.y - 80 : ground.y + type.yOffset;
+            const typeData = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+            const y = typeData.flying ? ground.y - 80 : ground.y + typeData.yOffset;
             
             obstacles.push({
-                ...type,
+                ...typeData,
                 x: BASE_WIDTH + 50,
                 y: y,
-                passed: false
+                passed: false,
+                animFrame: 0,
+                animTimer: 0
             });
         }
         
         // 수집 아이템 생성
         function spawnCollectible() {
-            const type = collectibleTypes[Math.floor(Math.random() * collectibleTypes.length)];
-            const y = ground.y - 50 - Math.random() * 100;
+            const typeData = collectibleTypes[Math.floor(Math.random() * collectibleTypes.length)];
+            const y = ground.y - 60 - Math.random() * 80;
             
             collectibles.push({
-                ...type,
+                ...typeData,
                 x: BASE_WIDTH + 50,
                 y: y,
-                size: 25,
+                size: 28,
                 collected: false,
-                bobOffset: Math.random() * Math.PI * 2
+                bobOffset: Math.random() * Math.PI * 2,
+                animFrame: 0,
+                animTimer: 0
             });
         }
         
         // 파티클 생성
-        function createParticle(x, y, color, emoji = null) {
-            for (let i = 0; i < 5; i++) {
+        function createParticle(x, y, color, count = 8) {
+            for (let i = 0; i < count; i++) {
                 particles.push({
                     x, y,
-                    vx: (Math.random() - 0.5) * 8,
-                    vy: (Math.random() - 0.5) * 8,
-                    life: 30,
-                    color,
-                    emoji,
-                    size: emoji ? 15 : 5
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.8) * 6,
+                    life: 40,
+                    color: color,
+                    size: 2 + Math.random() * 4
                 });
             }
         }
@@ -238,7 +814,7 @@
                 player.vy = player.jumpPower;
                 player.jumping = true;
                 player.grounded = false;
-                createParticle(player.x, player.y + player.height, '#888');
+                createParticle(player.x + player.width/2, player.y + player.height, PALETTE.stone, 5);
             }
         }
         
@@ -258,7 +834,7 @@
             
             // 속도 증가
             if (frameCount % 500 === 0) {
-                speed = Math.min(speed + 0.5, 15);
+                speed = Math.min(speed + 0.5, 12);
             }
             
             // 점수 증가
@@ -275,47 +851,70 @@
                 player.jumping = false;
             }
             
-            // 달리기 애니메이션
+            // 플레이어 애니메이션
             if (player.grounded) {
-                player.runFrame = (player.runFrame + 0.3) % 2;
+                player.animTimer++;
+                if (player.animTimer >= 6) {
+                    player.animTimer = 0;
+                    player.runFrame = (player.runFrame + 1) % 4;
+                }
             }
             
-            // 배경 업데이트
-            bgElements.forEach(bg => {
-                bg.x -= bg.speed;
-                if (bg.x < -30) {
-                    bg.x = BASE_WIDTH + 30;
-                    bg.y = Math.random() * (ground.y - 100) + 50;
+            // 횃불 애니메이션
+            torches.forEach(torch => {
+                torch.timer++;
+                if (torch.timer >= 8) {
+                    torch.timer = 0;
+                    torch.frame = 1 - torch.frame;
+                }
+                torch.x -= speed * 0.3;
+                if (torch.x < -20) {
+                    torch.x += BASE_WIDTH + 100;
+                }
+            });
+            
+            // 패럴렉스 배경 업데이트
+            parallaxBg.forEach(layer => {
+                layer.offset += layer.speed;
+                if (layer.offset >= 200) {
+                    layer.offset = 0;
                 }
             });
             
             // 장애물 스폰
-            if (frameCount % Math.max(60, 120 - speed * 5) === 0) {
+            if (frameCount % Math.max(70, 130 - Math.floor(speed * 4)) === 0) {
                 spawnObstacle();
             }
             
             // 수집 아이템 스폰
-            if (frameCount % 80 === 0) {
+            if (frameCount % 90 === 0) {
                 spawnCollectible();
             }
             
             // 장애물 업데이트
             obstacles = obstacles.filter(obs => {
                 obs.x -= speed;
+                obs.animTimer++;
+                
+                // 애니메이션 (박쥐, 화염)
+                if (obs.animTimer >= 8) {
+                    obs.animTimer = 0;
+                    obs.animFrame = 1 - obs.animFrame;
+                }
                 
                 // 충돌 체크
                 const playerRect = {
-                    x: player.x + 10,
-                    y: player.y + 5,
-                    width: player.width - 20,
-                    height: player.height - 10
+                    x: player.x + 8,
+                    y: player.y + 4,
+                    width: player.width - 16,
+                    height: player.height - 8
                 };
                 
                 const obsRect = {
-                    x: obs.x,
-                    y: obs.y,
-                    width: obs.width,
-                    height: obs.height
+                    x: obs.x + 4,
+                    y: obs.y + 4,
+                    width: obs.width - 8,
+                    height: obs.height - 8
                 };
                 
                 if (checkCollision(playerRect, obsRect)) {
@@ -328,7 +927,16 @@
             // 수집 아이템 업데이트
             collectibles = collectibles.filter(item => {
                 item.x -= speed;
-                item.bobOffset += 0.1;
+                item.bobOffset += 0.08;
+                item.animTimer++;
+                
+                // 코인 애니메이션
+                if (item.type === 'coin' && item.animTimer >= 6) {
+                    item.animTimer = 0;
+                    item.animFrame = (item.animFrame + 1) % 4;
+                }
+                
+                const bobY = item.y + Math.sin(item.bobOffset) * 5;
                 
                 const playerRect = {
                     x: player.x,
@@ -339,7 +947,7 @@
                 
                 const itemRect = {
                     x: item.x,
-                    y: item.y + Math.sin(item.bobOffset) * 5,
+                    y: bobY,
                     width: item.size,
                     height: item.size
                 };
@@ -347,7 +955,9 @@
                 if (!item.collected && checkCollision(playerRect, itemRect)) {
                     item.collected = true;
                     coins += item.value;
-                    createParticle(item.x, item.y, '#ffd93d', item.emoji);
+                    createParticle(item.x + item.size/2, bobY + item.size/2, 
+                        item.type === 'coin' ? PALETTE.coinGold : 
+                        item.type === 'gem' ? PALETTE.gemBlue : PALETTE.coinGold, 10);
                 }
                 
                 return item.x > -50 && !item.collected;
@@ -357,54 +967,100 @@
             particles = particles.filter(p => {
                 p.x += p.vx;
                 p.y += p.vy;
-                p.vy += 0.3;
+                p.vy += 0.2;
                 p.life--;
                 return p.life > 0;
             });
             
             // UI 업데이트
-            document.getElementById('score').textContent = `🏃 ${score}m`;
+            document.getElementById('score').textContent = `⚔️ ${score}m`;
             document.getElementById('coins').textContent = `💎 ${coins}`;
         }
         
         // 그리기
         function draw() {
-            // 배경
+            // 배경 그라데이션
             const gradient = ctx.createLinearGradient(0, 0, 0, BASE_HEIGHT);
-            gradient.addColorStop(0, '#16213e');
-            gradient.addColorStop(1, '#1a1a2e');
+            gradient.addColorStop(0, PALETTE.bgDark);
+            gradient.addColorStop(0.5, PALETTE.bgMid);
+            gradient.addColorStop(1, '#0a0a10');
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, BASE_WIDTH, BASE_HEIGHT);
             
-            // 배경 요소
+            // 패럴렉스 배경
             ctx.globalAlpha = 0.3;
-            bgElements.forEach(bg => {
-                ctx.font = `${bg.size}px Arial`;
-                ctx.fillText(bg.emoji, bg.x, bg.y);
+            parallaxBg.forEach((layer, idx) => {
+                layer.elements.forEach(el => {
+                    const x = ((el.x - layer.offset) % (BASE_WIDTH + 200)) - 50;
+                    if (spriteCache[el.type]) {
+                        const scale = el.scale;
+                        ctx.drawImage(spriteCache[el.type], x, layer.y, 
+                            spriteCache[el.type].width * scale, 
+                            spriteCache[el.type].height * scale);
+                    }
+                });
             });
             ctx.globalAlpha = 1;
             
-            // 지면
-            ctx.fillStyle = '#2d2d44';
-            ctx.fillRect(0, ground.y, BASE_WIDTH, ground.height);
+            // 횃불 및 조명 효과
+            torches.forEach(torch => {
+                // 조명 글로우
+                const grd = ctx.createRadialGradient(torch.x + 8, torch.y + 8, 0, torch.x + 8, torch.y + 8, 80);
+                grd.addColorStop(0, 'rgba(255,150,50,0.15)');
+                grd.addColorStop(1, 'rgba(255,150,50,0)');
+                ctx.fillStyle = grd;
+                ctx.fillRect(torch.x - 70, torch.y - 70, 160, 160);
+                
+                // 횃불 스프라이트
+                const torchSprite = torch.frame === 0 ? 'torch1' : 'torch2';
+                if (spriteCache[torchSprite]) {
+                    ctx.drawImage(spriteCache[torchSprite], torch.x, torch.y);
+                }
+            });
             
-            // 지면 패턴
-            ctx.fillStyle = '#3d3d5c';
-            for (let i = 0; i < BASE_WIDTH; i += 40) {
-                ctx.fillRect(i, ground.y, 2, 10);
+            // 지면 (타일 패턴)
+            if (spriteCache.floor) {
+                for (let i = -1; i < Math.ceil(BASE_WIDTH / 64) + 1; i++) {
+                    const offsetX = (frameCount * speed * 0.5) % 64;
+                    ctx.drawImage(spriteCache.floor, i * 64 - offsetX, ground.y);
+                }
             }
+            
+            // 벽 텍스처 (상단)
+            ctx.fillStyle = PALETTE.stoneDark;
+            ctx.fillRect(0, 0, BASE_WIDTH, 30);
             
             // 장애물
             obstacles.forEach(obs => {
-                ctx.font = `${obs.height}px Arial`;
-                ctx.fillText(obs.emoji, obs.x, obs.y + obs.height);
+                let spriteName = obs.sprite;
+                
+                // 애니메이션 프레임 선택
+                if (obs.type === 'bat') {
+                    spriteName = obs.animFrame === 0 ? 'bat1' : 'bat2';
+                } else if (obs.type === 'fire') {
+                    spriteName = obs.animFrame === 0 ? 'fire1' : 'fire2';
+                }
+                
+                if (spriteCache[spriteName]) {
+                    ctx.drawImage(spriteCache[spriteName], obs.x, obs.y);
+                }
             });
             
             // 수집 아이템
             collectibles.forEach(item => {
                 const bobY = item.y + Math.sin(item.bobOffset) * 5;
-                ctx.font = `${item.size}px Arial`;
-                ctx.fillText(item.emoji, item.x, bobY + item.size);
+                
+                let spriteName = item.sprite;
+                if (item.type === 'coin') {
+                    spriteName = 'coin' + (item.animFrame + 1);
+                }
+                
+                if (spriteCache[spriteName]) {
+                    // 반짝임 효과
+                    ctx.globalAlpha = 0.8 + Math.sin(item.bobOffset * 2) * 0.2;
+                    ctx.drawImage(spriteCache[spriteName], item.x, bobY);
+                    ctx.globalAlpha = 1;
+                }
             });
             
             // 플레이어
@@ -412,58 +1068,31 @@
             
             // 파티클
             particles.forEach(p => {
-                ctx.globalAlpha = p.life / 30;
-                if (p.emoji) {
-                    ctx.font = `${p.size}px Arial`;
-                    ctx.fillText(p.emoji, p.x, p.y);
-                } else {
-                    ctx.fillStyle = p.color;
-                    ctx.fillRect(p.x, p.y, p.size, p.size);
-                }
+                ctx.globalAlpha = p.life / 40;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
                 ctx.globalAlpha = 1;
             });
         }
         
         // 플레이어 그리기
         function drawPlayer() {
-            const x = player.x;
-            const y = player.y;
-            const w = player.width;
-            const h = player.height;
-            
             // 그림자
-            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
             ctx.beginPath();
-            ctx.ellipse(x + w/2, ground.y, w/2, 5, 0, 0, Math.PI * 2);
+            ctx.ellipse(player.x + player.width/2, ground.y, player.width/2 - 5, 6, 0, 0, Math.PI * 2);
             ctx.fill();
             
-            // 몸체
-            ctx.fillStyle = player.color;
-            ctx.fillRect(x + 5, y + 15, w - 10, h - 25);
+            // 스프라이트 선택
+            let spriteName;
+            if (player.jumping || !player.grounded) {
+                spriteName = 'player_jump';
+            } else {
+                spriteName = 'player_run' + (player.runFrame + 1);
+            }
             
-            // 머리
-            ctx.fillStyle = '#ffcc99';
-            ctx.beginPath();
-            ctx.arc(x + w/2, y + 12, 12, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // 눈
-            ctx.fillStyle = '#333';
-            ctx.beginPath();
-            ctx.arc(x + w/2 + 4, y + 10, 3, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // 다리 (달리기 애니메이션)
-            ctx.fillStyle = '#555';
-            const legOffset = player.grounded ? Math.sin(player.runFrame * Math.PI) * 8 : 5;
-            ctx.fillRect(x + 10, y + h - 12, 8, 12 + legOffset);
-            ctx.fillRect(x + w - 18, y + h - 12, 8, 12 - legOffset);
-            
-            // 점프 중이면 팔 위로
-            if (player.jumping) {
-                ctx.fillStyle = player.color;
-                ctx.fillRect(x, y + 18, 8, 5);
-                ctx.fillRect(x + w - 8, y + 18, 8, 5);
+            if (spriteCache[spriteName]) {
+                ctx.drawImage(spriteCache[spriteName], player.x, player.y);
             }
         }
         
@@ -473,7 +1102,10 @@
             document.getElementById('gameOverScreen').classList.remove('hidden');
             document.getElementById('finalScore').textContent = `${score}m`;
             document.getElementById('finalCoins').textContent = `💎 ${coins}개 수집`;
-            createParticle(player.x + player.width/2, player.y + player.height/2, '#ff0000');
+            
+            // 사망 이펙트
+            createParticle(player.x + player.width/2, player.y + player.height/2, '#f00', 20);
+            createParticle(player.x + player.width/2, player.y + player.height/2, PALETTE.cape, 15);
         }
         
         // 게임 시작
@@ -490,6 +1122,7 @@
             player.vy = 0;
             player.grounded = true;
             player.jumping = false;
+            player.runFrame = 0;
             initBackground();
             document.getElementById('startScreen').classList.add('hidden');
             document.getElementById('gameOverScreen').classList.add('hidden');
@@ -527,6 +1160,7 @@
         document.getElementById('restartBtn').addEventListener('click', startGame);
         
         // 초기화
+        initSprites();
         initBackground();
         gameLoop();
     </script>
