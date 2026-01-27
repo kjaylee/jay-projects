@@ -4,6 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>🧟 좀비 서바이버 타운</title>
+    <!--
+    ============================================
+    에셋 출처 (Asset Credits)
+    ============================================
+    모든 게임 스프라이트는 Kenney.nl의 "Top-down Shooter" 에셋 팩에서 가져왔습니다.
+    
+    Asset Pack: Top-down Shooter
+    URL: https://kenney.nl/assets/top-down-shooter
+    License: Creative Commons CC0 (Public Domain)
+    Author: Kenney (https://kenney.nl)
+    
+    사용된 스프라이트:
+    - 플레이어: survivor1_machine.png (Survivor 1)
+    - 일반 좀비: zoimbie1_stand.png (Zombie 1)
+    - 빠른 좀비: hitman1_stand.png (Hitman 1)
+    - 탱커 좀비: manOld_stand.png (Man Old)
+    
+    CC0 라이선스에 따라 상업적/비상업적 용도로 자유롭게 사용 가능합니다.
+    ============================================
+    -->
     <style>
         * {
             margin: 0;
@@ -157,9 +177,39 @@
             .btn { font-size: 18px; padding: 12px 30px; }
             .upgrade-btn { font-size: 14px; padding: 10px 20px; }
         }
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1a1a2e;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+            color: #fff;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #333;
+            border-top-color: #e74c3c;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+    <div id="loadingScreen">
+        <div class="loading-spinner"></div>
+        <p style="margin-top: 20px;">에셋 로딩 중...</p>
+    </div>
+
     <canvas id="gameCanvas"></canvas>
     
     <div id="ui">
@@ -186,7 +236,7 @@
         </div>
     </div>
     
-    <div id="startScreen">
+    <div id="startScreen" style="display: none;">
         <h1>🧟 좀비 서바이버 타운</h1>
         <p style="margin-bottom: 30px; font-size: 18px;">생존하고, 레벨업하고, 좀비를 처치하라!</p>
         <button class="btn" onclick="startGame()">🎮 게임 시작</button>
@@ -208,6 +258,53 @@
     </div>
 
     <script>
+        // ============================================
+        // 스프라이트 에셋 (Base64 인코딩)
+        // 출처: Kenney.nl Top-down Shooter Pack (CC0)
+        // ============================================
+        const SPRITE_DATA = {
+            // 플레이어 - Survivor with machine gun
+            player: 'data:image/png;base64,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',
+            
+            // 일반 좀비 - Green zombie
+            zombieNormal: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAArCAYAAAD2f+EJAAAFDUlEQVR42sWY/09TVxTAazQkZGGbmUBbnCCML3ZjqP0CSklbClRLaQGxlOJYv1cqoVCErmKKVecUcQwU0UoUEzeDLmNbljGXxW0JLNvc9+z3/QnjP7jruXDfXtvX8l4fbC85P/S9+04/75xzzz3nCAQsrhvOfYWzXtnkLW/11yDR3mpEhNyD59OOA1WCrbhA+Wyv/G/6H6eT2175r5sKcNOjeJMoXxiqQ0/CWizLl3SUkHvwfM5Xg9fCe5sD4JarCEDiH6eST0JqyiJhn8zEG4L4/nNXKfqpv5wVBAhYxOevReJQPT+3QCACwH3vQfSHbReWH4JSVhBXZlpRQbgBFYxqkcAjfSFzK7jlfoD41F1OQfzSW7QhwNx7Laj8IxsqfLcFQxSE1JnHxm2PbIy4gi3El5ePIMt9CzI+6EK6aRM6PKJGymHVIu94+Maxh4LgEhcQyPD+jFv2Z0xdbkx2ZAyx7NhNQXwXrmMNAUJ2SUydeF2e58KQRRQ8swvR74589P2Zak4AdAi3trSBBpLDBmC7ojinjCj4cXg/Wr4QnyOeXjyCPgwbsXxwthXNn2nH9xIhHgzUYh0R62t+GgRI9kYQuYGW0mPw8r2+Q5TCL87r0eRpCzp10oU8Hg+jwLMrASuGI/kC9Iy/UTWRACFOFyNgKvFoW6UdXoYvAWUzI+aUf5wo1iEXMkzY0fS0ES0GVRjiuku2wgCRxwSwLSZCWDBsqYnOeGvwl1wYOMEaAESyYMN5AqRvyoisgTpUHKpH2fVlCgaQpPiAyBVLJBKFyWRCx1pbUL+rixMACAEgQpJW/qBygQFCuP7x1IWtoNfrlwDCbDZzBgBRzNmTQHZHmjBICmtQQbqDbgUQp9OZEQTERCJEcfQ4hhAOqZYElaKKBIidBOI5uKHVasMA0NnZmREAEWPEmQRScFabyi1CAvEi3RXd3d28IECaxuNB9l5vWzvQmN2yHSBegh/Nzc0rAGGz2XhDJO6U4jvH0cuxhAYQu3prwwkQWVsGQQ/SV+YtqPCq4d/Y+L8gXn1nbbuKBmqj/xkE3R2F10iRo1ll2CFZVKLS6XRRgLBarbwB9G/HByaJh1xvtZ8hV2yjtqhSqbQDREdHBy8AyBV0K5Q+PEHtDAYr5MUlK5FIVBGDWOXjkkQAerISj2iYDrKd9LQNROLGxsYJPtZ4/f14gLJHPVTlncIV2UnHOLGGpd2Azp1s5Z2y94wb0lkhL+VRbj8qs8NR/jCgxFXToM/BGWL/4x50+poBN0HSYfUq26OcClBpUU4FvaiB0o1tXQG5AUr+j6/qqaJm0naQ6RjPTVvewSJSY9JrRlLiBfuYgxZAoeakt4Og41LXgTDDoZW2BYDDRAj9Aij49mIT5yp7JaJGP58qQfM+OYaAmpVroYu3bM1g3XJ77EsmLh/lBhGrzH9ziXGfwtB3CNkC4EsUql+EqC65a8aBBu3d2Gwb9nU6COjSAACaJloHxsoFSZfwLfUYQOy90RYX8RtBkG7tibMEQ0w5pUvrCYl7G5gf1PoBomjKREFAy7+ROwgEdPN4YuOWRjJuiPOCyiqAgCKVuINNTJB4gLnGGoRcxWtQIgpp/gIQSazNh7afDcSzoUo8TgAAGLbxHheJgxoTQAT6D6OvzjWwgvhsVEPtik0bnvX0H5qkT+9S5Y2n5xup5IRnmx7FvU0dI8LUhu0cE9bB+i0ZqMKk9pZXtpgOAJ5nOtH9B903lUzFjAVEAAAALXRFWHRTb2Z0d2FyZQBieS5ibG9vZGR5LmNyeXB0by5pbWFnZS5QTkcyNEVuY29kZXKoBn/uAAAAAElFTkSuQmCC',
+            
+            // 빠른 좀비 - Hitman (darker, stealthy look)
+            zombieFast: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAArCAYAAAD2f+EJAAAEQUlEQVR42sWYa0gUURTHFUWJKIowlv1SCorvZ66Kr6wkwiJKiCzKNrboQawkScXmtuma+Vh7bcJqrmVp75a0pKTSapMoUEM3IkP0S36wkvwUEac5V+84bTP7mJ3cgT+us3fO/e2Zc+899/j4uHAFBwcvi4mJqYuOjn6Oio2NBSp6D78PCwuL8/kfFxpn9J07sRP1SQrAGCykxpOTkyEjI4MoJyeHFb2H38fFxVGQQqk8kE0B7CcWUmpqKuuRyMjIjVJ4YQSNpaWluQRAhR7B5/AVegSAAYaGEhIS3AKgio+P99wbTLRr0YhCoRAFgc/NZI7WY4iUlBRREPgcPh8VFWX2BIKsBenp6aIgMJDx+dzcXCtjLoiRv2gIV7PCXtnZ2eSv0WgExpx8RgvdYQigaUaNuSulUgnNzc0Egvm8hgOywBUAv8DAwDAKwTeBans+FKkKiDSHCqG58jD5vHXzBhZgdHQUurq6CIRGo1FzIFDznEEEhYSE5NunJ058+9xR+PLsEkB/i6BeXK+EsZFhmJiYgO7ubgKh1+tr7CDkjmIEXSUPDQ1VIkRiYiKsX7cWXraUO5yYT1Oj/WC1WgmEwWCw8kAs5QPwZSTDAetz003JSQkk18UAUI28aYfG2lK4WnEAtuWlKXhA/okPjFw5Dm7R74MGrQp6r5VNGxy6CzDcNa0PD9wCsV4pBbRXr9l1kwdCNvPj2Yt4wXRC2YkPPW88Pmvs46NZCNRAq1sg9wxqAiLgDTZI/bleQE29bpg19Onx3xDv29yCGG6vITbxB66MWR5uB7GYQszHG4biglIcjC78yxBOSkFsFlHx0VZ5gIBc1qoG7UBkFGIR91XY7p8RHYxC+txRy4KcL9lhn7J+CLEE/2nUqqw4aPzpRckhvnbXw7vWUwTCfHLPmB1EwJxA/LCaYPDO6WmIsr2TXoPoNB5hA9QrEPRVoIq2rF7DB0EWKuOxnSYcNHBLLzlEx4ViAoAZyLNW+LIpqtu/SYkDn9SXSAqAaw71gqM9hCxWmL8YNFK/ErpYCSzdi7nLNhLJMYel9MbPt2a4ceYggTi6e0O+o2Wb3capNy4e3wXG0n0eQ+AeJJARvNs5u5WvW7VCiVt5UlISVJbscVrI8On3QBt86O0EU105NFUUTfLsGYKlHglQmUymoEUNVlXuFja/hizwbXyMrayqq6v5vBDksLzDQQiBh1tubYk1JJZ4nx6e5Z28704VNFWVgM1mI+WdxWIRKu9kzo4AuJnIHBW6zpSXlwc9PT1gNpsJhFqtzne30CUpy5ycXiFEZmamKBCUTqcjEExshXM8MG/ODj/0BMaU/4OuvgLe7gwawX6DGAjap4iIiLg5syD5e+1UzrxWndf7E9jt8UqnhtMyGpGsZ4XrhatZgsA0vT32Ar2wycHt3gmd0rOysthelcfNEUdB6qo8ahG50tF1Mvl9sR3dP9AVglYs+ilOAAAALXRFWHRTb2Z0d2FyZQBieS5ibG9vZGR5LmNyeXB0by5pbWFnZS5QTkcyNEVuY29kZXKoBn/uAAAAAElFTkSuQmCC',
+            
+            // 탱커 좀비 - Old man (bigger, tougher)
+            zombieTank: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAArCAYAAAD2f+EJAAAEiklEQVR42tWYbUhUWRjHjSKJMJJwGebLroIy+P6Co+I79UWiBIPIJFvTQsowNqxYSnsxd1rcjLLCmUJzqB2lDN1JQTN3UZPY0VkWg6BdgiBaiEiKhY0+nO7/NOdyup77MvfOLuzA/8Pce+5zfuc5zznnOU9UlIFffHz8l2lpaV2pqalTUHp6OmFiz/A+KSkpI+rf+MG4pDd8xzoKRhRAMribGc/NzSVFRUVU5eXlstgzvM/IyGAguyPlgVIGoOxYTfn5+bJHkpOTKyPhhWcwVlBQYAiACR7Bd5hCSwAIMBjKysoKC4ApMzPTujekaG+DEafTaQoC34VWTptliLy8PFMQ+A7fp6Sk9FqBoHtBYWGhKQgEcsgTi5K5OEmrTEMYXRVKlZaWyqtEMmcPaV04DKuZARgzAwExG3a7fRMHEmMEYGV0dHQSMyAyXlNTQ+rr66mamppIR0cHOdRQTXZUbfmsXXZ2NrWRmJjYzEFAa/Qg4hISErYplyc67urqIuPj4yQQCCwT+c1LFbz9PQXi9wuHw9GpgLBrxQhcZZfI6/AxRlJRUUH6+vqEHTP9HngoQzBNe9v5FTIrgPhCBLBCkg0NKisr3RgF1roeAPQ2eGcZBDR08ShprN5MPG0NZOfmAqcAZFl8IHLttbW1zsHBQdLf30cGBgaEo34y/wvV8/lx8k/QJwRgmr3RSrxnG8nV418PCCBsocHLP+oFaeRjgPD7/bTTYOAR7exD8KZmZ1oaOt9MQVS8IQfpKt4L0NzcHIV4s3DXdOdMf/zUSSHcJ+rGytK+ciggYhnEWjzo7u5uBcDo6CgF+GvBb7ijv4ODmu9/dO2nINfbGhYVIDYGsZ6fisnJSWHEi/RiYYy21fPan/4fZJCLR3Ypl+xKQGzAH6/XOwuI6elpGgdanSNGHgdmPgtarSB9/fNVErh1mkL0ntz7XAGxWgiBEep5gAd4Nn9fs/3bWTdZvP3dJ4gz+5YiAoF44SGwirQ8AYixyy1ygBqC0BsZhDY8CKZHrS2bCujQ9o2bRBB0o/J4PG5ATExM0JEZCUyMHl55Oj9FNzC1/cR/6TAFOH+4ulWwV6yQl6jL5aoDxMjICB3Zq4URy3sE9O6hR/aC1hlCN6uysjKHz+dbYlMCb+it/3A2K5WtO5bftkFk7+np6eS9ARDMvdlt+/2vvcR37gCFOLZnyzatbVs+xpk33G43aW9v1z3A9Dw1de1btRUhPM7lo1zKIepwlOfk5JCWlhbVRIZJFDvv5q6REwd3keqtG8m5b3YuCc4M1VSPBqjNZnOypAYZkpHEhp+ulw+u0OyKJTXSBUjkhTjN9A6N8DEut3zOWFVVRVO84eFhYWLz9N4F4jqyV24PT6qkdza9KwAOE5tWohvuVRA5a7iJLl2yUl44AwPFxcWWU/6YmBgH54E1/9nlR3EDMzQFwuoMjKDeYAaC1SlCQRlr9hoYkVu5NK2n/t/1CSuVGjYVlis1fM0K+4XRVQJgrrTYHJHiGYocfPVO7ZZeUlIi3z0tF0e0gtSoLJWIjFR0dTq/a7ai+xFTMFkegzv1xgAAAC10RVh0U29mdHdhcmUAYnkuYmxvb2RkeS5jcnlwdG8uaW1hZ2UuUE5HMjRFbmNvZGVyqAZ/7gAAAABJRU5ErkJggg=='
+        };
+        
+        // 이미지 객체 저장소
+        const sprites = {};
+        let assetsLoaded = 0;
+        const totalAssets = Object.keys(SPRITE_DATA).length;
+        
+        // 스프라이트 로드 함수
+        function loadSprites() {
+            return new Promise((resolve) => {
+                for (const [name, src] of Object.entries(SPRITE_DATA)) {
+                    const img = new Image();
+                    img.onload = () => {
+                        assetsLoaded++;
+                        if (assetsLoaded >= totalAssets) {
+                            resolve();
+                        }
+                    };
+                    img.onerror = () => {
+                        console.error(`Failed to load sprite: ${name}`);
+                        assetsLoaded++;
+                        if (assetsLoaded >= totalAssets) {
+                            resolve();
+                        }
+                    };
+                    img.src = src;
+                    sprites[name] = img;
+                }
+            });
+        }
+        
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
@@ -241,7 +338,8 @@
             expToLevel: 50,
             kills: 0,
             invincible: false,
-            invincibleTime: 0
+            invincibleTime: 0,
+            angle: 0 // 플레이어 회전 각도
         };
         
         // 좀비들
@@ -358,8 +456,9 @@
                     maxHealth: 30 + wave * 5,
                     damage: 10 + wave * 2,
                     exp: 10,
-                    color: '#27ae60',
-                    type: 'normal'
+                    sprite: 'zombieNormal',
+                    type: 'normal',
+                    angle: 0
                 };
             } else if (type < 0.9) {
                 // 빠른 좀비
@@ -371,21 +470,23 @@
                     maxHealth: 20 + wave * 3,
                     damage: 8 + wave,
                     exp: 15,
-                    color: '#f39c12',
-                    type: 'fast'
+                    sprite: 'zombieFast',
+                    type: 'fast',
+                    angle: 0
                 };
             } else {
                 // 탱커 좀비
                 zombie = {
                     x, y,
-                    size: 35,
+                    size: 30,
                     speed: 0.8 + wave * 0.05,
                     health: 100 + wave * 20,
                     maxHealth: 100 + wave * 20,
                     damage: 25 + wave * 3,
                     exp: 30,
-                    color: '#8e44ad',
-                    type: 'tank'
+                    sprite: 'zombieTank',
+                    type: 'tank',
+                    angle: 0
                 };
             }
             
@@ -460,6 +561,8 @@
             player.lastAttack = now;
             
             const angle = Math.atan2(target.y - player.y, target.x - player.x);
+            player.angle = angle; // 플레이어가 타겟을 바라보도록
+            
             bullets.push({
                 x: player.x,
                 y: player.y,
@@ -467,7 +570,8 @@
                 vy: Math.sin(angle) * player.bulletSpeed,
                 damage: player.damage,
                 pierce: player.bulletPierce,
-                hit: []
+                hit: [],
+                angle: angle
             });
         }
         
@@ -500,6 +604,7 @@
         function updateZombies() {
             for (const zombie of zombies) {
                 const angle = Math.atan2(player.y - zombie.y, player.x - zombie.x);
+                zombie.angle = angle;
                 zombie.x += Math.cos(angle) * zombie.speed;
                 zombie.y += Math.sin(angle) * zombie.speed;
                 
@@ -542,7 +647,7 @@
                     if (dist < zombie.size + 8) {
                         zombie.health -= bullet.damage;
                         showDamage(zombie.x, zombie.y - zombie.size, bullet.damage, '#fff');
-                        createParticles(zombie.x, zombie.y, zombie.color, 3);
+                        createParticles(zombie.x, zombie.y, '#ff6b6b', 3);
                         
                         bullet.hit.push(zombie);
                         bullet.pierce--;
@@ -556,7 +661,7 @@
                             player.kills++;
                             zombiesKilledInWave++;
                             dropItem(zombie.x, zombie.y);
-                            createParticles(zombie.x, zombie.y, zombie.color, 10);
+                            createParticles(zombie.x, zombie.y, '#2ecc71', 10);
                             zombies.splice(j, 1);
                             
                             // 레벨업 체크 (중복 호출 방지)
@@ -681,6 +786,23 @@
             document.getElementById('levelUpScreen').style.display = 'flex';
         }
         
+        // 스프라이트 그리기 함수
+        function drawSprite(spriteName, x, y, size, angle = 0) {
+            const sprite = sprites[spriteName];
+            if (!sprite || !sprite.complete) return;
+            
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle + Math.PI / 2); // 스프라이트가 위를 향하도록 보정
+            
+            const scale = (size * 2) / Math.max(sprite.width, sprite.height);
+            const w = sprite.width * scale;
+            const h = sprite.height * scale;
+            
+            ctx.drawImage(sprite, -w / 2, -h / 2, w, h);
+            ctx.restore();
+        }
+        
         // 그리기
         function draw() {
             ctx.fillStyle = '#2d3436';
@@ -711,9 +833,13 @@
             
             // 아이템
             items.forEach(item => {
-                ctx.font = '20px Arial';
+                // 아이템 글로우 효과
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = item.color;
+                ctx.font = '24px Arial';
                 ctx.textAlign = 'center';
-                ctx.fillText(item.emoji, item.x, item.y + 7);
+                ctx.fillText(item.emoji, item.x, item.y + 8);
+                ctx.shadowBlur = 0;
             });
             
             // 좀비
@@ -724,39 +850,42 @@
                 ctx.ellipse(zombie.x, zombie.y + zombie.size * 0.8, zombie.size * 0.8, zombie.size * 0.3, 0, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // 몸체
-                ctx.fillStyle = zombie.color;
-                ctx.beginPath();
-                ctx.arc(zombie.x, zombie.y, zombie.size, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // 눈
-                ctx.fillStyle = '#c0392b';
-                ctx.beginPath();
-                ctx.arc(zombie.x - zombie.size * 0.3, zombie.y - zombie.size * 0.2, zombie.size * 0.2, 0, Math.PI * 2);
-                ctx.arc(zombie.x + zombie.size * 0.3, zombie.y - zombie.size * 0.2, zombie.size * 0.2, 0, Math.PI * 2);
-                ctx.fill();
+                // 스프라이트 그리기
+                drawSprite(zombie.sprite, zombie.x, zombie.y, zombie.size, zombie.angle);
                 
                 // 체력바
                 const hpWidth = zombie.size * 2;
                 const hpHeight = 4;
                 ctx.fillStyle = '#333';
-                ctx.fillRect(zombie.x - hpWidth/2, zombie.y - zombie.size - 10, hpWidth, hpHeight);
-                ctx.fillStyle = '#e74c3c';
-                ctx.fillRect(zombie.x - hpWidth/2, zombie.y - zombie.size - 10, hpWidth * (zombie.health / zombie.maxHealth), hpHeight);
+                ctx.fillRect(zombie.x - hpWidth/2, zombie.y - zombie.size - 15, hpWidth, hpHeight);
+                ctx.fillStyle = zombie.type === 'tank' ? '#9b59b6' : (zombie.type === 'fast' ? '#f39c12' : '#e74c3c');
+                ctx.fillRect(zombie.x - hpWidth/2, zombie.y - zombie.size - 15, hpWidth * (zombie.health / zombie.maxHealth), hpHeight);
             });
             
             // 탄환
             bullets.forEach(bullet => {
-                ctx.fillStyle = '#f1c40f';
+                ctx.save();
+                ctx.translate(bullet.x, bullet.y);
+                ctx.rotate(bullet.angle);
+                
+                // 탄환 트레일 효과
+                const gradient = ctx.createLinearGradient(-15, 0, 10, 0);
+                gradient.addColorStop(0, 'rgba(241, 196, 15, 0)');
+                gradient.addColorStop(0.5, 'rgba(241, 196, 15, 0.5)');
+                gradient.addColorStop(1, '#f1c40f');
+                
+                ctx.fillStyle = gradient;
                 ctx.beginPath();
-                ctx.arc(bullet.x, bullet.y, 6, 0, Math.PI * 2);
+                ctx.ellipse(0, 0, 12, 4, 0, 0, Math.PI * 2);
                 ctx.fill();
                 
+                // 탄환 코어
                 ctx.fillStyle = '#fff';
                 ctx.beginPath();
-                ctx.arc(bullet.x, bullet.y, 3, 0, Math.PI * 2);
+                ctx.arc(5, 0, 3, 0, Math.PI * 2);
                 ctx.fill();
+                
+                ctx.restore();
             });
             
             // 플레이어
@@ -767,24 +896,8 @@
                 ctx.ellipse(player.x, player.y + player.size * 0.8, player.size * 0.8, player.size * 0.3, 0, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // 몸체
-                ctx.fillStyle = '#3498db';
-                ctx.beginPath();
-                ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // 눈
-                ctx.fillStyle = '#fff';
-                ctx.beginPath();
-                ctx.arc(player.x - 8, player.y - 5, 6, 0, Math.PI * 2);
-                ctx.arc(player.x + 8, player.y - 5, 6, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.fillStyle = '#2c3e50';
-                ctx.beginPath();
-                ctx.arc(player.x - 8, player.y - 5, 3, 0, Math.PI * 2);
-                ctx.arc(player.x + 8, player.y - 5, 3, 0, Math.PI * 2);
-                ctx.fill();
+                // 플레이어 스프라이트
+                drawSprite('player', player.x, player.y, player.size, player.angle);
             }
             
             // 파티클
@@ -803,7 +916,10 @@
                 ctx.font = 'bold 18px Arial';
                 ctx.fillStyle = d.color;
                 ctx.textAlign = 'center';
+                ctx.shadowBlur = 3;
+                ctx.shadowColor = '#000';
                 ctx.fillText(d.text, d.x, d.y);
+                ctx.shadowBlur = 0;
             });
             ctx.globalAlpha = 1;
         }
@@ -888,6 +1004,7 @@
             player.kills = 0;
             player.invincible = false;
             player.lastAttack = 0;
+            player.angle = 0;
             
             zombies = [];
             bullets = [];
@@ -907,10 +1024,25 @@
             announceWave(1);
         }
         
-        // 모바일 체크
-        if ('ontouchstart' in window) {
-            document.getElementById('mobileControls').style.display = 'block';
+        // 초기화
+        async function init() {
+            // 스프라이트 로드
+            await loadSprites();
+            
+            // 로딩 화면 숨기기
+            document.getElementById('loadingScreen').style.display = 'none';
+            
+            // 시작 화면 표시
+            document.getElementById('startScreen').style.display = 'flex';
+            
+            // 모바일 체크
+            if ('ontouchstart' in window) {
+                document.getElementById('mobileControls').style.display = 'block';
+            }
         }
+        
+        // 페이지 로드 시 초기화
+        init();
     </script>
 </body>
 </html>
