@@ -233,7 +233,7 @@
             // Background
             ctx.fillStyle = isUsed ? 'rgba(76, 175, 80, 0.2)' : 'rgba(255,255,255,0.1)';
             ctx.beginPath();
-            ctx.roundRect(20, y, canvas.width - 40, 40, 8);
+            ctx.roundRect(20, y, canvas.width - 40, 32, 6);
             ctx.fill();
             
             if (!isUsed && potentialScore > 0) {
@@ -244,16 +244,16 @@
             
             // Name
             ctx.fillStyle = isUsed ? '#888' : '#fff';
-            ctx.font = '14px sans-serif';
+            ctx.font = '13px sans-serif';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'middle';
-            ctx.fillText(cat.name, 30, y + 20);
+            ctx.fillText(cat.name, 30, y + 16);
             
             // Score
             ctx.fillStyle = isUsed ? '#4CAF50' : (potentialScore > 0 ? '#ffd700' : '#666');
-            ctx.font = 'bold 18px sans-serif';
+            ctx.font = 'bold 16px sans-serif';
             ctx.textAlign = 'right';
-            ctx.fillText(score.toString(), canvas.width - 30, y + 20);
+            ctx.fillText(score.toString(), canvas.width - 30, y + 16);
         }
         
         // Main draw function
@@ -324,18 +324,18 @@
             
             // Score categories
             const catStartY = btnY + 65;
-            const catHeight = 45;
+            const catHeight = 35;
             
             // Category title
             ctx.fillStyle = '#ffd700';
-            ctx.font = 'bold 16px sans-serif';
+            ctx.font = 'bold 14px sans-serif';
             ctx.textAlign = 'left';
-            ctx.fillText('📋 점수판 (터치하여 선택)', 20, catStartY - 10);
+            ctx.fillText('📋 점수판 (터치하여 선택)', 20, catStartY - 8);
             
             // Draw categories
             game.categories.forEach((cat, i) => {
                 const y = catStartY + i * catHeight;
-                if (y < canvas.height - 10) {
+                if (y + 32 < canvas.height) {
                     const potential = calcScore(cat.id, game.dice);
                     drawCategory(cat, y, game.rollsLeft < 3 ? potential : 0);
                 }
@@ -352,8 +352,6 @@
                 ctx.fillText('🎉 보너스!', canvas.width/2, canvas.height/2 - 30);
                 ctx.font = '24px sans-serif';
                 ctx.fillText(`+${game.bonusEarned}점`, canvas.width/2, canvas.height/2 + 20);
-                
-                setTimeout(() => { game.showBonus = false; }, 1500);
             }
             
             // Game Over screen
@@ -425,6 +423,7 @@
                     game.bonusEarned = bonus;
                     game.totalScore += bonus;
                     game.showBonus = true;
+                    setTimeout(() => { game.showBonus = false; }, 1500);
                 }
             }
             
@@ -500,11 +499,12 @@
             
             // Category selection
             const catStartY = btnY + 65;
-            const catHeight = 45;
+            const catHeight = 35;
             
             game.categories.forEach((cat, i) => {
                 const cy = catStartY + i * catHeight;
-                if (x >= 20 && x <= canvas.width - 20 && y >= cy && y <= cy + 40) {
+                // Only allow clicking visible categories
+                if (cy + 32 < canvas.height && x >= 20 && x <= canvas.width - 20 && y >= cy && y <= cy + 32) {
                     selectCategory(cat.id);
                 }
             });
