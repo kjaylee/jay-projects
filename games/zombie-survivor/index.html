@@ -239,7 +239,7 @@
     <div id="startScreen" style="display: none;">
         <h1>🧟 좀비 서바이버 타운</h1>
         <p style="margin-bottom: 30px; font-size: 18px;">생존하고, 레벨업하고, 좀비를 처치하라!</p>
-        <button class="btn" onclick="startGame()">🎮 게임 시작</button>
+        <button class="btn" id="startBtn">🎮 게임 시작</button>
         <p style="margin-top: 20px; color: #888;">WASD/방향키 또는 조이스틱으로 이동</p>
     </div>
     
@@ -248,7 +248,7 @@
         <p style="font-size: 24px;">웨이브: <span id="finalWave">1</span></p>
         <p style="font-size: 24px;">킬: <span id="finalKills">0</span></p>
         <p style="font-size: 24px;">레벨: <span id="finalLevel">1</span></p>
-        <button class="btn" onclick="restartGame()">🔄 다시 시작</button>
+        <button class="btn" id="restartBtn">🔄 다시 시작</button>
     </div>
     
     <div id="levelUpScreen">
@@ -1026,14 +1026,32 @@
         
         // 초기화
         async function init() {
-            // 스프라이트 로드
-            await loadSprites();
+            // 스프라이트 로드 (3초 타임아웃)
+            const loadPromise = loadSprites();
+            const timeoutPromise = new Promise(resolve => setTimeout(resolve, 3000));
+            await Promise.race([loadPromise, timeoutPromise]);
             
             // 로딩 화면 숨기기
             document.getElementById('loadingScreen').style.display = 'none';
             
             // 시작 화면 표시
             document.getElementById('startScreen').style.display = 'flex';
+            
+            // 버튼 이벤트 설정
+            const startBtn = document.getElementById('startBtn');
+            const restartBtn = document.getElementById('restartBtn');
+            
+            startBtn.addEventListener('click', startGame);
+            startBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                startGame();
+            });
+            
+            restartBtn.addEventListener('click', restartGame);
+            restartBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                restartGame();
+            });
             
             // 모바일 체크
             if ('ontouchstart' in window) {
