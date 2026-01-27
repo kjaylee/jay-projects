@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🏃 포켓 던전 런</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(255, 100, 100, 0.3);
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            color: #fff;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+        #startScreen, #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0,0,0,0.85);
+            color: #fff;
+            border-radius: 8px;
+        }
+        #startScreen h1, #gameOverScreen h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px #ff6b6b;
+        }
+        #startScreen p, #gameOverScreen p {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            opacity: 0.8;
+        }
+        .btn {
+            margin-top: 20px;
+            padding: 15px 40px;
+            font-size: 1.3em;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+            border: none;
+            border-radius: 30px;
+            color: #fff;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.4);
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 30px rgba(255, 107, 107, 0.6);
+        }
+        #finalScore {
+            font-size: 2em;
+            color: #ffd93d;
+            margin: 10px 0;
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="game"></canvas>
+        <div id="ui">
+            <span id="score">🏃 0m</span>
+            <span id="coins">💎 0</span>
+        </div>
+        
+        <div id="startScreen">
+            <h1>🏃 포켓 던전 런</h1>
+            <p>🎮 터치 또는 클릭으로 점프!</p>
+            <p>⚠️ 장애물을 피하고 보석을 모아라!</p>
+            <button class="btn" id="startBtn">게임 시작</button>
+        </div>
+        
+        <div id="gameOverScreen" class="hidden">
+            <h1>💀 게임 오버</h1>
+            <p>최종 거리</p>
+            <div id="finalScore">0m</div>
+            <p id="finalCoins">💎 0개 수집</p>
+            <button class="btn" id="restartBtn">다시 시작</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        
+        // 캔버스 크기 설정
+        const BASE_WIDTH = 800;
+        const BASE_HEIGHT = 400;
+        canvas.width = BASE_WIDTH;
+        canvas.height = BASE_HEIGHT;
+        
+        // 게임 상태
+        let gameState = 'start'; // start, playing, over
+        let score = 0;
+        let coins = 0;
+        let speed = 5;
+        let frameCount = 0;
+        
+        // 플레이어
+        const player = {
+            x: 100,
+            y: 300,
+            width: 40,
+            height: 50,
+            vy: 0,
+            jumping: false,
+            grounded: true,
+            jumpPower: -15,
+            gravity: 0.7,
+            color: '#ff6b6b',
+            runFrame: 0
+        };
+        
+        // 지면
+        const ground = {
+            y: 350,
+            height: 50
+        };
+        
+        // 장애물 & 아이템
+        let obstacles = [];
+        let collectibles = [];
+        let particles = [];
+        let bgElements = [];
+        
+        // 장애물 타입
+        const obstacleTypes = [
+            { type: 'spike', emoji: '🔺', width: 30, height: 35, yOffset: -35 },
+            { type: 'monster', emoji: '👾', width: 40, height: 40, yOffset: -40 },
+            { type: 'bat', emoji: '🦇', width: 35, height: 30, yOffset: -80, flying: true },
+            { type: 'pit', emoji: '🕳️', width: 60, height: 30, yOffset: 0, isPit: true }
+        ];
+        
+        // 수집 아이템
+        const collectibleTypes = [
+            { type: 'coin', emoji: '💰', value: 1 },
+            { type: 'gem', emoji: '💎', value: 5 },
+            { type: 'star', emoji: '⭐', value: 10 }
+        ];
+        
+        // 배경 생성
+        function initBackground() {
+            bgElements = [];
+            for (let i = 0; i < 20; i++) {
+                bgElements.push({
+                    x: Math.random() * BASE_WIDTH,
+                    y: Math.random() * (ground.y - 100) + 50,
+                    emoji: ['🕯️', '💀', '🗡️', '🛡️', '🔮'][Math.floor(Math.random() * 5)],
+                    speed: 0.5 + Math.random() * 1,
+                    size: 15 + Math.random() * 15
+                });
+            }
+        }
+        
+        // 장애물 생성
+        function spawnObstacle() {
+            const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+            const y = type.flying ? ground.y - 80 : ground.y + type.yOffset;
+            
+            obstacles.push({
+                ...type,
+                x: BASE_WIDTH + 50,
+                y: y,
+                passed: false
+            });
+        }
+        
+        // 수집 아이템 생성
+        function spawnCollectible() {
+            const type = collectibleTypes[Math.floor(Math.random() * collectibleTypes.length)];
+            const y = ground.y - 50 - Math.random() * 100;
+            
+            collectibles.push({
+                ...type,
+                x: BASE_WIDTH + 50,
+                y: y,
+                size: 25,
+                collected: false,
+                bobOffset: Math.random() * Math.PI * 2
+            });
+        }
+        
+        // 파티클 생성
+        function createParticle(x, y, color, emoji = null) {
+            for (let i = 0; i < 5; i++) {
+                particles.push({
+                    x, y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    life: 30,
+                    color,
+                    emoji,
+                    size: emoji ? 15 : 5
+                });
+            }
+        }
+        
+        // 점프
+        function jump() {
+            if (player.grounded && gameState === 'playing') {
+                player.vy = player.jumpPower;
+                player.jumping = true;
+                player.grounded = false;
+                createParticle(player.x, player.y + player.height, '#888');
+            }
+        }
+        
+        // 충돌 감지
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+        
+        // 게임 업데이트
+        function update() {
+            if (gameState !== 'playing') return;
+            
+            frameCount++;
+            
+            // 속도 증가
+            if (frameCount % 500 === 0) {
+                speed = Math.min(speed + 0.5, 15);
+            }
+            
+            // 점수 증가
+            score = Math.floor(frameCount / 5);
+            
+            // 플레이어 물리
+            player.vy += player.gravity;
+            player.y += player.vy;
+            
+            if (player.y + player.height >= ground.y) {
+                player.y = ground.y - player.height;
+                player.vy = 0;
+                player.grounded = true;
+                player.jumping = false;
+            }
+            
+            // 달리기 애니메이션
+            if (player.grounded) {
+                player.runFrame = (player.runFrame + 0.3) % 2;
+            }
+            
+            // 배경 업데이트
+            bgElements.forEach(bg => {
+                bg.x -= bg.speed;
+                if (bg.x < -30) {
+                    bg.x = BASE_WIDTH + 30;
+                    bg.y = Math.random() * (ground.y - 100) + 50;
+                }
+            });
+            
+            // 장애물 스폰
+            if (frameCount % Math.max(60, 120 - speed * 5) === 0) {
+                spawnObstacle();
+            }
+            
+            // 수집 아이템 스폰
+            if (frameCount % 80 === 0) {
+                spawnCollectible();
+            }
+            
+            // 장애물 업데이트
+            obstacles = obstacles.filter(obs => {
+                obs.x -= speed;
+                
+                // 충돌 체크
+                const playerRect = {
+                    x: player.x + 10,
+                    y: player.y + 5,
+                    width: player.width - 20,
+                    height: player.height - 10
+                };
+                
+                const obsRect = {
+                    x: obs.x,
+                    y: obs.y,
+                    width: obs.width,
+                    height: obs.height
+                };
+                
+                if (checkCollision(playerRect, obsRect)) {
+                    gameOver();
+                }
+                
+                return obs.x > -100;
+            });
+            
+            // 수집 아이템 업데이트
+            collectibles = collectibles.filter(item => {
+                item.x -= speed;
+                item.bobOffset += 0.1;
+                
+                const playerRect = {
+                    x: player.x,
+                    y: player.y,
+                    width: player.width,
+                    height: player.height
+                };
+                
+                const itemRect = {
+                    x: item.x,
+                    y: item.y + Math.sin(item.bobOffset) * 5,
+                    width: item.size,
+                    height: item.size
+                };
+                
+                if (!item.collected && checkCollision(playerRect, itemRect)) {
+                    item.collected = true;
+                    coins += item.value;
+                    createParticle(item.x, item.y, '#ffd93d', item.emoji);
+                }
+                
+                return item.x > -50 && !item.collected;
+            });
+            
+            // 파티클 업데이트
+            particles = particles.filter(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.3;
+                p.life--;
+                return p.life > 0;
+            });
+            
+            // UI 업데이트
+            document.getElementById('score').textContent = `🏃 ${score}m`;
+            document.getElementById('coins').textContent = `💎 ${coins}`;
+        }
+        
+        // 그리기
+        function draw() {
+            // 배경
+            const gradient = ctx.createLinearGradient(0, 0, 0, BASE_HEIGHT);
+            gradient.addColorStop(0, '#16213e');
+            gradient.addColorStop(1, '#1a1a2e');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, BASE_WIDTH, BASE_HEIGHT);
+            
+            // 배경 요소
+            ctx.globalAlpha = 0.3;
+            bgElements.forEach(bg => {
+                ctx.font = `${bg.size}px Arial`;
+                ctx.fillText(bg.emoji, bg.x, bg.y);
+            });
+            ctx.globalAlpha = 1;
+            
+            // 지면
+            ctx.fillStyle = '#2d2d44';
+            ctx.fillRect(0, ground.y, BASE_WIDTH, ground.height);
+            
+            // 지면 패턴
+            ctx.fillStyle = '#3d3d5c';
+            for (let i = 0; i < BASE_WIDTH; i += 40) {
+                ctx.fillRect(i, ground.y, 2, 10);
+            }
+            
+            // 장애물
+            obstacles.forEach(obs => {
+                ctx.font = `${obs.height}px Arial`;
+                ctx.fillText(obs.emoji, obs.x, obs.y + obs.height);
+            });
+            
+            // 수집 아이템
+            collectibles.forEach(item => {
+                const bobY = item.y + Math.sin(item.bobOffset) * 5;
+                ctx.font = `${item.size}px Arial`;
+                ctx.fillText(item.emoji, item.x, bobY + item.size);
+            });
+            
+            // 플레이어
+            drawPlayer();
+            
+            // 파티클
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life / 30;
+                if (p.emoji) {
+                    ctx.font = `${p.size}px Arial`;
+                    ctx.fillText(p.emoji, p.x, p.y);
+                } else {
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(p.x, p.y, p.size, p.size);
+                }
+                ctx.globalAlpha = 1;
+            });
+        }
+        
+        // 플레이어 그리기
+        function drawPlayer() {
+            const x = player.x;
+            const y = player.y;
+            const w = player.width;
+            const h = player.height;
+            
+            // 그림자
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(x + w/2, ground.y, w/2, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 몸체
+            ctx.fillStyle = player.color;
+            ctx.fillRect(x + 5, y + 15, w - 10, h - 25);
+            
+            // 머리
+            ctx.fillStyle = '#ffcc99';
+            ctx.beginPath();
+            ctx.arc(x + w/2, y + 12, 12, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 눈
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(x + w/2 + 4, y + 10, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 다리 (달리기 애니메이션)
+            ctx.fillStyle = '#555';
+            const legOffset = player.grounded ? Math.sin(player.runFrame * Math.PI) * 8 : 5;
+            ctx.fillRect(x + 10, y + h - 12, 8, 12 + legOffset);
+            ctx.fillRect(x + w - 18, y + h - 12, 8, 12 - legOffset);
+            
+            // 점프 중이면 팔 위로
+            if (player.jumping) {
+                ctx.fillStyle = player.color;
+                ctx.fillRect(x, y + 18, 8, 5);
+                ctx.fillRect(x + w - 8, y + 18, 8, 5);
+            }
+        }
+        
+        // 게임 오버
+        function gameOver() {
+            gameState = 'over';
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+            document.getElementById('finalScore').textContent = `${score}m`;
+            document.getElementById('finalCoins').textContent = `💎 ${coins}개 수집`;
+            createParticle(player.x + player.width/2, player.y + player.height/2, '#ff0000');
+        }
+        
+        // 게임 시작
+        function startGame() {
+            gameState = 'playing';
+            score = 0;
+            coins = 0;
+            speed = 5;
+            frameCount = 0;
+            obstacles = [];
+            collectibles = [];
+            particles = [];
+            player.y = ground.y - player.height;
+            player.vy = 0;
+            player.grounded = true;
+            player.jumping = false;
+            initBackground();
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+        }
+        
+        // 게임 루프
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // 이벤트 리스너
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                e.preventDefault();
+                jump();
+            }
+        });
+        
+        document.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            jump();
+        }, { passive: false });
+        
+        document.addEventListener('mousedown', (e) => {
+            if (e.target.tagName !== 'BUTTON') {
+                jump();
+            }
+        });
+        
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('restartBtn').addEventListener('click', startGame);
+        
+        // 초기화
+        initBackground();
+        gameLoop();
+    </script>
+</body>
+</html>
