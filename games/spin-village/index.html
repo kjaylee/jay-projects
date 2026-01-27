@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Spin Village 🎰🏘️</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #fff;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            width: 100%;
+            max-width: 500px;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+            border-radius: 0 0 20px 20px;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        
+        .stat-icon {
+            font-size: 18px;
+        }
+        
+        .level-badge {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        
+        .village-container {
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+            flex: 1;
+        }
+        
+        .village-name {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .village-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .building {
+            aspect-ratio: 1;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 3px solid transparent;
+            position: relative;
+        }
+        
+        .building:hover {
+            transform: scale(1.05);
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .building.upgradable {
+            border-color: #4ade80;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .building.damaged {
+            border-color: #ef4444;
+        }
+        
+        .building-icon {
+            font-size: 40px;
+            margin-bottom: 5px;
+        }
+        
+        .building-level {
+            font-size: 12px;
+            color: #fbbf24;
+        }
+        
+        .building-cost {
+            position: absolute;
+            bottom: 5px;
+            font-size: 10px;
+            color: #9ca3af;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); }
+        }
+        
+        .slot-machine {
+            background: linear-gradient(180deg, #2d1b4e 0%, #1a0f2e 100%);
+            border-radius: 25px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 350px;
+            border: 4px solid #fbbf24;
+            box-shadow: 0 10px 40px rgba(251, 191, 36, 0.3);
+        }
+        
+        .slot-display {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .slot-reel {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(180deg, #1f1f1f, #0a0a0a);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            border: 3px solid #333;
+            overflow: hidden;
+        }
+        
+        .slot-reel.spinning {
+            animation: slotSpin 0.1s linear infinite;
+        }
+        
+        @keyframes slotSpin {
+            0% { transform: translateY(-5px); }
+            50% { transform: translateY(5px); }
+            100% { transform: translateY(-5px); }
+        }
+        
+        .spin-button {
+            width: 100%;
+            padding: 18px;
+            font-size: 22px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border: none;
+            border-radius: 15px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .spin-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(245, 158, 11, 0.5);
+        }
+        
+        .spin-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .result-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
+            padding: 30px 50px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 100;
+            border: 3px solid #fbbf24;
+            transition: transform 0.3s;
+        }
+        
+        .result-popup.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+        
+        .result-icon {
+            font-size: 60px;
+            margin-bottom: 10px;
+        }
+        
+        .result-text {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .result-detail {
+            color: #9ca3af;
+            font-size: 14px;
+        }
+        
+        .attack-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            flex-direction: column;
+        }
+        
+        .attack-overlay.show {
+            display: flex;
+        }
+        
+        .attack-target {
+            font-size: 80px;
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-20px) rotate(-5deg); }
+            75% { transform: translateX(20px) rotate(5deg); }
+        }
+        
+        .progress-bar {
+            width: 100%;
+            max-width: 300px;
+            height: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ade80, #22c55e);
+            transition: width 0.3s;
+        }
+        
+        .village-progress {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #9ca3af;
+        }
+        
+        .shields {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            display: flex;
+            gap: 5px;
+        }
+        
+        .shield {
+            font-size: 24px;
+            opacity: 0.3;
+        }
+        
+        .shield.active {
+            opacity: 1;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: rgba(0,0,0,0.9);
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 16px;
+            z-index: 300;
+            transition: transform 0.3s;
+            border: 2px solid #fbbf24;
+        }
+        
+        .notification.show {
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        .multiplier {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            font-weight: bold;
+            color: #fbbf24;
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="stats">
+            <div class="stat">
+                <span class="stat-icon">🪙</span>
+                <span id="coins">1000</span>
+            </div>
+            <div class="stat">
+                <span class="stat-icon">⭐</span>
+                <span id="stars">0</span>
+            </div>
+        </div>
+        <div class="level-badge">Lv.<span id="level">1</span></div>
+    </div>
+    
+    <div class="shields" id="shields">
+        <span class="shield">🛡️</span>
+        <span class="shield">🛡️</span>
+        <span class="shield">🛡️</span>
+    </div>
+    
+    <div class="village-container">
+        <div class="village-name" id="village-name">🏘️ 평화로운 마을</div>
+        <div class="village-progress">
+            마을 완성도: <span id="completion">0</span>/9
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+        </div>
+        <div class="village-grid" id="village-grid"></div>
+    </div>
+    
+    <div class="slot-machine">
+        <div class="slot-display">
+            <div class="slot-reel" id="reel1">🪙</div>
+            <div class="slot-reel" id="reel2">🪙</div>
+            <div class="slot-reel" id="reel3">🪙</div>
+        </div>
+        <button class="spin-button" id="spin-btn" onclick="spin()">
+            🎰 스핀! (10 🪙)
+        </button>
+    </div>
+    
+    <div class="result-popup" id="result-popup">
+        <div class="result-icon" id="result-icon">🪙</div>
+        <div class="result-text" id="result-text">+500 코인!</div>
+        <div class="result-detail" id="result-detail">럭키!</div>
+    </div>
+    
+    <div class="attack-overlay" id="attack-overlay">
+        <div class="attack-target" id="attack-target">🏠</div>
+        <div id="attack-text" style="font-size: 24px; margin-top: 20px;">공격 중!</div>
+    </div>
+    
+    <div class="notification" id="notification"></div>
+    
+    <script>
+        // Game State
+        let gameState = {
+            coins: 1000,
+            stars: 0,
+            level: 1,
+            shields: 0,
+            spins: 0,
+            buildings: [
+                { name: '집', icon: '🏠', level: 0, maxLevel: 5, baseCost: 100 },
+                { name: '밭', icon: '🌾', level: 0, maxLevel: 5, baseCost: 150 },
+                { name: '우물', icon: '⛲', level: 0, maxLevel: 5, baseCost: 200 },
+                { name: '대장간', icon: '⚒️', level: 0, maxLevel: 5, baseCost: 250 },
+                { name: '창고', icon: '🏪', level: 0, maxLevel: 5, baseCost: 300 },
+                { name: '탑', icon: '🗼', level: 0, maxLevel: 5, baseCost: 400 },
+                { name: '성벽', icon: '🏰', level: 0, maxLevel: 5, baseCost: 500 },
+                { name: '시장', icon: '🎪', level: 0, maxLevel: 5, baseCost: 600 },
+                { name: '신전', icon: '⛩️', level: 0, maxLevel: 5, baseCost: 800 }
+            ],
+            villageNames: [
+                '🏘️ 평화로운 마을', '🌲 숲속 마을', '🏔️ 산골 마을',
+                '🌊 해변 마을', '🏜️ 사막 오아시스', '❄️ 눈꽃 마을',
+                '🌸 벚꽃 마을', '🌙 달빛 마을', '☀️ 태양의 도시',
+                '🌈 무지개 왕국'
+            ]
+        };
+        
+        const SYMBOLS = ['🪙', '🪙', '🪙', '⚔️', '⚔️', '🛡️', '🛡️', '💰', '🐷'];
+        const SPIN_COST = 10;
+        
+        function loadGame() {
+            const saved = localStorage.getItem('spinVillage');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                gameState = { ...gameState, ...parsed };
+            }
+            updateUI();
+            renderBuildings();
+        }
+        
+        function saveGame() {
+            localStorage.setItem('spinVillage', JSON.stringify(gameState));
+        }
+        
+        function updateUI() {
+            document.getElementById('coins').textContent = formatNumber(gameState.coins);
+            document.getElementById('stars').textContent = formatNumber(gameState.stars);
+            document.getElementById('level').textContent = gameState.level;
+            document.getElementById('village-name').textContent = gameState.villageNames[Math.min(gameState.level - 1, 9)];
+            
+            // Update shields
+            const shieldElements = document.querySelectorAll('.shield');
+            shieldElements.forEach((el, i) => {
+                el.classList.toggle('active', i < gameState.shields);
+            });
+            
+            // Update progress
+            const completed = gameState.buildings.filter(b => b.level >= b.maxLevel).length;
+            document.getElementById('completion').textContent = completed;
+            document.getElementById('progress-fill').style.width = (completed / 9 * 100) + '%';
+            
+            // Check level up
+            if (completed >= 9) {
+                levelUp();
+            }
+            
+            // Update spin button
+            const spinBtn = document.getElementById('spin-btn');
+            spinBtn.disabled = gameState.coins < SPIN_COST;
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+        
+        function renderBuildings() {
+            const grid = document.getElementById('village-grid');
+            grid.innerHTML = '';
+            
+            gameState.buildings.forEach((building, index) => {
+                const cost = Math.floor(building.baseCost * Math.pow(1.5, building.level));
+                const canUpgrade = gameState.coins >= cost && building.level < building.maxLevel;
+                const isMaxed = building.level >= building.maxLevel;
+                
+                const div = document.createElement('div');
+                div.className = 'building' + (canUpgrade ? ' upgradable' : '');
+                div.innerHTML = `
+                    <span class="building-icon">${building.icon}</span>
+                    <span class="building-level">${isMaxed ? '⭐ MAX' : 'Lv.' + building.level}</span>
+                    ${!isMaxed ? `<span class="building-cost">💰 ${formatNumber(cost)}</span>` : ''}
+                `;
+                
+                if (!isMaxed) {
+                    div.onclick = () => upgradeBuilding(index);
+                }
+                
+                grid.appendChild(div);
+            });
+        }
+        
+        function upgradeBuilding(index) {
+            const building = gameState.buildings[index];
+            const cost = Math.floor(building.baseCost * Math.pow(1.5, building.level));
+            
+            if (gameState.coins >= cost && building.level < building.maxLevel) {
+                gameState.coins -= cost;
+                building.level++;
+                gameState.stars += 10;
+                
+                showNotification(`${building.icon} ${building.name} 업그레이드! Lv.${building.level}`);
+                
+                saveGame();
+                updateUI();
+                renderBuildings();
+            }
+        }
+        
+        function levelUp() {
+            gameState.level++;
+            gameState.stars += 100;
+            gameState.buildings.forEach(b => b.level = 0);
+            
+            showNotification(`🎉 레벨 업! Lv.${gameState.level} - 새로운 마을!`);
+            
+            saveGame();
+            updateUI();
+            renderBuildings();
+        }
+        
+        async function spin() {
+            if (gameState.coins < SPIN_COST) return;
+            
+            gameState.coins -= SPIN_COST;
+            updateUI();
+            
+            const reels = [
+                document.getElementById('reel1'),
+                document.getElementById('reel2'),
+                document.getElementById('reel3')
+            ];
+            
+            // Start spinning animation
+            reels.forEach(reel => reel.classList.add('spinning'));
+            
+            // Random results
+            const results = [
+                SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
+                SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
+                SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]
+            ];
+            
+            // Stop reels one by one
+            for (let i = 0; i < 3; i++) {
+                await sleep(300 + i * 200);
+                reels[i].classList.remove('spinning');
+                reels[i].textContent = results[i];
+            }
+            
+            await sleep(300);
+            processResults(results);
+        }
+        
+        function processResults(results) {
+            const counts = {};
+            results.forEach(s => counts[s] = (counts[s] || 0) + 1);
+            
+            // Check for matches
+            const hasTriple = Object.values(counts).some(c => c === 3);
+            const hasPair = Object.values(counts).some(c => c === 2);
+            
+            let reward = { icon: '', text: '', detail: '' };
+            
+            // Triple matches
+            if (hasTriple) {
+                const symbol = Object.keys(counts).find(k => counts[k] === 3);
+                switch(symbol) {
+                    case '🪙':
+                        const coinReward = 200 * gameState.level;
+                        gameState.coins += coinReward;
+                        reward = { icon: '🪙🪙🪙', text: `+${coinReward} 코인!`, detail: '트리플 코인!' };
+                        break;
+                    case '⚔️':
+                        performAttack(3);
+                        return;
+                    case '🛡️':
+                        gameState.shields = Math.min(3, gameState.shields + 3);
+                        reward = { icon: '🛡️🛡️🛡️', text: '풀 실드!', detail: '완벽한 방어!' };
+                        break;
+                    case '💰':
+                        const bigReward = 1000 * gameState.level;
+                        gameState.coins += bigReward;
+                        reward = { icon: '💰💰💰', text: `+${bigReward} 코인!`, detail: '잭팟!!!' };
+                        break;
+                    case '🐷':
+                        performRaid();
+                        return;
+                }
+            }
+            // Pairs
+            else if (hasPair) {
+                const symbol = Object.keys(counts).find(k => counts[k] === 2);
+                switch(symbol) {
+                    case '🪙':
+                        const coinReward = 50 * gameState.level;
+                        gameState.coins += coinReward;
+                        reward = { icon: '🪙', text: `+${coinReward} 코인`, detail: '코인 페어!' };
+                        break;
+                    case '⚔️':
+                        performAttack(1);
+                        return;
+                    case '🛡️':
+                        gameState.shields = Math.min(3, gameState.shields + 1);
+                        reward = { icon: '🛡️', text: '+1 실드', detail: '방어력 증가!' };
+                        break;
+                    case '💰':
+                        const medReward = 200 * gameState.level;
+                        gameState.coins += medReward;
+                        reward = { icon: '💰', text: `+${medReward} 코인`, detail: '보너스!' };
+                        break;
+                    case '🐷':
+                        performRaid();
+                        return;
+                }
+            }
+            // No match - small coin reward
+            else {
+                const smallReward = 10 * gameState.level;
+                gameState.coins += smallReward;
+                reward = { icon: '🪙', text: `+${smallReward} 코인`, detail: '작은 보상' };
+            }
+            
+            showResult(reward.icon, reward.text, reward.detail);
+            saveGame();
+            updateUI();
+        }
+        
+        async function performAttack(power) {
+            const overlay = document.getElementById('attack-overlay');
+            const target = document.getElementById('attack-target');
+            const attackText = document.getElementById('attack-text');
+            
+            overlay.classList.add('show');
+            target.textContent = '🏠';
+            attackText.textContent = '적 마을 공격!';
+            
+            await sleep(1000);
+            
+            target.textContent = '💥';
+            
+            const loot = 100 * power * gameState.level;
+            gameState.coins += loot;
+            
+            await sleep(500);
+            
+            attackText.textContent = `+${loot} 코인 약탈!`;
+            
+            await sleep(1000);
+            overlay.classList.remove('show');
+            
+            saveGame();
+            updateUI();
+        }
+        
+        async function performRaid() {
+            const overlay = document.getElementById('attack-overlay');
+            const target = document.getElementById('attack-target');
+            const attackText = document.getElementById('attack-text');
+            
+            overlay.classList.add('show');
+            target.textContent = '🐷';
+            attackText.textContent = '돼지 레이드!';
+            
+            await sleep(1000);
+            
+            target.textContent = '💎';
+            
+            const loot = 500 * gameState.level;
+            gameState.coins += loot;
+            gameState.stars += 50;
+            
+            await sleep(500);
+            
+            attackText.textContent = `+${loot} 코인 & +50 ⭐!`;
+            
+            await sleep(1000);
+            overlay.classList.remove('show');
+            
+            saveGame();
+            updateUI();
+        }
+        
+        function showResult(icon, text, detail) {
+            const popup = document.getElementById('result-popup');
+            document.getElementById('result-icon').textContent = icon;
+            document.getElementById('result-text').textContent = text;
+            document.getElementById('result-detail').textContent = detail;
+            
+            popup.classList.add('show');
+            
+            setTimeout(() => {
+                popup.classList.remove('show');
+            }, 1500);
+        }
+        
+        function showNotification(text) {
+            const notif = document.getElementById('notification');
+            notif.textContent = text;
+            notif.classList.add('show');
+            
+            setTimeout(() => {
+                notif.classList.remove('show');
+            }, 2000);
+        }
+        
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        // Initialize
+        loadGame();
+        
+        // Auto-save every 30 seconds
+        setInterval(saveGame, 30000);
+    </script>
+</body>
+</html>
