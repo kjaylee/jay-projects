@@ -95,9 +95,9 @@
             <p style="margin-bottom: 20px; opacity: 0.8;">9홀 미니 골프</p>
             <button onclick="startGame()">게임 시작</button>
             <div class="guide">
-                🎯 공을 터치하고 드래그로 방향!<br>
-                ⏱️ 오래 누를수록 파워 UP!<br>
-                💪 타이밍 맞춰서 손 떼기!
+                🎯 화면 터치 → 공 반대 방향으로 발사<br>
+                ⏱️ 롱터치로 파워 게이지 조절<br>
+                💪 원하는 파워에서 손 떼기!
             </div>
         </div>
         <div id="endScreen">
@@ -167,7 +167,7 @@
         const maxPower = 18;
         let aimStartTime = 0;
         let currentPower = 0;
-        const powerChargeRate = 0.015; // 파워 충전 속도
+        const powerChargeRate = 0.006; // 파워 충전 속도 (느리게)
 
         // 터치/마우스 좌표 얻기
         function getPos(e) {
@@ -195,18 +195,12 @@
             if (!game.running || isMoving) return;
             const pos = getPos(e);
             
-            // 공 근처에서만 에이밍 시작
-            const dx = pos.x - ball.x;
-            const dy = pos.y - ball.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            
-            if (dist < 60) {
-                isAiming = true;
-                aimStart = { x: ball.x, y: ball.y };
-                aimCurrent = pos;
-                aimStartTime = Date.now();
-                currentPower = 0;
-            }
+            // 아무데나 터치해서 에이밍 시작
+            isAiming = true;
+            aimStart = { x: ball.x, y: ball.y };
+            aimCurrent = pos;
+            aimStartTime = Date.now();
+            currentPower = 0;
         }
 
         function updateAim(e) {
@@ -229,13 +223,13 @@
             const pos = getPos(e);
             aimCurrent = pos;
             
-            // 당긴 방향의 반대로 발사
-            const dx = aimStart.x - aimCurrent.x;
-            const dy = aimStart.y - aimCurrent.y;
+            // 터치 위치에서 공으로의 방향 (반대로 발사)
+            const dx = ball.x - aimCurrent.x;
+            const dy = ball.y - aimCurrent.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
             
-            if (dist < 10) {
-                // 너무 짧으면 취소
+            if (dist < 10 || currentPower < 0.05) {
+                // 너무 짧거나 파워 없으면 취소
                 isAiming = false;
                 currentPower = 0;
                 return;
@@ -506,8 +500,9 @@
                 const elapsed = Date.now() - aimStartTime;
                 currentPower = (Math.sin(elapsed * powerChargeRate - Math.PI / 2) + 1) / 2;
                 
-                const dx = aimStart.x - aimCurrent.x;
-                const dy = aimStart.y - aimCurrent.y;
+                // 터치 위치에서 공으로의 방향 (반대로 발사)
+                const dx = ball.x - aimCurrent.x;
+                const dy = ball.y - aimCurrent.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 const angle = Math.atan2(dy, dx);
                 
@@ -522,39 +517,42 @@
                 ctx.stroke();
                 ctx.setLineDash([]);
                 
-                // 당기는 선 (실선) - 방향 표시용
-                if (dist > 10) {
-                    ctx.strokeStyle = 'rgba(255,100,100,0.8)';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.moveTo(ball.x, ball.y);
-                    ctx.lineTo(aimCurrent.x, aimCurrent.y);
-                    ctx.stroke();
-                }
+                // 조준선 (공 → 터치 반대 방향)
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(ball.x, ball.y);
+                ctx.lineTo(aimCurrent.x, aimCurrent.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
                 
-                // 파워 바 (화면 하단)
-                const barWidth = 200;
-                const barHeight = 20;
-                const barX = (canvas.width - barWidth) / 2;
-                const barY = canvas.height - 40;
+                // 공 주변 원형 파워 게이지
+                const gaugeRadius = 35;
                 
-                ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                ctx.fillRect(barX - 2, barY - 2, barWidth + 4, barHeight + 4);
+                // 배경 원
+                ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+                ctx.lineWidth = 8;
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, gaugeRadius, 0, Math.PI * 2);
+                ctx.stroke();
                 
-                ctx.fillStyle = '#333';
-                ctx.fillRect(barX, barY, barWidth, barHeight);
+                // 파워 원 (위에서 시작, 시계방향)
+                const startAngle = -Math.PI / 2;
+                const endAngle = startAngle + (Math.PI * 2 * currentPower);
+                ctx.strokeStyle = currentPower < 0.7 ? '#4ade80' : (currentPower < 0.9 ? '#fbbf24' : '#ef4444');
+                ctx.lineWidth = 6;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, gaugeRadius, startAngle, endAngle);
+                ctx.stroke();
+                ctx.lineCap = 'butt';
                 
-                // 파워 색상 (낮음=녹색, 중간=노랑, 높음=빨강)
-                const powerColor = currentPower < 0.5 
-                    ? `rgb(${Math.round(currentPower * 2 * 255)}, 255, 0)` 
-                    : `rgb(255, ${Math.round((1 - (currentPower - 0.5) * 2) * 255)}, 0)`;
-                ctx.fillStyle = powerColor;
-                ctx.fillRect(barX, barY, barWidth * currentPower, barHeight);
-                
+                // 파워 퍼센트 표시
                 ctx.fillStyle = '#fff';
-                ctx.font = 'bold 14px sans-serif';
+                ctx.font = 'bold 12px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText(`${Math.round(currentPower * 100)}%`, canvas.width / 2, barY + 15);
+                ctx.fillText(`${Math.round(currentPower * 100)}%`, ball.x, ball.y + gaugeRadius + 18);
             }
             
             // 공
