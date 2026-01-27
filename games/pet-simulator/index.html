@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🐾 AI 펫 시뮬레이터</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            touch-action: manipulation;
+        }
+        
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            padding: 20px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .header h1 {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .level-info {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .level-badge {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        
+        .exp-bar {
+            width: 120px;
+            height: 12px;
+            background: #e0e0e0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .exp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f093fb, #f5576c);
+            transition: width 0.3s ease;
+        }
+        
+        .pet-area {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(180deg, #87CEEB 0%, #98FB98 100%);
+            border-radius: 20px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .pet-display {
+            text-align: center;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .pet-emoji {
+            font-size: 80px;
+            display: block;
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.2));
+        }
+        
+        .pet-name {
+            margin-top: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+            text-shadow: 0 2px 4px rgba(255,255,255,0.8);
+        }
+        
+        .mood-bubble {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 15px;
+            font-size: 1.5em;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .stat-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .stat-icon {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+        
+        .stat-name {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .stat-bar {
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .stat-fill {
+            height: 100%;
+            transition: width 0.3s ease, background 0.3s ease;
+            border-radius: 5px;
+        }
+        
+        .stat-fill.hunger { background: linear-gradient(90deg, #ff6b6b, #ffa502); }
+        .stat-fill.happiness { background: linear-gradient(90deg, #ffd93d, #ff6b6b); }
+        .stat-fill.energy { background: linear-gradient(90deg, #6bcb77, #4a90a4); }
+        .stat-fill.cleanliness { background: linear-gradient(90deg, #4fc3f7, #7c4dff); }
+        
+        .stat-fill.low { background: linear-gradient(90deg, #ff4444, #cc0000) !important; }
+        
+        .buttons-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .action-btn {
+            padding: 15px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .action-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-feed { background: linear-gradient(135deg, #ff6b6b 0%, #ffa502 100%); }
+        .btn-play { background: linear-gradient(135deg, #ffd93d 0%, #ff6b6b 100%); }
+        .btn-sleep { background: linear-gradient(135deg, #6bcb77 0%, #4a90a4 100%); }
+        .btn-clean { background: linear-gradient(135deg, #4fc3f7 0%, #7c4dff 100%); }
+        
+        .btn-icon {
+            font-size: 1.8em;
+        }
+        
+        .message-area {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #555;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .sleeping-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 50, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        
+        .sleeping-overlay.active {
+            opacity: 1;
+        }
+        
+        .zzz {
+            font-size: 3em;
+            color: white;
+            animation: zzz 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes zzz {
+            0%, 100% { opacity: 0.5; transform: translateY(0); }
+            50% { opacity: 1; transform: translateY(-10px); }
+        }
+        
+        .particles {
+            position: absolute;
+            pointer-events: none;
+        }
+        
+        .particle {
+            position: absolute;
+            font-size: 1.5em;
+            animation: particle-float 1s ease-out forwards;
+        }
+        
+        @keyframes particle-float {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-50px) scale(0.5); }
+        }
+        
+        .level-up-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px 50px;
+            border-radius: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+            z-index: 1000;
+            animation: level-up 2s ease-out forwards;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        @keyframes level-up {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            40% { transform: translate(-50%, -50%) scale(1); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        .death-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .death-screen h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        
+        .death-screen p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            color: #aaa;
+        }
+        
+        .restart-btn {
+            padding: 15px 40px;
+            font-size: 1.2em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .restart-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1>🐾 AI 펫 시뮬레이터</h1>
+            <div class="level-info">
+                <span class="level-badge">Lv. <span id="level">1</span></span>
+                <div class="exp-bar">
+                    <div class="exp-fill" id="expBar" style="width: 0%"></div>
+                </div>
+                <span id="expText">0/100</span>
+            </div>
+        </div>
+        
+        <div class="pet-area" id="petArea">
+            <div class="pet-display">
+                <span class="pet-emoji" id="petEmoji">🐱</span>
+                <div class="pet-name" id="petName">냥이</div>
+            </div>
+            <div class="mood-bubble" id="moodBubble">😊</div>
+            <div class="sleeping-overlay" id="sleepingOverlay">
+                <span class="zzz">💤 Zzz...</span>
+            </div>
+            <div class="particles" id="particles"></div>
+        </div>
+        
+        <div class="stats-container">
+            <div class="stat-item">
+                <div class="stat-icon">🍖</div>
+                <div class="stat-name">배고픔</div>
+                <div class="stat-bar">
+                    <div class="stat-fill hunger" id="hungerBar" style="width: 80%"></div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon">💖</div>
+                <div class="stat-name">행복도</div>
+                <div class="stat-bar">
+                    <div class="stat-fill happiness" id="happinessBar" style="width: 80%"></div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon">⚡</div>
+                <div class="stat-name">에너지</div>
+                <div class="stat-bar">
+                    <div class="stat-fill energy" id="energyBar" style="width: 80%"></div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon">✨</div>
+                <div class="stat-name">청결도</div>
+                <div class="stat-bar">
+                    <div class="stat-fill cleanliness" id="cleanlinessBar" style="width: 80%"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="buttons-container">
+            <button class="action-btn btn-feed" id="feedBtn" onclick="feed()">
+                <span class="btn-icon">🍖</span>
+                <span>먹이주기</span>
+            </button>
+            <button class="action-btn btn-play" id="playBtn" onclick="play()">
+                <span class="btn-icon">🎾</span>
+                <span>놀아주기</span>
+            </button>
+            <button class="action-btn btn-sleep" id="sleepBtn" onclick="sleep()">
+                <span class="btn-icon">😴</span>
+                <span>재우기</span>
+            </button>
+            <button class="action-btn btn-clean" id="cleanBtn" onclick="clean()">
+                <span class="btn-icon">🛁</span>
+                <span>씻기기</span>
+            </button>
+        </div>
+        
+        <div class="message-area" id="messageArea">
+            냥이가 당신을 반갑게 맞이해요! 🐱
+        </div>
+    </div>
+    
+    <div class="death-screen" id="deathScreen" style="display: none;">
+        <h2>😢 펫이 떠났어요...</h2>
+        <p>펫의 상태를 잘 관리해주세요</p>
+        <button class="restart-btn" onclick="restartGame()">다시 시작하기</button>
+    </div>
+
+    <script>
+        // 게임 상태
+        const gameState = {
+            hunger: 80,
+            happiness: 80,
+            energy: 80,
+            cleanliness: 80,
+            level: 1,
+            exp: 0,
+            expToLevel: 100,
+            isSleeping: false,
+            isAlive: true,
+            petType: '🐱',
+            petName: '냥이'
+        };
+        
+        // 펫 종류 (레벨에 따라 진화)
+        const petEvolutions = [
+            { emoji: '🐱', name: '냥이' },
+            { emoji: '🐈', name: '고양이' },
+            { emoji: '🦁', name: '사자냥이' },
+            { emoji: '🐯', name: '호랭이' },
+            { emoji: '🦄', name: '유니콘' }
+        ];
+        
+        // 감정 이모지
+        const moodEmojis = {
+            happy: '😊',
+            veryHappy: '🥰',
+            sad: '😢',
+            hungry: '🤤',
+            tired: '😴',
+            dirty: '🤢',
+            sick: '😵',
+            excited: '🤩'
+        };
+        
+        // DOM 요소
+        const elements = {
+            petEmoji: document.getElementById('petEmoji'),
+            petName: document.getElementById('petName'),
+            moodBubble: document.getElementById('moodBubble'),
+            hungerBar: document.getElementById('hungerBar'),
+            happinessBar: document.getElementById('happinessBar'),
+            energyBar: document.getElementById('energyBar'),
+            cleanlinessBar: document.getElementById('cleanlinessBar'),
+            level: document.getElementById('level'),
+            expBar: document.getElementById('expBar'),
+            expText: document.getElementById('expText'),
+            messageArea: document.getElementById('messageArea'),
+            sleepingOverlay: document.getElementById('sleepingOverlay'),
+            particles: document.getElementById('particles'),
+            deathScreen: document.getElementById('deathScreen'),
+            feedBtn: document.getElementById('feedBtn'),
+            playBtn: document.getElementById('playBtn'),
+            sleepBtn: document.getElementById('sleepBtn'),
+            cleanBtn: document.getElementById('cleanBtn')
+        };
+        
+        // 메시지 목록
+        const messages = {
+            feed: [
+                '냠냠! 맛있어요! 🍖',
+                '배부르다 냥~ 😋',
+                '더 주세요! 🙀',
+                '최고의 밥이에요! ⭐'
+            ],
+            play: [
+                '신난다 냥! 🎾',
+                '더 놀아줘요! 🤪',
+                '야호! 재밌어! 🎉',
+                '최고의 시간! 💕'
+            ],
+            sleep: [
+                '잘 자요... 💤',
+                '꿈나라로 갈게요~ 🌙',
+                'Zzz... 😴',
+                '포근해요... ☁️'
+            ],
+            clean: [
+                '깨끗해졌어요! ✨',
+                '상쾌하다 냥! 🛁',
+                '반짝반짝! 💎',
+                '기분 좋아요! 🌟'
+            ],
+            wakeUp: [
+                '잘 잤어요! 기운이 넘쳐요! ⚡',
+                '좋은 아침이에요! ☀️',
+                '에너지 충전 완료! 🔋'
+            ],
+            warning: {
+                hunger: '배고파요... 밥 주세요! 😿',
+                happiness: '외로워요... 놀아주세요! 😢',
+                energy: '너무 피곤해요... 재워주세요! 😩',
+                cleanliness: '씻고 싶어요... 🤢'
+            }
+        };
+        
+        // 파티클 효과
+        function createParticles(emoji, count = 5) {
+            const petArea = document.getElementById('petArea');
+            const rect = petArea.getBoundingClientRect();
+            
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('span');
+                particle.className = 'particle';
+                particle.textContent = emoji;
+                particle.style.left = `${Math.random() * 80 + 10}%`;
+                particle.style.top = `${Math.random() * 40 + 30}%`;
+                elements.particles.appendChild(particle);
+                
+                setTimeout(() => particle.remove(), 1000);
+            }
+        }
+        
+        // 레벨업 애니메이션
+        function showLevelUp() {
+            const levelUp = document.createElement('div');
+            levelUp.className = 'level-up-animation';
+            levelUp.innerHTML = `🎉 레벨 업! Lv.${gameState.level} 🎉`;
+            document.body.appendChild(levelUp);
+            
+            setTimeout(() => levelUp.remove(), 2000);
+        }
+        
+        // 메시지 표시
+        function showMessage(category) {
+            const msgList = messages[category];
+            const msg = msgList[Math.floor(Math.random() * msgList.length)];
+            elements.messageArea.textContent = msg;
+        }
+        
+        // 경고 메시지
+        function showWarning(type) {
+            elements.messageArea.textContent = messages.warning[type];
+        }
+        
+        // 경험치 획득
+        function gainExp(amount) {
+            gameState.exp += amount;
+            
+            while (gameState.exp >= gameState.expToLevel) {
+                gameState.exp -= gameState.expToLevel;
+                gameState.level++;
+                gameState.expToLevel = Math.floor(gameState.expToLevel * 1.5);
+                
+                // 진화 체크
+                const evolutionIndex = Math.min(gameState.level - 1, petEvolutions.length - 1);
+                const evolution = petEvolutions[evolutionIndex];
+                gameState.petType = evolution.emoji;
+                gameState.petName = evolution.name;
+                
+                showLevelUp();
+                createParticles('⭐', 10);
+            }
+            
+            updateUI();
+        }
+        
+        // 먹이주기
+        function feed() {
+            if (gameState.isSleeping || !gameState.isAlive) return;
+            
+            gameState.hunger = Math.min(100, gameState.hunger + 25);
+            gameState.cleanliness = Math.max(0, gameState.cleanliness - 5);
+            gainExp(10);
+            createParticles('🍖', 5);
+            showMessage('feed');
+            updateUI();
+        }
+        
+        // 놀아주기
+        function play() {
+            if (gameState.isSleeping || !gameState.isAlive) return;
+            if (gameState.energy < 20) {
+                elements.messageArea.textContent = '너무 피곤해서 놀 수 없어요... 😩';
+                return;
+            }
+            
+            gameState.happiness = Math.min(100, gameState.happiness + 25);
+            gameState.energy = Math.max(0, gameState.energy - 15);
+            gameState.hunger = Math.max(0, gameState.hunger - 10);
+            gainExp(15);
+            createParticles('🎾', 5);
+            showMessage('play');
+            updateUI();
+        }
+        
+        // 재우기
+        function sleep() {
+            if (!gameState.isAlive) return;
+            
+            if (gameState.isSleeping) {
+                // 깨우기
+                gameState.isSleeping = false;
+                elements.sleepingOverlay.classList.remove('active');
+                showMessage('wakeUp');
+                elements.sleepBtn.innerHTML = '<span class="btn-icon">😴</span><span>재우기</span>';
+            } else {
+                // 재우기
+                gameState.isSleeping = true;
+                elements.sleepingOverlay.classList.add('active');
+                showMessage('sleep');
+                elements.sleepBtn.innerHTML = '<span class="btn-icon">☀️</span><span>깨우기</span>';
+            }
+            updateUI();
+        }
+        
+        // 씻기기
+        function clean() {
+            if (gameState.isSleeping || !gameState.isAlive) return;
+            
+            gameState.cleanliness = Math.min(100, gameState.cleanliness + 30);
+            gameState.happiness = Math.min(100, gameState.happiness + 10);
+            gainExp(10);
+            createParticles('✨', 5);
+            showMessage('clean');
+            updateUI();
+        }
+        
+        // 감정 업데이트
+        function updateMood() {
+            const avg = (gameState.hunger + gameState.happiness + gameState.energy + gameState.cleanliness) / 4;
+            
+            let mood;
+            if (gameState.isSleeping) {
+                mood = moodEmojis.tired;
+            } else if (avg >= 80) {
+                mood = moodEmojis.veryHappy;
+            } else if (avg >= 60) {
+                mood = moodEmojis.happy;
+            } else if (gameState.hunger < 30) {
+                mood = moodEmojis.hungry;
+            } else if (gameState.cleanliness < 30) {
+                mood = moodEmojis.dirty;
+            } else if (gameState.energy < 30) {
+                mood = moodEmojis.tired;
+            } else if (avg < 30) {
+                mood = moodEmojis.sick;
+            } else {
+                mood = moodEmojis.sad;
+            }
+            
+            elements.moodBubble.textContent = mood;
+        }
+        
+        // UI 업데이트
+        function updateUI() {
+            elements.petEmoji.textContent = gameState.petType;
+            elements.petName.textContent = gameState.petName;
+            
+            // 스탯 바 업데이트
+            updateStatBar(elements.hungerBar, gameState.hunger);
+            updateStatBar(elements.happinessBar, gameState.happiness);
+            updateStatBar(elements.energyBar, gameState.energy);
+            updateStatBar(elements.cleanlinessBar, gameState.cleanliness);
+            
+            // 레벨 & 경험치
+            elements.level.textContent = gameState.level;
+            elements.expBar.style.width = `${(gameState.exp / gameState.expToLevel) * 100}%`;
+            elements.expText.textContent = `${gameState.exp}/${gameState.expToLevel}`;
+            
+            // 감정 업데이트
+            updateMood();
+            
+            // 버튼 상태
+            const disabled = gameState.isSleeping;
+            elements.feedBtn.disabled = disabled;
+            elements.playBtn.disabled = disabled;
+            elements.cleanBtn.disabled = disabled;
+        }
+        
+        function updateStatBar(bar, value) {
+            bar.style.width = `${value}%`;
+            if (value < 30) {
+                bar.classList.add('low');
+            } else {
+                bar.classList.remove('low');
+            }
+        }
+        
+        // 시간 경과 (스탯 감소)
+        function tick() {
+            if (!gameState.isAlive) return;
+            
+            if (gameState.isSleeping) {
+                // 수면 중 에너지 회복
+                gameState.energy = Math.min(100, gameState.energy + 5);
+                if (gameState.energy >= 100) {
+                    sleep(); // 자동으로 깨우기
+                }
+            } else {
+                // 일반 상태 - 스탯 감소
+                gameState.hunger = Math.max(0, gameState.hunger - 2);
+                gameState.happiness = Math.max(0, gameState.happiness - 1);
+                gameState.energy = Math.max(0, gameState.energy - 1);
+                gameState.cleanliness = Math.max(0, gameState.cleanliness - 1);
+            }
+            
+            // 경고 메시지
+            if (gameState.hunger < 20 && !gameState.isSleeping) {
+                showWarning('hunger');
+            } else if (gameState.happiness < 20 && !gameState.isSleeping) {
+                showWarning('happiness');
+            } else if (gameState.energy < 20 && !gameState.isSleeping) {
+                showWarning('energy');
+            } else if (gameState.cleanliness < 20 && !gameState.isSleeping) {
+                showWarning('cleanliness');
+            }
+            
+            // 사망 체크
+            if (gameState.hunger <= 0 || gameState.happiness <= 0 || 
+                gameState.energy <= 0 || gameState.cleanliness <= 0) {
+                gameOver();
+            }
+            
+            updateUI();
+        }
+        
+        // 게임 오버
+        function gameOver() {
+            gameState.isAlive = false;
+            elements.deathScreen.style.display = 'flex';
+        }
+        
+        // 게임 재시작
+        function restartGame() {
+            gameState.hunger = 80;
+            gameState.happiness = 80;
+            gameState.energy = 80;
+            gameState.cleanliness = 80;
+            gameState.level = 1;
+            gameState.exp = 0;
+            gameState.expToLevel = 100;
+            gameState.isSleeping = false;
+            gameState.isAlive = true;
+            gameState.petType = petEvolutions[0].emoji;
+            gameState.petName = petEvolutions[0].name;
+            
+            elements.deathScreen.style.display = 'none';
+            elements.sleepingOverlay.classList.remove('active');
+            elements.sleepBtn.innerHTML = '<span class="btn-icon">😴</span><span>재우기</span>';
+            elements.messageArea.textContent = `${gameState.petName}가 당신을 반갑게 맞이해요! ${gameState.petType}`;
+            
+            updateUI();
+        }
+        
+        // 로컬 스토리지에서 저장/불러오기
+        function saveGame() {
+            localStorage.setItem('petSimulator', JSON.stringify(gameState));
+        }
+        
+        function loadGame() {
+            const saved = localStorage.getItem('petSimulator');
+            if (saved) {
+                const data = JSON.parse(saved);
+                Object.assign(gameState, data);
+                
+                if (gameState.isSleeping) {
+                    elements.sleepingOverlay.classList.add('active');
+                    elements.sleepBtn.innerHTML = '<span class="btn-icon">☀️</span><span>깨우기</span>';
+                }
+                
+                if (!gameState.isAlive) {
+                    elements.deathScreen.style.display = 'flex';
+                }
+            }
+            updateUI();
+        }
+        
+        // 초기화
+        loadGame();
+        
+        // 게임 루프 (3초마다 틱)
+        setInterval(() => {
+            tick();
+            saveGame();
+        }, 3000);
+        
+        // 터치 이벤트 최적화
+        document.querySelectorAll('.action-btn').forEach(btn => {
+            btn.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                this.click();
+            }, { passive: false });
+        });
+    </script>
+</body>
+</html>
