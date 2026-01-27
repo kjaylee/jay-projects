@@ -134,13 +134,39 @@
         const gravity = 0.4;
         const maxPower = 20;
         
-        // 입력 처리
+        // 입력 처리 - 개선된 터치 지원
         let isHolding = false;
+        let touchStartX = 0;
+        let chargeStartTime = 0;
         
+        // 마우스 이벤트
         canvas.addEventListener('mousedown', startCharge);
-        canvas.addEventListener('mouseup', releaseJump);
-        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startCharge(e); });
-        canvas.addEventListener('touchend', (e) => { e.preventDefault(); releaseJump(e); });
+        document.addEventListener('mouseup', releaseJump);
+        
+        // 터치 이벤트 - document 레벨에서 처리
+        canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+        document.addEventListener('touchend', handleTouchEnd, { passive: false });
+        document.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+        
+        // 스크롤 방지
+        document.body.addEventListener('touchmove', (e) => {
+            if (game.running) e.preventDefault();
+        }, { passive: false });
+
+        function handleTouchStart(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.touches.length > 0) {
+                const rect = canvas.getBoundingClientRect();
+                touchStartX = e.touches[0].clientX - rect.left;
+                startCharge(e);
+            }
+        }
+        
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            releaseJump(e);
+        }
 
         function startCharge(e) {
             if (!game.running) return;
@@ -148,30 +174,37 @@
                 isHolding = true;
                 player.charging = true;
                 player.power = 0;
+                chargeStartTime = Date.now();
                 document.getElementById('powerBar').style.display = 'block';
             }
         }
 
         function releaseJump(e) {
             if (!game.running) return;
-            if (player.charging && player.onGround) {
+            if (!player.charging) return;
+            
+            // 최소 파워 보장 (짧은 탭도 점프)
+            const minPower = 5;
+            const actualPower = Math.max(player.power, minPower);
+            
+            if (player.onGround || player.power > 0) {
                 // 점프 방향 계산 (터치/클릭 위치 기반)
                 let targetX = canvas.width / 2;
-                if (e.changedTouches) {
+                if (e && e.changedTouches && e.changedTouches.length > 0) {
                     const rect = canvas.getBoundingClientRect();
                     targetX = e.changedTouches[0].clientX - rect.left;
-                } else if (e.clientX) {
+                } else if (e && e.clientX) {
                     const rect = canvas.getBoundingClientRect();
                     targetX = e.clientX - rect.left;
+                } else {
+                    targetX = touchStartX || canvas.width / 2;
                 }
                 
-                const dx = targetX - player.x;
-                const angle = Math.atan2(-1, dx / 100); // 위쪽으로 점프
-                
-                player.vy = -player.power * 0.9;
-                player.vx = (targetX - player.x) * 0.02 * (player.power / maxPower);
+                player.vy = -actualPower * 0.9;
+                player.vx = (targetX - player.x) * 0.02 * (actualPower / maxPower);
                 player.onGround = false;
             }
+            
             isHolding = false;
             player.charging = false;
             player.power = 0;
