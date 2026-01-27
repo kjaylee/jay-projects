@@ -258,7 +258,15 @@
             const friction = 0.98;
             let inSand = false;
             
-            // 장애물 체크
+            // 이전 위치 저장
+            const prevX = ball.x;
+            const prevY = ball.y;
+            
+            // 이동 먼저
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+            
+            // 장애물 체크 (이동 후)
             for (let obs of hole.obstacles) {
                 const ox = obs.x * canvas.width;
                 const oy = obs.y * canvas.height;
@@ -279,10 +287,7 @@
                     } else if (obs.type === 'sand') {
                         inSand = true;
                     } else if (obs.type === 'rect') {
-                        // 벽 충돌
-                        const prevX = ball.x - ball.vx;
-                        const prevY = ball.y - ball.vy;
-                        
+                        // 벽 충돌 - 이전 위치 기준으로 어느 면에서 충돌했는지 판단
                         if (prevX <= ox || prevX >= ox + ow) {
                             ball.vx *= -0.7;
                             ball.x = prevX;
@@ -294,10 +299,6 @@
                     }
                 }
             }
-            
-            // 이동
-            ball.x += ball.vx;
-            ball.y += ball.vy;
             
             // 마찰
             const f = inSand ? 0.92 : friction;
