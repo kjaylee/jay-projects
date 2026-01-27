@@ -527,9 +527,6 @@
         
         // 파티클 효과
         function createParticles(emoji, count = 5) {
-            const petArea = document.getElementById('petArea');
-            const rect = petArea.getBoundingClientRect();
-            
             for (let i = 0; i < count; i++) {
                 const particle = document.createElement('span');
                 particle.className = 'particle';
@@ -749,6 +746,8 @@
         // 게임 오버
         function gameOver() {
             gameState.isAlive = false;
+            stopGameLoop();
+            saveGame();
             elements.deathScreen.style.display = 'flex';
         }
         
@@ -772,6 +771,8 @@
             elements.messageArea.textContent = `${gameState.petName}가 당신을 반갑게 맞이해요! ${gameState.petType}`;
             
             updateUI();
+            saveGame();
+            startGameLoop();
         }
         
         // 로컬 스토리지에서 저장/불러오기
@@ -782,37 +783,53 @@
         function loadGame() {
             const saved = localStorage.getItem('petSimulator');
             if (saved) {
-                const data = JSON.parse(saved);
-                Object.assign(gameState, data);
-                
-                if (gameState.isSleeping) {
-                    elements.sleepingOverlay.classList.add('active');
-                    elements.sleepBtn.innerHTML = '<span class="btn-icon">☀️</span><span>깨우기</span>';
-                }
-                
-                if (!gameState.isAlive) {
-                    elements.deathScreen.style.display = 'flex';
+                try {
+                    const data = JSON.parse(saved);
+                    Object.assign(gameState, data);
+                    
+                    if (gameState.isSleeping) {
+                        elements.sleepingOverlay.classList.add('active');
+                        elements.sleepBtn.innerHTML = '<span class="btn-icon">☀️</span><span>깨우기</span>';
+                    }
+                    
+                    if (!gameState.isAlive) {
+                        elements.deathScreen.style.display = 'flex';
+                    }
+                } catch (e) {
+                    console.warn('저장 데이터 로드 실패, 새 게임 시작:', e);
+                    localStorage.removeItem('petSimulator');
                 }
             }
             updateUI();
         }
         
+        // 게임 루프 ID (메모리 누수 방지)
+        let gameLoopId = null;
+        
+        // 게임 루프 시작
+        function startGameLoop() {
+            if (gameLoopId) clearInterval(gameLoopId);
+            gameLoopId = setInterval(() => {
+                tick();
+                if (gameState.isAlive) {
+                    saveGame();
+                }
+            }, 3000);
+        }
+        
+        // 게임 루프 정지
+        function stopGameLoop() {
+            if (gameLoopId) {
+                clearInterval(gameLoopId);
+                gameLoopId = null;
+            }
+        }
+        
         // 초기화
         loadGame();
-        
-        // 게임 루프 (3초마다 틱)
-        setInterval(() => {
-            tick();
-            saveGame();
-        }, 3000);
-        
-        // 터치 이벤트 최적화
-        document.querySelectorAll('.action-btn').forEach(btn => {
-            btn.addEventListener('touchstart', function(e) {
-                e.preventDefault();
-                this.click();
-            }, { passive: false });
-        });
+        if (gameState.isAlive) {
+            startGameLoop();
+        }
     </script>
 </body>
 </html>
