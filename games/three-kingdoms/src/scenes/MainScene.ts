@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import { GameManager, UserData } from '../managers/GameManager';
 import { IdleRewardPopupManager, IdleRewardData } from '../managers/IdleRewardPopupManager';
+import { FormationManager } from '../managers/FormationManager';
+import { OwnedGeneralsManager } from '../managers/OwnedGeneralsManager';
+import { RewardManager, GeneralForExp } from '../managers/RewardManager';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { 
@@ -10,6 +13,7 @@ import {
   createResourceIcon,
   COLORS 
 } from '../ui/effects';
+import generalsData from '../data/generals.json';
 
 export class MainScene extends Phaser.Scene {
   private gameManager!: GameManager;
@@ -232,9 +236,43 @@ export class MainScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * 진형 장수 기반 실제 전투력 계산
+   * 전투력 = Σ (attack + defense + intelligence + speed) × 등급배수 × 레벨배수
+   */
   private calculatePower(): number {
-    // TODO: 실제 전투력 계산
-    return Math.floor(Math.random() * 5000) + 1000;
+    const formationManager = FormationManager.load(this.userId);
+    const activeFormation = formationManager.getActiveFormation();
+    const ownedGenerals = new OwnedGeneralsManager(this.userId);
+    const unitIds = activeFormation.getAllUnits();
+
+    if (unitIds.length === 0) return 0;
+
+    const gradeMultiplier: Record<string, number> = {
+      N: 1.0, R: 1.2, SR: 1.5, SSR: 1.8, UR: 2.2,
+    };
+
+    let totalPower = 0;
+
+    for (const generalId of unitIds) {
+      const general = (generalsData.generals as Array<{
+        id: string;
+        grade: string;
+        baseStats: { attack: number; defense: number; intelligence: number; speed: number };
+      }>).find(g => g.id === generalId);
+
+      if (!general) continue;
+
+      const { attack, defense, intelligence, speed } = general.baseStats;
+      const statSum = attack + defense + intelligence + speed;
+      const gradeMult = gradeMultiplier[general.grade] ?? 1.0;
+      const level = ownedGenerals.getGeneralLevel(generalId);
+      const levelMult = 1 + (level - 1) * 0.1;
+
+      totalPower += Math.floor(statSum * gradeMult * levelMult);
+    }
+
+    return totalPower;
   }
 
   private createMainButtons(width: number): void {
@@ -495,7 +533,9 @@ export class MainScene extends Phaser.Scene {
   private async claimIdleReward(reward: IdleRewardData): Promise<void> {
     // 보상 지급
     await this.gameManager.addGold(reward.gold);
-    // TODO: 경험치는 진형 장수들에게 분배 필요
+
+    // 경험치를 진형 장수들에게 균등 분배
+    this.distributeExpToFormation(reward.exp);
     
     // 시간 리셋
     this.idleRewardManager.claimReward();
@@ -508,6 +548,49 @@ export class MainScene extends Phaser.Scene {
     
     // 획득 알림 표시
     this.showRewardToast(reward);
+  }
+
+  /**
+   * 경험치를 현재 활성 진형의 장수들에게 균등 분배
+   */
+  private distributeExpToFormation(totalExp: number): void {
+    if (totalExp <= 0) return;
+
+    const formationManager = FormationManager.load(this.userId);
+    const activeFormation = formationManager.getActiveFormation();
+    const unitIds = activeFormation.getAllUnits();
+
+    if (unitIds.length === 0) return;
+
+    const ownedGenerals = new OwnedGeneralsManager(this.userId);
+
+    // GeneralForExp 어댑터 생성
+    const generals: GeneralForExp[] = unitIds
+      .map(generalId => {
+        const generalData = (generalsData.generals as Array<{
+          id: string; name: string;
+        }>).find(g => g.id === generalId);
+        if (!generalData) return null;
+
+        const level = ownedGenerals.getGeneralLevel(generalId);
+        const exp = ownedGenerals.getGeneralExp(generalId);
+
+        return {
+          id: generalId,
+          name: generalData.name,
+          level,
+          exp,
+          addExp: (amount: number) => {
+            const result = ownedGenerals.addExp(generalId, amount);
+            if (result.leveled) {
+              console.log(`🎉 ${generalData.name} 레벨업! → Lv.${result.newLevel}`);
+            }
+          },
+        } as GeneralForExp;
+      })
+      .filter((g): g is GeneralForExp => g !== null);
+
+    RewardManager.distributeExp(totalExp, generals);
   }
 
   private showRewardToast(reward: IdleRewardData): void {

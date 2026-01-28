@@ -1,5 +1,6 @@
 import stagesData from '../data/stages.json';
 import { GameManager } from './GameManager';
+import { InventoryManager } from './InventoryManager';
 
 /**
  * 전투 보상 인터페이스
@@ -107,21 +108,28 @@ export class RewardManager {
   }
 
   /**
-   * 보상 지급 (GameManager 연동)
+   * 보상 지급 (GameManager + InventoryManager 연동)
    * @param reward 지급할 보상
    * @param gameManager GameManager 인스턴스
+   * @param inventoryManager InventoryManager 인스턴스 (선택적)
    */
-  static async grantReward(reward: BattleReward, gameManager: GameManager): Promise<void> {
+  static async grantReward(
+    reward: BattleReward,
+    gameManager: GameManager,
+    inventoryManager?: InventoryManager,
+  ): Promise<void> {
     // 기본 보상 지급
     if (reward.gold > 0) {
       await gameManager.addGold(reward.gold);
       console.log(`💰 골드 획득: +${reward.gold}`);
     }
 
-    // 아이템 지급 (추후 InventoryManager 연동)
+    // 아이템 지급 (InventoryManager 연동)
     for (const item of reward.items) {
+      if (inventoryManager) {
+        inventoryManager.addItem(item.itemId, item.quantity);
+      }
       console.log(`📦 아이템 획득: ${item.itemId} x${item.quantity}`);
-      // TODO: inventoryManager.addItem(item.itemId, item.quantity);
     }
 
     // 첫 클리어 보너스 지급
@@ -139,8 +147,10 @@ export class RewardManager {
       }
 
       for (const item of bonus.items) {
+        if (inventoryManager) {
+          inventoryManager.addItem(item.itemId, item.quantity);
+        }
         console.log(`🎁 첫 클리어 보너스 아이템: ${item.itemId} x${item.quantity}`);
-        // TODO: inventoryManager.addItem(item.itemId, item.quantity);
       }
     }
   }

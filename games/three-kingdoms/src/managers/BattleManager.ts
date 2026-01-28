@@ -8,6 +8,8 @@ import { GameManager } from './GameManager';
 import { SkillEffectManager } from './SkillEffectManager';
 import { PassiveAbilityManager, PassiveAbilityType } from './PassiveAbilityManager';
 import { CounterSkillManager, CounterSkillType } from './CounterSkillManager';
+import { OwnedGeneralsManager } from './OwnedGeneralsManager';
+import { InventoryManager } from './InventoryManager';
 import stagesData from '../data/stages.json';
 import generalsData from '../data/generals.json';
 
@@ -111,6 +113,8 @@ export class BattleManager {
   
   private buffManager: BuffManager;
   private gameManager: GameManager | null = null;
+  private ownedGeneralsManager: OwnedGeneralsManager | null = null;
+  private inventoryManager: InventoryManager | null = null;
   private skillEffectManager: SkillEffectManager;
   private passiveAbilityManager: PassiveAbilityManager;
   private counterSkillManager: CounterSkillManager;
@@ -129,6 +133,20 @@ export class BattleManager {
    */
   setGameManager(gameManager: GameManager): void {
     this.gameManager = gameManager;
+  }
+
+  /**
+   * OwnedGeneralsManager 설정 (장수 레벨 조회용)
+   */
+  setOwnedGeneralsManager(manager: OwnedGeneralsManager): void {
+    this.ownedGeneralsManager = manager;
+  }
+
+  /**
+   * InventoryManager 설정 (아이템 보상 지급용)
+   */
+  setInventoryManager(manager: InventoryManager): void {
+    this.inventoryManager = manager;
   }
 
   /**
@@ -237,7 +255,7 @@ export class BattleManager {
           speed: general.baseStats.speed,
           hp: this.calculateBaseHp(general),
         },
-        level: 1, // TODO: 실제 장수 레벨 연동
+        level: this.ownedGeneralsManager?.getGeneralLevel(pos.generalId) ?? 1,
         skills: general.skillIds ?? [],
       });
 
@@ -662,7 +680,11 @@ export class BattleManager {
 
         // 보상 지급
         if (this.gameManager) {
-          await RewardManager.grantReward(reward, this.gameManager);
+          await RewardManager.grantReward(
+            reward,
+            this.gameManager,
+            this.inventoryManager ?? undefined,
+          );
           
           // 스테이지 클리어 기록
           await this.gameManager.recordStageClear(stageId);

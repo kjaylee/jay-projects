@@ -11,6 +11,8 @@ export interface OwnedGeneral {
   grade: GeneralGrade;
   acquiredAt: number;
   shards: number; // 승급 조각
+  level: number;  // 장수 레벨 (기본 1)
+  exp: number;    // 현재 경험치
 }
 
 export interface ShardConversionResult {
@@ -51,7 +53,12 @@ export class OwnedGeneralsManager {
       const saved = localStorage.getItem(this.storageKey);
       if (saved) {
         const data = JSON.parse(saved) as OwnedGeneral[];
-        data.forEach(g => this.ownedGenerals.set(g.generalId, g));
+        data.forEach(g => {
+          // 하위 호환: level/exp 필드가 없는 기존 데이터 처리
+          if (g.level === undefined || g.level === null) g.level = 1;
+          if (g.exp === undefined || g.exp === null) g.exp = 0;
+          this.ownedGenerals.set(g.generalId, g);
+        });
       }
     } catch (e) {
       console.error('Failed to load owned generals:', e);
@@ -115,6 +122,8 @@ export class OwnedGeneralsManager {
       grade,
       acquiredAt: Date.now(),
       shards: 0,
+      level: 1,
+      exp: 0,
     };
     this.ownedGenerals.set(generalId, newGeneral);
     this.save();
@@ -177,6 +186,58 @@ export class OwnedGeneralsManager {
     }
     
     return counts;
+  }
+
+  // ============ 레벨/경험치 관리 ============
+
+  /**
+   * 장수 레벨 조회
+   */
+  getGeneralLevel(generalId: string): number {
+    return this.ownedGenerals.get(generalId)?.level ?? 1;
+  }
+
+  /**
+   * 장수 경험치 조회
+   */
+  getGeneralExp(generalId: string): number {
+    return this.ownedGenerals.get(generalId)?.exp ?? 0;
+  }
+
+  /**
+   * 다음 레벨까지 필요한 경험치 계산
+   * Level 1→2: 100, Level 2→3: 150, Level n→n+1: 100 + (n-1)*50
+   */
+  static getExpToNextLevel(level: number): number {
+    return 100 + (level - 1) * 50;
+  }
+
+  /**
+   * 경험치 추가 (자동 레벨업 포함)
+   * @returns 레벨업 여부 및 새 레벨
+   */
+  addExp(generalId: string, amount: number): { leveled: boolean; newLevel: number; expGained: number } {
+    const general = this.ownedGenerals.get(generalId);
+    if (!general || amount <= 0) {
+      return { leveled: false, newLevel: general?.level ?? 1, expGained: 0 };
+    }
+
+    general.exp += amount;
+    const oldLevel = general.level;
+
+    // 자동 레벨업 처리
+    while (general.exp >= OwnedGeneralsManager.getExpToNextLevel(general.level)) {
+      general.exp -= OwnedGeneralsManager.getExpToNextLevel(general.level);
+      general.level++;
+    }
+
+    this.save();
+
+    return {
+      leveled: general.level > oldLevel,
+      newLevel: general.level,
+      expGained: amount,
+    };
   }
 
   /**
