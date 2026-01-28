@@ -355,6 +355,7 @@
         "politics": 65
       },
       "skillIds": ["skill_green_dragon", "skill_loyalty"],
+      "passiveAbilities": ["underdog"],
       "portrait": "assets/generals/guan_yu.png"
     },
     {
@@ -372,6 +373,7 @@
         "politics": 40
       },
       "skillIds": ["skill_roar", "skill_serpent_spear"],
+      "passiveAbilities": ["bleed"],
       "portrait": "assets/generals/zhang_fei.png"
     },
     {
@@ -457,6 +459,7 @@
         "politics": 99
       },
       "skillIds": ["skill_hero_decree", "skill_talent_scout", "skill_ambition"],
+      "passiveAbilities": ["negotiation"],
       "portrait": "assets/generals/cao_cao.png"
     },
     {
@@ -508,6 +511,7 @@
         "politics": 25
       },
       "skillIds": ["skill_unrivaled", "skill_red_hare", "skill_sky_piercer"],
+      "passiveAbilities": ["overwhelm"],
       "portrait": "assets/generals/lu_bu.png"
     },
     {
@@ -525,6 +529,7 @@
         "politics": 98
       },
       "skillIds": ["skill_empty_fort", "skill_eight_formations", "skill_dongfeng"],
+      "counterSkills": ["fire_counter", "water_counter"],
       "portrait": "assets/generals/zhuge_liang.png"
     },
     {
@@ -729,6 +734,42 @@
           "awakenStones": 90
         }
       }
+    },
+    {
+      "id": "hua_tuo",
+      "name": "화타",
+      "nameEn": "Hua Tuo",
+      "grade": "SR",
+      "class": "support",
+      "faction": "other",
+      "baseStats": {
+        "attack": 30,
+        "defense": 55,
+        "intelligence": 92,
+        "speed": 65,
+        "politics": 75
+      },
+      "skillIds": ["skill_divine_medicine", "skill_acupuncture"],
+      "passiveAbilities": ["victory_heal"],
+      "portrait": "assets/generals/hua_tuo.png"
+    },
+    {
+      "id": "dian_wei",
+      "name": "전위",
+      "nameEn": "Dian Wei",
+      "grade": "SR",
+      "class": "warrior",
+      "faction": "wei",
+      "baseStats": {
+        "attack": 96,
+        "defense": 88,
+        "intelligence": 40,
+        "speed": 75,
+        "politics": 35
+      },
+      "skillIds": ["skill_twin_halberds_fury", "skill_bodyguard"],
+      "passiveAbilities": ["lifesteal"],
+      "portrait": "assets/generals/dian_wei.png"
     }
   ]
 }

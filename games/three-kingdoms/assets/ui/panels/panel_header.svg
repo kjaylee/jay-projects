@@ -1,19 +1,86 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="280" height="50" viewBox="0 0 280 50">
+<svg xmlns="http://www.w3.org/2000/svg" width="280" height="60" viewBox="0 0 280 60">
   <defs>
-    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#4a2000;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#2a1000;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#1a0800;stop-opacity:1" />
+    <!-- 헤더 배경 그라데이션 -->
+    <linearGradient id="headerBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b0000"/>
+      <stop offset="30%" style="stop-color:#6b0000"/>
+      <stop offset="70%" style="stop-color:#4a0000"/>
+      <stop offset="100%" style="stop-color:#2a0000"/>
     </linearGradient>
-    <linearGradient id="borderGold" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#b8860b;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#ffd700;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#b8860b;stop-opacity:1" />
+    <!-- 금장 테두리 -->
+    <linearGradient id="goldHeader" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b6914"/>
+      <stop offset="20%" style="stop-color:#daa520"/>
+      <stop offset="50%" style="stop-color:#ffd700"/>
+      <stop offset="80%" style="stop-color:#daa520"/>
+      <stop offset="100%" style="stop-color:#8b6914"/>
     </linearGradient>
+    <!-- 용 문양 패턴 -->
+    <pattern id="dragonHeader" x="0" y="0" width="140" height="30" patternUnits="userSpaceOnUse">
+      <!-- 용 몸통 실루엣 -->
+      <path d="M10,20 Q20,10 35,15 Q50,20 65,12 Q80,5 95,15 Q110,25 130,18" 
+            stroke="rgba(255,215,0,0.2)" stroke-width="1.5" fill="none"/>
+      <ellipse cx="35" cy="15" rx="4" ry="3" fill="rgba(255,215,0,0.1)"/>
+      <ellipse cx="95" cy="15" rx="4" ry="3" fill="rgba(255,215,0,0.1)"/>
+    </pattern>
+    <filter id="headerGlow">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="textShadow">
+      <feDropShadow dx="1" dy="1" stdDeviation="1" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
   </defs>
-  <rect x="0" y="0" width="280" height="50" rx="6" ry="6" fill="url(#headerGrad)"/>
-  <rect x="0" y="0" width="280" height="50" rx="6" ry="6" fill="none" stroke="url(#borderGold)" stroke-width="2"/>
-  <rect x="5" y="3" width="270" height="15" rx="4" ry="4" fill="rgba(255,215,0,0.1)"/>
-  <!-- Decorative lines -->
-  <line x1="20" y1="45" x2="260" y2="45" stroke="#ffd700" stroke-width="1" opacity="0.5"/>
+  
+  <!-- 헤더 형태 - 중국 전통 현판 스타일 -->
+  <path d="M15,55 L5,30 L15,5 L265,5 L275,30 L265,55 Z" fill="url(#headerBg)"/>
+  <path d="M15,55 L5,30 L15,5 L265,5 L275,30 L265,55 Z" fill="url(#dragonHeader)"/>
+  
+  <!-- 금장 테두리 -->
+  <path d="M15,55 L5,30 L15,5 L265,5 L275,30 L265,55 Z" 
+        fill="none" stroke="url(#goldHeader)" stroke-width="3" filter="url(#headerGlow)"/>
+  
+  <!-- 내부 테두리 -->
+  <path d="M20,50 L12,30 L20,10 L260,10 L268,30 L260,50 Z" 
+        fill="none" stroke="rgba(255,215,0,0.3)" stroke-width="1"/>
+  
+  <!-- 좌측 용 머리 장식 -->
+  <g transform="translate(20, 22)" fill="url(#goldHeader)" filter="url(#headerGlow)">
+    <ellipse cx="0" cy="8" rx="8" ry="6"/>
+    <path d="M8,8 Q15,5 20,10 Q25,15 30,12" stroke="url(#goldHeader)" stroke-width="2" fill="none"/>
+    <circle cx="-3" cy="5" r="2" fill="#2a0000"/>
+    <path d="M-8,4 Q-12,2 -10,8" stroke="url(#goldHeader)" stroke-width="1.5" fill="none"/>
+    <path d="M-6,10 Q-10,12 -8,16" stroke="url(#goldHeader)" stroke-width="1.5" fill="none"/>
+  </g>
+  
+  <!-- 우측 용 머리 장식 (미러) -->
+  <g transform="translate(260, 22) scale(-1, 1)" fill="url(#goldHeader)" filter="url(#headerGlow)">
+    <ellipse cx="0" cy="8" rx="8" ry="6"/>
+    <path d="M8,8 Q15,5 20,10 Q25,15 30,12" stroke="url(#goldHeader)" stroke-width="2" fill="none"/>
+    <circle cx="-3" cy="5" r="2" fill="#2a0000"/>
+    <path d="M-8,4 Q-12,2 -10,8" stroke="url(#goldHeader)" stroke-width="1.5" fill="none"/>
+    <path d="M-6,10 Q-10,12 -8,16" stroke="url(#goldHeader)" stroke-width="1.5" fill="none"/>
+  </g>
+  
+  <!-- 상단 구름 장식 -->
+  <g transform="translate(80, 8)" fill="none" stroke="rgba(255,215,0,0.4)" stroke-width="1">
+    <path d="M0,0 Q30,-5 60,0 Q90,5 120,0"/>
+    <ellipse cx="60" cy="0" rx="5" ry="2" fill="rgba(255,215,0,0.2)"/>
+  </g>
+  
+  <!-- 하단 구름 장식 -->
+  <g transform="translate(80, 52)" fill="none" stroke="rgba(255,215,0,0.4)" stroke-width="1">
+    <path d="M0,0 Q30,5 60,0 Q90,-5 120,0"/>
+    <ellipse cx="60" cy="0" rx="5" ry="2" fill="rgba(255,215,0,0.2)"/>
+  </g>
+  
+  <!-- 중앙 보석 장식 -->
+  <g transform="translate(140, 30)" filter="url(#headerGlow)">
+    <ellipse cx="0" cy="0" rx="6" ry="5" fill="url(#goldHeader)"/>
+    <ellipse cx="0" cy="0" rx="3" ry="2.5" fill="#8b0000"/>
+    <ellipse cx="-1" cy="-1" rx="1" ry="0.8" fill="rgba(255,255,255,0.4)"/>
+  </g>
 </svg>

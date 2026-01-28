@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 56 56">
+  <defs>
+    <linearGradient id="goldGenSel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#daa520"/>
+      <stop offset="30%" style="stop-color:#ffd700"/>
+      <stop offset="50%" style="stop-color:#ffec8b"/>
+      <stop offset="70%" style="stop-color:#ffd700"/>
+      <stop offset="100%" style="stop-color:#daa520"/>
+    </linearGradient>
+    <linearGradient id="redGenSel" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#c41e3a"/>
+      <stop offset="100%" style="stop-color:#8b0000"/>
+    </linearGradient>
+    <linearGradient id="skinToneSel" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffdfc0"/>
+      <stop offset="100%" style="stop-color:#e4b584"/>
+    </linearGradient>
+    <filter id="genSelGlow">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#ffd700" flood-opacity="0.8"/>
+    </filter>
+  </defs>
+  
+  <!-- 외부 발광 -->
+  <rect x="2" y="2" width="52" height="52" rx="10" fill="none" stroke="rgba(255,215,0,0.4)" stroke-width="4" filter="url(#genSelGlow)"/>
+  
+  <!-- 배경 -->
+  <rect x="4" y="4" width="48" height="48" rx="8" fill="url(#redGenSel)"/>
+  <rect x="4" y="4" width="48" height="48" rx="8" fill="none" stroke="url(#goldGenSel)" stroke-width="3"/>
+  
+  <!-- 장수 실루엣 -->
+  <g transform="translate(28, 30)" filter="url(#genSelGlow)">
+    <!-- 투구 -->
+    <path d="M-10,-14 Q-12,-18 0,-20 Q12,-18 10,-14 L8,-10 L-8,-10 Z" fill="url(#goldGenSel)"/>
+    <path d="M0,-20 Q-2,-26 0,-28 Q2,-26 0,-20" fill="#ff4444"/>
+    <path d="M-4,-18 Q-8,-22 -6,-24 Q-4,-22 -4,-18" fill="url(#goldGenSel)"/>
+    <path d="M4,-18 Q8,-22 6,-24 Q4,-22 4,-18" fill="url(#goldGenSel)"/>
+    
+    <!-- 얼굴 -->
+    <ellipse cx="0" cy="-6" rx="7" ry="8" fill="url(#skinToneSel)"/>
+    <ellipse cx="-3" cy="-7" rx="1.5" ry="1" fill="#1a1a1a"/>
+    <ellipse cx="3" cy="-7" rx="1.5" ry="1" fill="#1a1a1a"/>
+    <path d="M-5,-9 Q-3,-10 -1,-9" stroke="#3a3a3a" stroke-width="1" fill="none"/>
+    <path d="M1,-9 Q3,-10 5,-9" stroke="#3a3a3a" stroke-width="1" fill="none"/>
+    <path d="M-4,-2 Q-6,4 -8,8" stroke="#3a3a3a" stroke-width="1.5" fill="none"/>
+    <path d="M4,-2 Q6,4 8,8" stroke="#3a3a3a" stroke-width="1.5" fill="none"/>
+    
+    <!-- 갑옷 -->
+    <rect x="-14" y="4" width="10" height="8" rx="2" fill="url(#goldGenSel)"/>
+    <rect x="4" y="4" width="10" height="8" rx="2" fill="url(#goldGenSel)"/>
+    <path d="M-8,8 L8,8 L6,18 L-6,18 Z" fill="#7a5030"/>
+    <rect x="-4" y="10" width="8" height="6" fill="url(#goldGenSel)" opacity="0.8"/>
+  </g>
+  
+  <!-- 반짝임 -->
+  <g fill="#ffffff" opacity="0.9">
+    <circle cx="14" cy="14" r="2"/>
+    <circle cx="42" cy="42" r="1.5"/>
+  </g>
+</svg>

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">
+  <defs>
+    <linearGradient id="dragonGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd700"/>
+      <stop offset="30%" style="stop-color:#ffec8b"/>
+      <stop offset="50%" style="stop-color:#ffd700"/>
+      <stop offset="70%" style="stop-color:#daa520"/>
+      <stop offset="100%" style="stop-color:#b8860b"/>
+    </linearGradient>
+    <filter id="dragonGlow">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- 용 모서리 장식 - 중국 전통 용 머리 스타일화 -->
+  <g fill="url(#dragonGold)" filter="url(#dragonGlow)">
+    <!-- 용 몸통 곡선 -->
+    <path d="M5,75 Q5,50 15,35 Q25,20 40,15 Q55,10 70,5" fill="none" stroke="url(#dragonGold)" stroke-width="4" stroke-linecap="round"/>
+    <!-- 용 비늘 패턴 -->
+    <ellipse cx="20" cy="45" rx="6" ry="8" transform="rotate(-30 20 45)"/>
+    <ellipse cx="35" cy="28" rx="5" ry="7" transform="rotate(-45 35 28)"/>
+    <ellipse cx="52" cy="16" rx="4" ry="6" transform="rotate(-60 52 16)"/>
+    <!-- 용 머리 (코너) -->
+    <circle cx="68" cy="8" r="6"/>
+    <path d="M62,3 Q66,1 71,2" stroke="url(#dragonGold)" stroke-width="2" fill="none"/>
+    <path d="M73,4 Q77,6 78,12" stroke="url(#dragonGold)" stroke-width="2" fill="none"/>
+    <!-- 수염 -->
+    <path d="M60,10 Q50,8 45,12" stroke="url(#dragonGold)" stroke-width="1.5" fill="none"/>
+    <path d="M62,14 Q52,14 46,20" stroke="url(#dragonGold)" stroke-width="1.5" fill="none"/>
+    <!-- 꼬리 장식 -->
+    <path d="M8,70 Q2,65 5,58" stroke="url(#dragonGold)" stroke-width="2" fill="none"/>
+    <path d="M12,72 Q8,78 2,76" stroke="url(#dragonGold)" stroke-width="2" fill="none"/>
+  </g>
+  <!-- 구름 장식 추가 -->
+  <g fill="rgba(255,215,0,0.4)">
+    <ellipse cx="28" cy="55" rx="8" ry="5"/>
+    <ellipse cx="22" cy="58" rx="5" ry="3"/>
+  </g>
+</svg>

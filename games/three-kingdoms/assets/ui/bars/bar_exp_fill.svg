@@ -1,11 +1,50 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="196" height="16" viewBox="0 0 196 16">
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="12" viewBox="0 0 160 12">
   <defs>
-    <linearGradient id="expGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#00ccff;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#0088cc;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#005588;stop-opacity:1" />
+    <!-- 청옥 그라데이션 -->
+    <linearGradient id="expFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#00ffff"/>
+      <stop offset="20%" style="stop-color:#00e5e5"/>
+      <stop offset="40%" style="stop-color:#00bfbf"/>
+      <stop offset="60%" style="stop-color:#008b8b"/>
+      <stop offset="80%" style="stop-color:#006666"/>
+      <stop offset="100%" style="stop-color:#004040"/>
     </linearGradient>
+    <!-- 옥 광택 -->
+    <linearGradient id="jadeSheen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0.4)"/>
+      <stop offset="30%" style="stop-color:rgba(255,255,255,0.1)"/>
+      <stop offset="50%" style="stop-color:rgba(255,255,255,0.3)"/>
+      <stop offset="70%" style="stop-color:rgba(255,255,255,0.1)"/>
+      <stop offset="100%" style="stop-color:rgba(255,255,255,0.2)"/>
+    </linearGradient>
+    <!-- 옥 문양 패턴 -->
+    <pattern id="jadePattern" x="0" y="0" width="30" height="12" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="6" r="4" fill="none" stroke="rgba(0,255,255,0.15)" stroke-width="0.5"/>
+      <circle cx="15" cy="6" r="2" fill="rgba(0,255,255,0.1)"/>
+    </pattern>
+    <filter id="jadeGlow">
+      <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="#00ffff" flood-opacity="0.4"/>
+    </filter>
   </defs>
-  <rect x="0" y="0" width="196" height="16" rx="3" ry="3" fill="url(#expGrad)"/>
-  <rect x="0" y="0" width="196" height="6" rx="3" ry="3" fill="rgba(255,255,255,0.3)"/>
+  
+  <!-- 메인 경험치 바 -->
+  <rect x="0" y="0" width="160" height="12" rx="2" ry="2" fill="url(#expFill)" filter="url(#jadeGlow)"/>
+  
+  <!-- 옥 문양 패턴 -->
+  <rect x="0" y="0" width="160" height="12" rx="2" ry="2" fill="url(#jadePattern)"/>
+  
+  <!-- 상단 광택 -->
+  <rect x="2" y="1" width="156" height="4" rx="1" ry="1" fill="url(#jadeSheen)"/>
+  
+  <!-- 하단 그림자 -->
+  <rect x="2" y="9" width="156" height="2" rx="1" ry="1" fill="rgba(0,50,50,0.4)"/>
+  
+  <!-- 옥 결 효과 -->
+  <g stroke="rgba(0,200,200,0.2)" stroke-width="0.5" fill="none">
+    <path d="M10,3 Q40,1 70,3 Q100,5 130,3 Q145,2 155,4"/>
+    <path d="M5,8 Q35,10 65,8 Q95,6 125,8 Q140,9 155,7"/>
+  </g>
+  
+  <!-- 우측 끝 하이라이트 -->
+  <rect x="155" y="2" width="3" height="8" rx="1" ry="1" fill="rgba(150,255,255,0.5)"/>
 </svg>

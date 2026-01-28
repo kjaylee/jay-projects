@@ -1,30 +1,116 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400">
   <defs>
-    <linearGradient id="panelGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#2a1a3a;stop-opacity:0.98" />
-      <stop offset="100%" style="stop-color:#1a0f2e;stop-opacity:0.98" />
+    <!-- 목재 프레임 그라데이션 -->
+    <linearGradient id="woodFrame" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#5c3d2e"/>
+      <stop offset="20%" style="stop-color:#8b5a3c"/>
+      <stop offset="40%" style="stop-color:#6b4532"/>
+      <stop offset="60%" style="stop-color:#8b5a3c"/>
+      <stop offset="80%" style="stop-color:#5c3d2e"/>
+      <stop offset="100%" style="stop-color:#4a3020"/>
     </linearGradient>
-    <linearGradient id="borderGold" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#daa520;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#b8860b;stop-opacity:1" />
+    <!-- 비단 배경 -->
+    <linearGradient id="silkBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a0f2e"/>
+      <stop offset="50%" style="stop-color:#0f0820"/>
+      <stop offset="100%" style="stop-color:#1a0f2e"/>
     </linearGradient>
+    <!-- 금장 모서리 -->
+    <linearGradient id="goldCorner" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b6914"/>
+      <stop offset="30%" style="stop-color:#daa520"/>
+      <stop offset="50%" style="stop-color:#ffd700"/>
+      <stop offset="70%" style="stop-color:#daa520"/>
+      <stop offset="100%" style="stop-color:#8b6914"/>
+    </linearGradient>
+    <!-- 비단 직물 패턴 -->
+    <pattern id="silkWeave" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="4" height="4" fill="rgba(255,215,0,0.02)"/>
+      <rect x="4" y="4" width="4" height="4" fill="rgba(255,215,0,0.02)"/>
+      <rect x="0" y="4" width="4" height="4" fill="rgba(0,0,0,0.03)"/>
+      <rect x="4" y="0" width="4" height="4" fill="rgba(0,0,0,0.03)"/>
+    </pattern>
+    <!-- 목재 결 패턴 -->
+    <pattern id="woodGrain" x="0" y="0" width="100" height="10" patternUnits="userSpaceOnUse">
+      <path d="M0,5 Q25,3 50,5 Q75,7 100,5" stroke="rgba(0,0,0,0.15)" stroke-width="1" fill="none"/>
+      <path d="M0,8 Q30,6 60,8 Q90,10 100,8" stroke="rgba(0,0,0,0.1)" stroke-width="0.5" fill="none"/>
+    </pattern>
+    <filter id="panelShadow">
+      <feDropShadow dx="4" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="0.6"/>
+    </filter>
+    <filter id="goldGlow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
     <filter id="innerGlow">
-      <feGaussianBlur stdDeviation="3" result="blur"/>
-      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+      <feGaussianBlur stdDeviation="3" in="SourceGraphic" result="blur"/>
+      <feComposite operator="in" in="blur" in2="SourceGraphic"/>
     </filter>
   </defs>
-  <!-- Shadow -->
-  <rect x="8" y="10" width="292" height="392" rx="12" ry="12" fill="rgba(0,0,0,0.5)"/>
-  <!-- Main panel -->
-  <rect x="4" y="4" width="292" height="392" rx="12" ry="12" fill="url(#panelGrad)"/>
-  <!-- Inner border -->
-  <rect x="10" y="10" width="280" height="380" rx="8" ry="8" fill="none" stroke="rgba(255,215,0,0.2)" stroke-width="1"/>
-  <!-- Outer border -->
-  <rect x="4" y="4" width="292" height="392" rx="12" ry="12" fill="none" stroke="url(#borderGold)" stroke-width="3"/>
-  <!-- Corner decorations -->
-  <path d="M4,30 L4,4 L30,4" fill="none" stroke="#ffd700" stroke-width="4" stroke-linecap="round"/>
-  <path d="M270,4 L296,4 L296,30" fill="none" stroke="#ffd700" stroke-width="4" stroke-linecap="round"/>
-  <path d="M4,370 L4,396 L30,396" fill="none" stroke="#ffd700" stroke-width="4" stroke-linecap="round"/>
-  <path d="M270,396 L296,396 L296,370" fill="none" stroke="#ffd700" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- 그림자 -->
+  <rect x="8" y="10" width="292" height="392" rx="8" ry="8" fill="rgba(0,0,0,0.5)" filter="url(#panelShadow)"/>
+  
+  <!-- 목재 외곽 프레임 -->
+  <rect x="0" y="0" width="300" height="400" rx="10" ry="10" fill="url(#woodFrame)"/>
+  <rect x="0" y="0" width="300" height="400" rx="10" ry="10" fill="url(#woodGrain)"/>
+  
+  <!-- 비단 내부 배경 -->
+  <rect x="12" y="12" width="276" height="376" rx="6" ry="6" fill="url(#silkBg)"/>
+  <rect x="12" y="12" width="276" height="376" rx="6" ry="6" fill="url(#silkWeave)"/>
+  
+  <!-- 내부 금장 테두리 -->
+  <rect x="16" y="16" width="268" height="368" rx="4" ry="4" fill="none" stroke="url(#goldCorner)" stroke-width="2"/>
+  <rect x="20" y="20" width="260" height="360" rx="2" ry="2" fill="none" stroke="rgba(255,215,0,0.2)" stroke-width="1"/>
+  
+  <!-- 금장 모서리 장식 - 좌상 (용 스타일) -->
+  <g transform="translate(8, 8)" filter="url(#goldGlow)">
+    <path d="M0,40 L0,0 L40,0" fill="none" stroke="url(#goldCorner)" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="0" cy="0" r="5" fill="url(#goldCorner)"/>
+    <path d="M8,0 Q20,-5 25,8" stroke="url(#goldCorner)" stroke-width="2" fill="none"/>
+    <path d="M0,8 Q-5,20 8,25" stroke="url(#goldCorner)" stroke-width="2" fill="none"/>
+    <ellipse cx="15" cy="15" rx="4" ry="3" fill="url(#goldCorner)" opacity="0.7"/>
+  </g>
+  
+  <!-- 금장 모서리 장식 - 우상 -->
+  <g transform="translate(292, 8) scale(-1, 1)" filter="url(#goldGlow)">
+    <path d="M0,40 L0,0 L40,0" fill="none" stroke="url(#goldCorner)" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="0" cy="0" r="5" fill="url(#goldCorner)"/>
+    <path d="M8,0 Q20,-5 25,8" stroke="url(#goldCorner)" stroke-width="2" fill="none"/>
+    <path d="M0,8 Q-5,20 8,25" stroke="url(#goldCorner)" stroke-width="2" fill="none"/>
+    <ellipse cx="15" cy="15" rx="4" ry="3" fill="url(#goldCorner)" opacity="0.7"/>
+  </g>
+  
+  <!-- 금장 모서리 장식 - 좌하 -->
+  <g transform="translate(8, 392) scale(1, -1)" filter="url(#goldGlow)">
+    <path d="M0,40 L0,0 L40,0" fill="none" stroke="url(#goldCorner)" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="0" cy="0" r="5" fill="url(#goldCorner)"/>
+    <path d="M8,0 Q20,-5 25,8" stroke="url(#goldCorner)" stroke-width="2" fill="none"/>
+    <path d="M0,8 Q-5,20 8,25" stroke="url(#goldCorner)" stroke-width="2" fill="none"/>
+    <ellipse cx="15" cy="15" rx="4" ry="3" fill="url(#goldCorner)" opacity="0.7"/>
+  </g>
+  
+  <!-- 금장 모서리 장식 - 우하 -->
+  <g transform="translate(292, 392) scale(-1, -1)" filter="url(#goldGlow)">
+    <path d="M0,40 L0,0 L40,0" fill="none" stroke="url(#goldCorner)" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="0" cy="0" r="5" fill="url(#goldCorner)"/>
+    <path d="M8,0 Q20,-5 25,8" stroke="url(#goldCorner)" stroke-width="2" fill="none"/>
+    <path d="M0,8 Q-5,20 8,25" stroke="url(#goldCorner)" stroke-width="2" fill="none"/>
+    <ellipse cx="15" cy="15" rx="4" ry="3" fill="url(#goldCorner)" opacity="0.7"/>
+  </g>
+  
+  <!-- 상단 장식 구름 문양 -->
+  <g transform="translate(100, 25)" fill="none" stroke="rgba(255,215,0,0.3)" stroke-width="1">
+    <path d="M0,0 Q20,-8 50,0 Q80,8 100,0"/>
+    <ellipse cx="50" cy="0" rx="8" ry="4" fill="rgba(255,215,0,0.1)"/>
+  </g>
+  
+  <!-- 하단 장식 구름 문양 -->
+  <g transform="translate(100, 375)" fill="none" stroke="rgba(255,215,0,0.3)" stroke-width="1">
+    <path d="M0,0 Q20,8 50,0 Q80,-8 100,0"/>
+    <ellipse cx="50" cy="0" rx="8" ry="4" fill="rgba(255,215,0,0.1)"/>
+  </g>
 </svg>

@@ -9,11 +9,40 @@ export type SkillTarget =
   | 'enemy_row'
   | 'enemy_column';
 
+/**
+ * 스킬 효과 타입
+ * - damage: 데미지
+ * - heal: 회복
+ * - buff: 버프
+ * - debuff: 디버프
+ * - lifesteal: 데미지 비례 회복
+ * - bleed: 지속 피해 증가 (스택 가능)
+ * - counter: 특정 스킬 무효화
+ * - negotiation: 전투 시작 HP 감소
+ */
+export type SkillEffectType = 
+  | 'damage' 
+  | 'heal' 
+  | 'buff' 
+  | 'debuff'
+  | 'lifesteal'
+  | 'bleed'
+  | 'counter'
+  | 'negotiation';
+
 export interface SkillEffect {
-  type: 'damage' | 'heal' | 'buff' | 'debuff';
+  type: SkillEffectType;
   value: number;
   attribute?: 'attack' | 'defense' | 'intelligence' | 'speed';
   duration?: number;
+  /** counter 효과용: 무효화 대상 스킬 타입 */
+  counterTarget?: 'fire' | 'water' | 'trap' | 'confusion';
+  /** lifesteal 효과용: 회복 비율 (0.13 ~ 0.23) */
+  lifestealRatio?: number;
+  /** bleed 효과용: 데미지 증가 비율 (0.11 ~ 0.16) */
+  bleedRatio?: number;
+  /** negotiation 효과용: HP 감소 비율 (0.09 ~ 0.18) */
+  hpReductionRatio?: number;
 }
 
 export interface SkillConfig {

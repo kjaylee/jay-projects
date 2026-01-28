@@ -6,6 +6,8 @@ import { BuffManager } from './BuffManager';
 import { RewardManager, BattleReward } from './RewardManager';
 import { GameManager } from './GameManager';
 import { SkillEffectManager } from './SkillEffectManager';
+import { PassiveAbilityManager, PassiveAbilityType } from './PassiveAbilityManager';
+import { CounterSkillManager, CounterSkillType } from './CounterSkillManager';
 import stagesData from '../data/stages.json';
 import generalsData from '../data/generals.json';
 
@@ -87,6 +89,8 @@ interface General {
     politics?: number;
   };
   skillIds?: string[];
+  passiveAbilities?: string[];
+  counterSkills?: string[];
   portrait?: string;
 }
 
@@ -108,11 +112,15 @@ export class BattleManager {
   private buffManager: BuffManager;
   private gameManager: GameManager | null = null;
   private skillEffectManager: SkillEffectManager;
+  private passiveAbilityManager: PassiveAbilityManager;
+  private counterSkillManager: CounterSkillManager;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     this.buffManager = new BuffManager();
     this.skillEffectManager = new SkillEffectManager(scene);
+    this.passiveAbilityManager = new PassiveAbilityManager();
+    this.counterSkillManager = new CounterSkillManager();
     SkillExecutor.setBuffManager(this.buffManager);
   }
 
@@ -128,6 +136,20 @@ export class BattleManager {
    */
   getBuffManager(): BuffManager {
     return this.buffManager;
+  }
+
+  /**
+   * PassiveAbilityManager 조회 (외부 접근용)
+   */
+  getPassiveAbilityManager(): PassiveAbilityManager {
+    return this.passiveAbilityManager;
+  }
+
+  /**
+   * CounterSkillManager 조회 (외부 접근용)
+   */
+  getCounterSkillManager(): CounterSkillManager {
+    return this.counterSkillManager;
   }
 
   /**
@@ -156,6 +178,13 @@ export class BattleManager {
 
     // 버프 초기화
     this.buffManager.clearAllBuffs();
+    
+    // 패시브/카운터 초기화
+    this.passiveAbilityManager.reset();
+    this.counterSkillManager.reset();
+    
+    // 유닛별 패시브 능력 및 계략 간파 등록
+    this.registerUnitAbilities();
 
     // 턴 카운터 초기화
     this.turnsElapsed = 0;
@@ -267,6 +296,40 @@ export class BattleManager {
   }
 
   /**
+   * 유닛별 패시브 능력 및 계략 간파 등록
+   */
+  private registerUnitAbilities(): void {
+    for (const unit of this.playerUnits) {
+      const general = this.findGeneral(unit.generalId);
+      if (!general) continue;
+      
+      // 패시브 능력 등록 (P0/P1만)
+      if (general.passiveAbilities) {
+        for (const ability of general.passiveAbilities) {
+          const validAbilities: PassiveAbilityType[] = [
+            'underdog', 'lifesteal', 'victory_heal', 'bleed'
+          ];
+          if (validAbilities.includes(ability as PassiveAbilityType)) {
+            this.passiveAbilityManager.registerAbility(unit.id, ability as PassiveAbilityType);
+          }
+        }
+      }
+      
+      // 계략 간파 등록
+      if (general.counterSkills) {
+        for (const counter of general.counterSkills) {
+          const validCounters: CounterSkillType[] = [
+            'fire_counter', 'water_counter', 'trap_counter', 'confusion_counter'
+          ];
+          if (validCounters.includes(counter as CounterSkillType)) {
+            this.counterSkillManager.registerCounter(unit.id, counter as CounterSkillType);
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * 기본 HP 계산 (장수 데이터에 hp가 없을 경우)
    */
   private calculateBaseHp(general: General): number {
@@ -320,6 +383,9 @@ export class BattleManager {
     // 턴 카운터 증가
     this.turnsElapsed++;
     
+    // 턴 시작 시 패시브 능력 처리 (출혈 스택 감소 등)
+    this.passiveAbilityManager.onTurnStart(this.turnsElapsed);
+    
     // 턴 시작 시 모든 유닛의 쿨다운 감소
     const allUnitsForCooldown = [...this.playerUnits, ...this.enemyUnits];
     SkillExecutor.reduceCooldowns(allUnitsForCooldown);
@@ -339,6 +405,20 @@ export class BattleManager {
       // 스킬 발동 체크 (쿨다운 0인 스킬이 있으면 발동)
       const readySkillId = SkillExecutor.getReadySkill(unit);
       if (readySkillId) {
+        // 계략 간파 체크 (적군이 스킬 사용 시 아군이 무효화 시도)
+        const defenders = unit.team === 'enemy' ? this.playerUnits : this.enemyUnits;
+        const counterResult = this.counterSkillManager.tryCounterForAny(
+          defenders.filter(d => d.isAlive),
+          readySkillId
+        );
+        
+        if (counterResult.countered) {
+          console.log(`🛡️ ${counterResult.message}`);
+          // 쿨다운은 설정되지만 스킬 효과는 무효화
+          unit.skillCooldowns.set(readySkillId, 4); // 기본 쿨다운
+          continue;
+        }
+        
         const allUnitsForSkill = [...this.playerUnits, ...this.enemyUnits];
         const skillResult = SkillExecutor.executeSkill(unit, readySkillId, allUnitsForSkill);
         
@@ -446,8 +526,31 @@ export class BattleManager {
     
     // 데미지 공식: ATK * (1 - DEF/(DEF+100))
     const damageReduction = defensePower / (defensePower + 100);
-    const damage = Math.floor(attackPower * (1 - damageReduction));
+    let damage = Math.floor(attackPower * (1 - damageReduction));
 
+    // P0: 역전의 명수 (Underdog) 체크
+    const underdogResult = this.passiveAbilityManager.checkUnderdog(attacker, defender);
+    if (underdogResult.triggered && underdogResult.effect) {
+      const bonusDamage = Math.floor(damage * underdogResult.effect.value);
+      damage += bonusDamage;
+      console.log(`⚡ ${underdogResult.message}`);
+    }
+
+    // P1: 출혈 (Bleed) 보너스 적용
+    const bleedBonus = this.passiveAbilityManager.getBleedBonus(attacker.id, defender.id);
+    if (bleedBonus > 0) {
+      const bleedDamage = Math.floor(damage * bleedBonus);
+      damage += bleedDamage;
+      console.log(`🩸 출혈 효과로 ${bleedDamage} 추가 데미지!`);
+    }
+
+    // P1: 출혈 스택 추가 시도
+    const bleedResult = this.passiveAbilityManager.checkBleed(attacker, defender);
+    if (bleedResult.triggered) {
+      console.log(`🩸 ${bleedResult.message}`);
+    }
+
+    // 데미지 적용
     defender.stats.currentHp = Math.max(0, defender.stats.currentHp - damage);
 
     if (defender.stats.currentHp === 0) {
@@ -457,6 +560,13 @@ export class BattleManager {
     console.log(
       `${attacker.name} → ${defender.name}: ${damage} 데미지! (HP: ${defender.stats.currentHp}/${defender.stats.maxHp})`
     );
+
+    // P0: 흡혈 (Lifesteal) 적용
+    const healAmount = this.passiveAbilityManager.applyLifesteal(attacker, damage);
+    if (healAmount > 0) {
+      console.log(`🧛 ${attacker.name}의 흡혈로 HP ${healAmount} 회복!`);
+      this.showHealText(healAmount, attacker.team === 'player');
+    }
 
     // 데미지 표시 애니메이션
     this.showDamageText(damage, defender.team === 'player');
@@ -487,6 +597,10 @@ export class BattleManager {
 
     if (enemyAlive === 0) {
       this.state = BattleState.VICTORY;
+      
+      // P1: 환호성 (Victory Heal) 적용
+      this.applyVictoryHealToAll();
+      
       this.showResult(true);
       return true;
     } else if (allyAlive === 0) {
@@ -495,6 +609,20 @@ export class BattleManager {
       return true;
     }
     return false;
+  }
+
+  /**
+   * P1: 승리 시 환호성 효과 적용
+   */
+  private applyVictoryHealToAll(): void {
+    for (const unit of this.playerUnits) {
+      if (!unit.isAlive) continue;
+      
+      const healAmount = this.passiveAbilityManager.applyVictoryHeal(unit);
+      if (healAmount > 0) {
+        console.log(`🎉 ${unit.name}의 환호성 발동! HP ${healAmount} 회복!`);
+      }
+    }
   }
 
   private async showResult(isVictory: boolean): Promise<void> {

@@ -1,20 +1,63 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 56 56">
   <defs>
-    <linearGradient id="scrollGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#f4e4bc;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#d4c4a0;stop-opacity:1" />
+    <linearGradient id="goldNavGacha" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b6914"/>
+      <stop offset="30%" style="stop-color:#daa520"/>
+      <stop offset="50%" style="stop-color:#ffd700"/>
+      <stop offset="70%" style="stop-color:#daa520"/>
+      <stop offset="100%" style="stop-color:#8b6914"/>
     </linearGradient>
-    <linearGradient id="rodGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#c41e3a;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#8b0000;stop-opacity:1" />
+    <linearGradient id="redNavGacha" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b0000"/>
+      <stop offset="100%" style="stop-color:#4a0000"/>
     </linearGradient>
+    <linearGradient id="scrollPaper" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#d4c4a8"/>
+      <stop offset="50%" style="stop-color:#f5e6c8"/>
+      <stop offset="100%" style="stop-color:#d4c4a8"/>
+    </linearGradient>
+    <filter id="gachaGlow">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#ffd700" flood-opacity="0.6"/>
+    </filter>
+    <filter id="sparkleFilter">
+      <feGaussianBlur stdDeviation="1" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
-  <!-- Scroll body -->
-  <rect x="10" y="8" width="28" height="32" fill="url(#scrollGrad)"/>
-  <!-- Top rod -->
-  <rect x="6" y="4" width="36" height="8" rx="4" fill="url(#rodGrad)" stroke="#5a0000" stroke-width="1"/>
-  <!-- Bottom rod -->
-  <rect x="6" y="36" width="36" height="8" rx="4" fill="url(#rodGrad)" stroke="#5a0000" stroke-width="1"/>
-  <!-- Mystical symbol -->
-  <text x="24" y="28" text-anchor="middle" font-size="18" fill="#c41e3a" font-weight="bold">召</text>
+  
+  <!-- 배경 -->
+  <rect x="4" y="4" width="48" height="48" rx="8" fill="url(#redNavGacha)"/>
+  <rect x="4" y="4" width="48" height="48" rx="8" fill="none" stroke="url(#goldNavGacha)" stroke-width="2" filter="url(#gachaGlow)"/>
+  
+  <!-- 두루마리 (소환서) -->
+  <g transform="translate(28, 28)" filter="url(#gachaGlow)">
+    <!-- 두루마리 본체 -->
+    <rect x="-12" y="-8" width="24" height="20" fill="url(#scrollPaper)"/>
+    
+    <!-- 상단 봉 -->
+    <rect x="-14" y="-10" width="28" height="5" rx="2" fill="#8b5a3c"/>
+    <circle cx="-14" cy="-7.5" r="3" fill="url(#goldNavGacha)"/>
+    <circle cx="14" cy="-7.5" r="3" fill="url(#goldNavGacha)"/>
+    
+    <!-- 하단 봉 -->
+    <rect x="-14" y="9" width="28" height="5" rx="2" fill="#8b5a3c"/>
+    <circle cx="-14" cy="11.5" r="3" fill="url(#goldNavGacha)"/>
+    <circle cx="14" cy="11.5" r="3" fill="url(#goldNavGacha)"/>
+    
+    <!-- 소환 문양 -->
+    <circle cx="0" cy="2" r="6" fill="none" stroke="url(#goldNavGacha)" stroke-width="1.5"/>
+    <path d="M0,-4 L0,8 M-6,2 L6,2" stroke="url(#goldNavGacha)" stroke-width="1"/>
+    <circle cx="0" cy="2" r="2" fill="url(#goldNavGacha)"/>
+  </g>
+  
+  <!-- 반짝임 효과 -->
+  <g fill="#ffffff" filter="url(#sparkleFilter)">
+    <circle cx="16" cy="16" r="2"/>
+    <circle cx="44" cy="20" r="1.5"/>
+    <circle cx="40" cy="40" r="1.8"/>
+    <circle cx="14" cy="38" r="1.2"/>
+  </g>
 </svg>

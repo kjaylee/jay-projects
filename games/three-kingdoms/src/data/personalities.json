@@ -1,0 +1,438 @@
+{
+  "personalities": [
+    {
+      "id": "charge",
+      "name": "돌격",
+      "nameEn": "Charge",
+      "category": "combat",
+      "description": "첫 공격 데미지 +30%",
+      "effect": { "type": "firstAttackBonus", "value": 0.30 }
+    },
+    {
+      "id": "ironwall",
+      "name": "철벽",
+      "nameEn": "Iron Wall",
+      "category": "combat",
+      "description": "방어 시 데미지 -20%",
+      "effect": { "type": "defenseBonus", "value": 0.20 }
+    },
+    {
+      "id": "marksman",
+      "name": "명사수",
+      "nameEn": "Marksman",
+      "category": "combat",
+      "description": "원거리 공격 +25%",
+      "effect": { "type": "rangedBonus", "value": 0.25 }
+    },
+    {
+      "id": "swift",
+      "name": "질풍",
+      "nameEn": "Swift",
+      "category": "combat",
+      "description": "속도 +20%",
+      "effect": { "type": "speedBonus", "value": 0.20 }
+    },
+    {
+      "id": "unyielding",
+      "name": "불굴",
+      "nameEn": "Unyielding",
+      "category": "combat",
+      "description": "HP 30% 이하 시 공격력 +40%",
+      "effect": { "type": "lowHpAttackBonus", "threshold": 0.30, "value": 0.40 }
+    },
+    {
+      "id": "regeneration",
+      "name": "회복",
+      "nameEn": "Regeneration",
+      "category": "combat",
+      "description": "턴 시작 시 HP 5% 회복",
+      "effect": { "type": "turnHeal", "value": 0.05 }
+    },
+    {
+      "id": "intimidation",
+      "name": "위압",
+      "nameEn": "Intimidation",
+      "category": "combat",
+      "description": "인접 적 공격력 -10%",
+      "effect": { "type": "adjacentEnemyDebuff", "stat": "attack", "value": 0.10 }
+    },
+    {
+      "id": "inspire",
+      "name": "고무",
+      "nameEn": "Inspire",
+      "category": "combat",
+      "description": "인접 아군 공격력 +10%",
+      "effect": { "type": "adjacentAllyBuff", "stat": "attack", "value": 0.10 }
+    },
+    {
+      "id": "melee_specialist",
+      "name": "난전",
+      "nameEn": "Melee Specialist",
+      "category": "combat",
+      "description": "다수 적 상대 시 방어력 +30%",
+      "effect": { "type": "multiEnemyDefense", "value": 0.30 }
+    },
+    {
+      "id": "ambush",
+      "name": "기습",
+      "nameEn": "Ambush",
+      "category": "combat",
+      "description": "선제 공격 시 데미지 +50%",
+      "effect": { "type": "firstStrikeBonus", "value": 0.50 }
+    },
+    {
+      "id": "loyalty",
+      "name": "충의",
+      "nameEn": "Loyalty",
+      "category": "personality",
+      "description": "주군 인접 시 모든 스탯 +15%",
+      "effect": { "type": "lordProximityBonus", "value": 0.15 }
+    },
+    {
+      "id": "war_god",
+      "name": "무신",
+      "nameEn": "War God",
+      "category": "combat",
+      "description": "일기토 승률 +20%, 물리 데미지 +15%",
+      "effect": { "type": "duelBonus", "duelValue": 0.20, "damageValue": 0.15 }
+    },
+    {
+      "id": "fierce",
+      "name": "맹장",
+      "nameEn": "Fierce",
+      "category": "combat",
+      "description": "공격력 +15%, 방어력 -5%",
+      "effect": { "type": "attackDefenseTrade", "attackBonus": 0.15, "defensePenalty": 0.05 }
+    },
+    {
+      "id": "hegemon",
+      "name": "패왕",
+      "nameEn": "Hegemon",
+      "category": "personality",
+      "description": "전군 사기 +10%, 계략 저항 +20%",
+      "effect": { "type": "armyMoraleBonus", "moraleValue": 0.10, "resistValue": 0.20 }
+    },
+    {
+      "id": "strategist",
+      "name": "책모",
+      "nameEn": "Strategist",
+      "category": "strategy",
+      "description": "계략 데미지 +20%, 쿨다운 -1",
+      "effect": { "type": "strategyBonus", "damageValue": 0.20, "cooldownReduction": 1 }
+    },
+    {
+      "id": "divine_calculation",
+      "name": "신산",
+      "nameEn": "Divine Calculation",
+      "category": "strategy",
+      "description": "계략 성공률 100%, 계략 데미지 +30%",
+      "effect": { "type": "perfectStrategy", "successRate": 1.0, "damageValue": 0.30 }
+    },
+    {
+      "id": "qimen",
+      "name": "기문",
+      "nameEn": "Qimen",
+      "category": "strategy",
+      "description": "기문둔갑 사용 가능, 지형 효과 +25%",
+      "effect": { "type": "qimenDunjia", "terrainBonus": 0.25 }
+    },
+    {
+      "id": "celestial",
+      "name": "천기",
+      "nameEn": "Celestial",
+      "category": "strategy",
+      "description": "날씨 조작 가능, 날씨 효과 +30%",
+      "effect": { "type": "weatherControl", "weatherBonus": 0.30 }
+    },
+    {
+      "id": "unmatched",
+      "name": "무쌍",
+      "nameEn": "Unmatched",
+      "category": "combat",
+      "description": "무력 +25%, 일기토 필승 (무력 차 20 이상)",
+      "effect": { "type": "unmatched", "powerBonus": 0.25, "duelThreshold": 20 }
+    },
+    {
+      "id": "changshan_dragon",
+      "name": "상산의 용",
+      "nameEn": "Dragon of Changshan",
+      "category": "unique",
+      "description": "포위 돌파 +50%, 아군 구출 성공률 100%",
+      "effect": { "type": "breakoutAndRescue", "breakoutBonus": 0.50, "rescueRate": 1.0 }
+    },
+    {
+      "id": "rescue",
+      "name": "구출",
+      "nameEn": "Rescue",
+      "category": "combat",
+      "description": "인접 아군 사망 시 즉시 회복",
+      "effect": { "type": "allyRescue", "healPercent": 0.30 }
+    },
+    {
+      "id": "counter",
+      "name": "반격",
+      "nameEn": "Counter",
+      "category": "combat",
+      "description": "피격 시 30% 확률로 반격",
+      "effect": { "type": "counterAttack", "chance": 0.30 }
+    },
+    {
+      "id": "focus",
+      "name": "집중",
+      "nameEn": "Focus",
+      "category": "combat",
+      "description": "치명타 확률 +20%",
+      "effect": { "type": "critBonus", "value": 0.20 }
+    },
+    {
+      "id": "piercing",
+      "name": "관통",
+      "nameEn": "Piercing",
+      "category": "combat",
+      "description": "적 방어력 15% 무시",
+      "effect": { "type": "armorPiercing", "value": 0.15 }
+    },
+    {
+      "id": "bloodlust",
+      "name": "피의 갈증",
+      "nameEn": "Bloodlust",
+      "category": "combat",
+      "description": "적 처치 시 HP 20% 회복",
+      "effect": { "type": "killHeal", "value": 0.20 }
+    },
+    {
+      "id": "shield_wall",
+      "name": "방패벽",
+      "nameEn": "Shield Wall",
+      "category": "combat",
+      "description": "원거리 데미지 -30%",
+      "effect": { "type": "rangedResist", "value": 0.30 }
+    },
+    {
+      "id": "taunt",
+      "name": "도발",
+      "nameEn": "Taunt",
+      "category": "combat",
+      "description": "인접 적이 자신만 공격하도록 유도",
+      "effect": { "type": "taunt", "duration": 2 }
+    },
+    {
+      "id": "steadfast",
+      "name": "부동",
+      "nameEn": "Steadfast",
+      "category": "combat",
+      "description": "밀침/넉백 면역",
+      "effect": { "type": "knockbackImmune" }
+    },
+    {
+      "id": "commander",
+      "name": "총대장",
+      "nameEn": "Commander",
+      "category": "leadership",
+      "description": "전군 공격력 +5%, 방어력 +5%",
+      "effect": { "type": "armyBuff", "attackValue": 0.05, "defenseValue": 0.05 }
+    },
+    {
+      "id": "vanguard",
+      "name": "선봉",
+      "nameEn": "Vanguard",
+      "category": "combat",
+      "description": "첫 턴 이동력 +2, 돌격 데미지 +20%",
+      "effect": { "type": "vanguard", "movementBonus": 2, "chargeBonus": 0.20 }
+    },
+    {
+      "id": "rearguard",
+      "name": "후위",
+      "nameEn": "Rearguard",
+      "category": "combat",
+      "description": "후열에서 방어력 +20%, 아군 보호",
+      "effect": { "type": "rearguard", "defenseBonus": 0.20 }
+    },
+    {
+      "id": "fire_attack",
+      "name": "화공",
+      "nameEn": "Fire Attack",
+      "category": "strategy",
+      "description": "화계 데미지 +35%",
+      "effect": { "type": "elementBonus", "element": "fire", "value": 0.35 }
+    },
+    {
+      "id": "water_attack",
+      "name": "수공",
+      "nameEn": "Water Attack",
+      "category": "strategy",
+      "description": "수계 데미지 +35%",
+      "effect": { "type": "elementBonus", "element": "water", "value": 0.35 }
+    },
+    {
+      "id": "calm",
+      "name": "침착",
+      "nameEn": "Calm",
+      "category": "personality",
+      "description": "혼란/공포 면역",
+      "effect": { "type": "statusImmune", "statuses": ["confusion", "fear"] }
+    },
+    {
+      "id": "vengeful",
+      "name": "복수심",
+      "nameEn": "Vengeful",
+      "category": "combat",
+      "description": "아군 사망 시 공격력 +25% (3턴)",
+      "effect": { "type": "vengeance", "value": 0.25, "duration": 3 }
+    },
+    {
+      "id": "fortify",
+      "name": "견고",
+      "nameEn": "Fortify",
+      "category": "combat",
+      "description": "이동하지 않으면 방어력 +30%",
+      "effect": { "type": "staticDefense", "value": 0.30 }
+    },
+    {
+      "id": "mobility",
+      "name": "기동",
+      "nameEn": "Mobility",
+      "category": "combat",
+      "description": "이동력 +1, 지형 패널티 무시",
+      "effect": { "type": "mobility", "movementBonus": 1, "ignoreTerrainPenalty": true }
+    },
+    {
+      "id": "cavalry_master",
+      "name": "기마술",
+      "nameEn": "Cavalry Master",
+      "category": "combat",
+      "description": "기병 부대 시 공격력 +20%",
+      "effect": { "type": "classBonus", "class": "cavalry", "value": 0.20 }
+    },
+    {
+      "id": "archery_master",
+      "name": "궁술",
+      "nameEn": "Archery Master",
+      "category": "combat",
+      "description": "궁병 부대 시 사거리 +1",
+      "effect": { "type": "rangeBonus", "class": "archer", "value": 1 }
+    },
+    {
+      "id": "spear_master",
+      "name": "창술",
+      "nameEn": "Spear Master",
+      "category": "combat",
+      "description": "창병 부대 시 기병 상대 데미지 +30%",
+      "effect": { "type": "antiClassBonus", "targetClass": "cavalry", "value": 0.30 }
+    },
+    {
+      "id": "dual_wield",
+      "name": "쌍검",
+      "nameEn": "Dual Wield",
+      "category": "combat",
+      "description": "2회 공격, 각 공격 데미지 60%",
+      "effect": { "type": "multiAttack", "attacks": 2, "damagePercent": 0.60 }
+    },
+    {
+      "id": "berserk",
+      "name": "광전사",
+      "nameEn": "Berserk",
+      "category": "combat",
+      "description": "공격력 +50%, 받는 피해 +20%",
+      "effect": { "type": "berserk", "attackBonus": 0.50, "defensePenalty": 0.20 }
+    },
+    {
+      "id": "last_stand",
+      "name": "결사",
+      "nameEn": "Last Stand",
+      "category": "combat",
+      "description": "HP 10% 이하 시 1회 치명상 면역",
+      "effect": { "type": "deathSave", "threshold": 0.10, "uses": 1 }
+    },
+    {
+      "id": "veteran",
+      "name": "노련",
+      "nameEn": "Veteran",
+      "category": "combat",
+      "description": "경험치 획득량 +20%, 스킬 쿨다운 -1",
+      "effect": { "type": "veteran", "expBonus": 0.20, "cooldownReduction": 1 }
+    },
+    {
+      "id": "discipline",
+      "name": "규율",
+      "nameEn": "Discipline",
+      "category": "leadership",
+      "description": "부대 사기 저하 면역",
+      "effect": { "type": "moraleImmune" }
+    },
+    {
+      "id": "cunning",
+      "name": "교활",
+      "nameEn": "Cunning",
+      "category": "strategy",
+      "description": "함정 발동 확률 +30%",
+      "effect": { "type": "trapBonus", "value": 0.30 }
+    },
+    {
+      "id": "night_raid",
+      "name": "야습",
+      "nameEn": "Night Raid",
+      "category": "combat",
+      "description": "야간 전투 시 모든 스탯 +20%",
+      "effect": { "type": "nightBonus", "value": 0.20 }
+    },
+    {
+      "id": "siege_expert",
+      "name": "공성",
+      "nameEn": "Siege Expert",
+      "category": "combat",
+      "description": "성벽 상대 데미지 +40%",
+      "effect": { "type": "siegeBonus", "value": 0.40 }
+    },
+    {
+      "id": "navy",
+      "name": "수군",
+      "nameEn": "Navy",
+      "category": "combat",
+      "description": "수상 전투 시 모든 스탯 +25%",
+      "effect": { "type": "waterBonus", "value": 0.25 }
+    }
+  ],
+  "generalPersonalities": {
+    "guan_yu": ["loyalty", "war_god", "intimidation"],
+    "zhang_fei": ["fierce", "charge", "unyielding"],
+    "cao_cao": ["hegemon", "strategist", "intimidation"],
+    "zhuge_liang": ["divine_calculation", "qimen", "celestial"],
+    "lu_bu": ["unmatched", "charge", "swift"],
+    "zhao_yun": ["changshan_dragon", "loyalty", "rescue"],
+    "liu_bei": ["loyalty", "inspire", "commander"],
+    "sun_quan": ["hegemon", "navy", "calm"],
+    "zhou_yu": ["fire_attack", "strategist", "focus"],
+    "huang_zhong": ["marksman", "veteran", "unyielding"],
+    "ma_chao": ["cavalry_master", "charge", "vanguard"],
+    "xu_chu": ["fierce", "berserk", "ironwall"],
+    "dian_wei": ["unyielding", "last_stand", "taunt"],
+    "zhang_liao": ["ambush", "vanguard", "discipline"],
+    "gan_ning": ["charge", "night_raid", "navy"],
+    "taishi_ci": ["marksman", "dual_wield", "loyalty"],
+    "xiahou_dun": ["unyielding", "counter", "fierce"],
+    "xiahou_yuan": ["swift", "cavalry_master", "ambush"],
+    "guo_jia": ["strategist", "cunning", "calm"],
+    "sima_yi": ["strategist", "cunning", "counter"],
+    "pang_tong": ["divine_calculation", "fire_attack", "qimen"],
+    "lu_xun": ["fire_attack", "strategist", "calm"],
+    "zhang_he": ["mobility", "cavalry_master", "fortify"],
+    "wen_chou": ["fierce", "charge", "cavalry_master"],
+    "yan_liang": ["fierce", "vanguard", "counter"],
+    "sun_ce": ["hegemon", "charge", "vanguard"],
+    "huang_gai": ["fire_attack", "unyielding", "navy"],
+    "lu_meng": ["ambush", "strategist", "navy"],
+    "wei_yan": ["fierce", "counter", "vengeful"],
+    "jiang_wei": ["strategist", "loyalty", "unyielding"],
+    "deng_ai": ["ambush", "siege_expert", "mobility"],
+    "zhong_hui": ["strategist", "cunning", "ambush"],
+    "xu_huang": ["discipline", "siege_expert", "fortify"],
+    "zhang_bao": ["qimen", "night_raid", "cunning"],
+    "hua_xiong": ["fierce", "intimidation", "charge"],
+    "yuan_shao": ["commander", "discipline", "hegemon"],
+    "yuan_shu": ["cunning", "rearguard", "discipline"],
+    "dong_zhuo": ["intimidation", "berserk", "siege_expert"],
+    "lu_su": ["calm", "strategist", "navy"],
+    "cheng_pu": ["veteran", "navy", "loyalty"]
+  }
+}

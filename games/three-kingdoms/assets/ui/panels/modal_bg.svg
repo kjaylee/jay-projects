@@ -1,27 +1,127 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="350" height="250" viewBox="0 0 350 250">
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="450" viewBox="0 0 320 450">
   <defs>
-    <linearGradient id="modalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#2a1a3a;stop-opacity:0.98" />
-      <stop offset="100%" style="stop-color:#1a0f2e;stop-opacity:0.98" />
+    <!-- 두루마리 배경 -->
+    <linearGradient id="scrollBg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#d4c4a8"/>
+      <stop offset="5%" style="stop-color:#f5e6c8"/>
+      <stop offset="50%" style="stop-color:#faf0dc"/>
+      <stop offset="95%" style="stop-color:#f5e6c8"/>
+      <stop offset="100%" style="stop-color:#d4c4a8"/>
     </linearGradient>
-    <linearGradient id="borderGold" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#daa520;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#b8860b;stop-opacity:1" />
+    <!-- 두루마리 봉 -->
+    <linearGradient id="scrollRod" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b4513"/>
+      <stop offset="30%" style="stop-color:#a0522d"/>
+      <stop offset="50%" style="stop-color:#cd853f"/>
+      <stop offset="70%" style="stop-color:#a0522d"/>
+      <stop offset="100%" style="stop-color:#8b4513"/>
     </linearGradient>
-    <filter id="shadow">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000" flood-opacity="0.6"/>
+    <!-- 금장 손잡이 -->
+    <linearGradient id="goldKnob" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b6914"/>
+      <stop offset="30%" style="stop-color:#daa520"/>
+      <stop offset="50%" style="stop-color:#ffd700"/>
+      <stop offset="70%" style="stop-color:#daa520"/>
+      <stop offset="100%" style="stop-color:#8b6914"/>
+    </linearGradient>
+    <!-- 종이 텍스처 -->
+    <pattern id="paperTexture" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="20" height="20" fill="transparent"/>
+      <circle cx="5" cy="5" r="0.5" fill="rgba(139,90,43,0.1)"/>
+      <circle cx="15" cy="15" r="0.3" fill="rgba(139,90,43,0.08)"/>
+      <circle cx="10" cy="12" r="0.4" fill="rgba(139,90,43,0.05)"/>
+    </pattern>
+    <!-- 붉은 인장 문양 -->
+    <pattern id="sealPattern" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+      <rect x="35" y="35" width="30" height="30" fill="none" stroke="rgba(139,0,0,0.08)" stroke-width="2"/>
+      <rect x="40" y="40" width="20" height="20" fill="none" stroke="rgba(139,0,0,0.05)" stroke-width="1"/>
+    </pattern>
+    <filter id="scrollShadow">
+      <feDropShadow dx="4" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
+    <filter id="goldGlow">
+      <feGaussianBlur stdDeviation="1" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
     </filter>
   </defs>
-  <!-- Main panel -->
-  <rect x="4" y="4" width="342" height="242" rx="16" ry="16" fill="url(#modalGrad)" filter="url(#shadow)"/>
-  <!-- Inner highlight -->
-  <rect x="10" y="10" width="330" height="230" rx="12" ry="12" fill="none" stroke="rgba(255,215,0,0.15)" stroke-width="1"/>
-  <!-- Outer border -->
-  <rect x="4" y="4" width="342" height="242" rx="16" ry="16" fill="none" stroke="url(#borderGold)" stroke-width="4"/>
-  <!-- Corner ornaments -->
-  <circle cx="20" cy="20" r="6" fill="#ffd700" opacity="0.8"/>
-  <circle cx="330" cy="20" r="6" fill="#ffd700" opacity="0.8"/>
-  <circle cx="20" cy="230" r="6" fill="#ffd700" opacity="0.8"/>
-  <circle cx="330" cy="230" r="6" fill="#ffd700" opacity="0.8"/>
+  
+  <!-- 그림자 -->
+  <rect x="15" y="40" width="290" height="370" rx="4" ry="4" fill="rgba(0,0,0,0.3)" filter="url(#scrollShadow)"/>
+  
+  <!-- 상단 두루마리 봉 -->
+  <rect x="10" y="25" width="300" height="25" rx="12" ry="12" fill="url(#scrollRod)"/>
+  <!-- 상단 목재 결 -->
+  <g stroke="rgba(0,0,0,0.2)" stroke-width="0.5" fill="none">
+    <line x1="20" y1="32" x2="300" y2="32"/>
+    <line x1="25" y1="38" x2="295" y2="38"/>
+    <line x1="20" y1="44" x2="300" y2="44"/>
+  </g>
+  <!-- 상단 좌측 금장 손잡이 -->
+  <g filter="url(#goldGlow)">
+    <circle cx="15" cy="37" r="12" fill="url(#goldKnob)"/>
+    <circle cx="15" cy="37" r="8" fill="url(#scrollRod)"/>
+    <circle cx="15" cy="37" r="5" fill="url(#goldKnob)"/>
+  </g>
+  <!-- 상단 우측 금장 손잡이 -->
+  <g filter="url(#goldGlow)">
+    <circle cx="305" cy="37" r="12" fill="url(#goldKnob)"/>
+    <circle cx="305" cy="37" r="8" fill="url(#scrollRod)"/>
+    <circle cx="305" cy="37" r="5" fill="url(#goldKnob)"/>
+  </g>
+  
+  <!-- 하단 두루마리 봉 -->
+  <rect x="10" y="400" width="300" height="25" rx="12" ry="12" fill="url(#scrollRod)"/>
+  <!-- 하단 목재 결 -->
+  <g stroke="rgba(0,0,0,0.2)" stroke-width="0.5" fill="none">
+    <line x1="20" y1="407" x2="300" y2="407"/>
+    <line x1="25" y1="413" x2="295" y2="413"/>
+    <line x1="20" y1="419" x2="300" y2="419"/>
+  </g>
+  <!-- 하단 좌측 금장 손잡이 -->
+  <g filter="url(#goldGlow)">
+    <circle cx="15" cy="413" r="12" fill="url(#goldKnob)"/>
+    <circle cx="15" cy="413" r="8" fill="url(#scrollRod)"/>
+    <circle cx="15" cy="413" r="5" fill="url(#goldKnob)"/>
+  </g>
+  <!-- 하단 우측 금장 손잡이 -->
+  <g filter="url(#goldGlow)">
+    <circle cx="305" cy="413" r="12" fill="url(#goldKnob)"/>
+    <circle cx="305" cy="413" r="8" fill="url(#scrollRod)"/>
+    <circle cx="305" cy="413" r="5" fill="url(#goldKnob)"/>
+  </g>
+  
+  <!-- 메인 두루마리 종이 -->
+  <rect x="20" y="45" width="280" height="360" fill="url(#scrollBg)"/>
+  <rect x="20" y="45" width="280" height="360" fill="url(#paperTexture)"/>
+  <rect x="20" y="45" width="280" height="360" fill="url(#sealPattern)"/>
+  
+  <!-- 종이 접힌 효과 (상단) -->
+  <path d="M20,45 L300,45 L300,55 Q160,60 20,55 Z" fill="rgba(0,0,0,0.05)"/>
+  <!-- 종이 접힌 효과 (하단) -->
+  <path d="M20,395 Q160,400 300,395 L300,405 L20,405 Z" fill="rgba(0,0,0,0.05)"/>
+  
+  <!-- 테두리 장식 -->
+  <rect x="30" y="55" width="260" height="340" fill="none" stroke="rgba(139,0,0,0.3)" stroke-width="1"/>
+  <rect x="35" y="60" width="250" height="330" fill="none" stroke="rgba(139,0,0,0.15)" stroke-width="1"/>
+  
+  <!-- 모서리 장식 (중국풍 구름) -->
+  <g fill="rgba(139,0,0,0.2)">
+    <!-- 좌상 -->
+    <path d="M35,65 Q45,55 55,65 Q50,70 40,68 Q35,75 35,65"/>
+    <!-- 우상 -->
+    <path d="M265,65 Q275,55 285,65 Q280,70 270,68 Q265,75 265,65" transform="scale(-1,1) translate(-320,0)"/>
+    <!-- 좌하 -->
+    <path d="M35,385 Q45,395 55,385 Q50,380 40,382 Q35,375 35,385"/>
+    <!-- 우하 -->
+    <path d="M265,385 Q275,395 285,385 Q280,380 270,382 Q265,375 265,385" transform="scale(-1,1) translate(-320,0)"/>
+  </g>
+  
+  <!-- 중앙 상단 장식 -->
+  <g transform="translate(160, 70)" fill="none" stroke="rgba(139,0,0,0.25)" stroke-width="1">
+    <path d="M-30,0 Q-15,-8 0,0 Q15,8 30,0"/>
+    <circle cx="0" cy="0" r="3" fill="rgba(139,0,0,0.2)"/>
+  </g>
 </svg>

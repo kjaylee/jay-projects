@@ -1,20 +1,94 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="200" height="50" viewBox="0 0 200 50">
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60">
   <defs>
-    <linearGradient id="btnGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#c41e3a;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#8b0000;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#5c0000;stop-opacity:1" />
+    <!-- 붉은 비단 그라데이션 -->
+    <linearGradient id="silkRed" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#d42a2a"/>
+      <stop offset="15%" style="stop-color:#b81c1c"/>
+      <stop offset="50%" style="stop-color:#8b0000"/>
+      <stop offset="85%" style="stop-color:#6b0000"/>
+      <stop offset="100%" style="stop-color:#4a0000"/>
     </linearGradient>
-    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#daa520;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#b8860b;stop-opacity:1" />
+    <!-- 비단 광택 -->
+    <linearGradient id="silkSheen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0.25)"/>
+      <stop offset="50%" style="stop-color:rgba(255,255,255,0)"/>
+      <stop offset="100%" style="stop-color:rgba(255,255,255,0.1)"/>
     </linearGradient>
-    <filter id="shadow">
-      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.5"/>
+    <!-- 금장 테두리 -->
+    <linearGradient id="goldFrame" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b6914"/>
+      <stop offset="25%" style="stop-color:#daa520"/>
+      <stop offset="50%" style="stop-color:#ffd700"/>
+      <stop offset="55%" style="stop-color:#ffec8b"/>
+      <stop offset="60%" style="stop-color:#ffd700"/>
+      <stop offset="75%" style="stop-color:#daa520"/>
+      <stop offset="100%" style="stop-color:#8b6914"/>
+    </linearGradient>
+    <!-- 내부 금장 테두리 -->
+    <linearGradient id="goldInner" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd700;stop-opacity:0.6"/>
+      <stop offset="50%" style="stop-color:#daa520;stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:#ffd700;stop-opacity:0.6"/>
+    </linearGradient>
+    <!-- 그림자 -->
+    <filter id="btnShadow">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.5"/>
     </filter>
+    <!-- 발광 효과 -->
+    <filter id="goldGlow">
+      <feGaussianBlur stdDeviation="1" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <!-- 직물 텍스처 -->
+    <pattern id="fabricTex" x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="2" height="2" fill="rgba(0,0,0,0.05)"/>
+      <rect x="2" y="2" width="2" height="2" fill="rgba(0,0,0,0.05)"/>
+    </pattern>
   </defs>
-  <rect x="3" y="3" width="194" height="44" rx="8" ry="8" fill="url(#btnGrad)" filter="url(#shadow)"/>
-  <rect x="3" y="3" width="194" height="44" rx="8" ry="8" fill="none" stroke="url(#borderGrad)" stroke-width="3"/>
-  <rect x="8" y="6" width="184" height="15" rx="6" ry="6" fill="rgba(255,255,255,0.15)"/>
+  
+  <!-- 외곽 그림자 -->
+  <rect x="5" y="5" width="190" height="50" rx="6" ry="6" fill="rgba(0,0,0,0.4)" filter="url(#btnShadow)"/>
+  
+  <!-- 금장 외곽 프레임 -->
+  <rect x="3" y="3" width="194" height="54" rx="8" ry="8" fill="url(#goldFrame)" filter="url(#goldGlow)"/>
+  
+  <!-- 메인 비단 버튼 -->
+  <rect x="7" y="7" width="186" height="46" rx="5" ry="5" fill="url(#silkRed)"/>
+  <rect x="7" y="7" width="186" height="46" rx="5" ry="5" fill="url(#fabricTex)"/>
+  
+  <!-- 비단 광택 오버레이 -->
+  <rect x="7" y="7" width="186" height="20" rx="5" ry="5" fill="url(#silkSheen)"/>
+  
+  <!-- 내부 금장 테두리 -->
+  <rect x="10" y="10" width="180" height="40" rx="4" ry="4" fill="none" stroke="url(#goldInner)" stroke-width="1"/>
+  
+  <!-- 모서리 장식 - 좌상 -->
+  <g fill="url(#goldFrame)" filter="url(#goldGlow)">
+    <path d="M10,18 L10,10 L18,10" fill="none" stroke="url(#goldFrame)" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="10" cy="10" r="2"/>
+  </g>
+  <!-- 모서리 장식 - 우상 -->
+  <g fill="url(#goldFrame)" filter="url(#goldGlow)">
+    <path d="M182,10 L190,10 L190,18" fill="none" stroke="url(#goldFrame)" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="190" cy="10" r="2"/>
+  </g>
+  <!-- 모서리 장식 - 좌하 -->
+  <g fill="url(#goldFrame)" filter="url(#goldGlow)">
+    <path d="M10,42 L10,50 L18,50" fill="none" stroke="url(#goldFrame)" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="10" cy="50" r="2"/>
+  </g>
+  <!-- 모서리 장식 - 우하 -->
+  <g fill="url(#goldFrame)" filter="url(#goldGlow)">
+    <path d="M182,50 L190,50 L190,42" fill="none" stroke="url(#goldFrame)" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="190" cy="50" r="2"/>
+  </g>
+  
+  <!-- 중앙 장식 문양 -->
+  <g stroke="rgba(218,165,32,0.3)" stroke-width="0.5" fill="none">
+    <path d="M95,15 Q100,12 105,15"/>
+    <path d="M95,45 Q100,48 105,45"/>
+  </g>
 </svg>

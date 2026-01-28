@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="100" viewBox="0 0 20 100">
+  <defs>
+    <linearGradient id="goldBorder" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b6914"/>
+      <stop offset="20%" style="stop-color:#daa520"/>
+      <stop offset="40%" style="stop-color:#ffd700"/>
+      <stop offset="50%" style="stop-color:#ffec8b"/>
+      <stop offset="60%" style="stop-color:#ffd700"/>
+      <stop offset="80%" style="stop-color:#daa520"/>
+      <stop offset="100%" style="stop-color:#8b6914"/>
+    </linearGradient>
+    <pattern id="borderPattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <!-- 기하학적 중국 문양 -->
+      <rect x="0" y="0" width="20" height="20" fill="#1a1a1a"/>
+      <path d="M0,10 L5,5 L10,10 L5,15 Z" fill="url(#goldBorder)"/>
+      <path d="M10,0 L15,5 L10,10 L5,5 Z" fill="url(#goldBorder)" opacity="0.7"/>
+      <path d="M10,10 L15,15 L10,20 L5,15 Z" fill="url(#goldBorder)" opacity="0.7"/>
+    </pattern>
+  </defs>
+  <!-- 금장 테두리 베이스 -->
+  <rect x="0" y="0" width="20" height="100" fill="url(#borderPattern)"/>
+  <!-- 입체감 하이라이트 -->
+  <rect x="2" y="0" width="2" height="100" fill="rgba(255,236,139,0.3)"/>
+  <!-- 그림자 -->
+  <rect x="16" y="0" width="2" height="100" fill="rgba(0,0,0,0.3)"/>
+</svg>

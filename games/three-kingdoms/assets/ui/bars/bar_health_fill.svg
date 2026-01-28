@@ -1,11 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="196" height="16" viewBox="0 0 196 16">
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="12" viewBox="0 0 160 12">
   <defs>
-    <linearGradient id="healthGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#00ff00;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#00cc00;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#008800;stop-opacity:1" />
+    <!-- 붉은 비단 그라데이션 -->
+    <linearGradient id="healthFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff3030"/>
+      <stop offset="20%" style="stop-color:#e02020"/>
+      <stop offset="40%" style="stop-color:#c41e3a"/>
+      <stop offset="60%" style="stop-color:#8b0000"/>
+      <stop offset="80%" style="stop-color:#6b0000"/>
+      <stop offset="100%" style="stop-color:#4a0000"/>
     </linearGradient>
+    <!-- 비단 광택 -->
+    <linearGradient id="healthSheen" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0)"/>
+      <stop offset="30%" style="stop-color:rgba(255,255,255,0.3)"/>
+      <stop offset="50%" style="stop-color:rgba(255,255,255,0.4)"/>
+      <stop offset="70%" style="stop-color:rgba(255,255,255,0.3)"/>
+      <stop offset="100%" style="stop-color:rgba(255,255,255,0)"/>
+    </linearGradient>
+    <!-- 비단 패턴 -->
+    <pattern id="silkPatternHealth" x="0" y="0" width="8" height="4" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="4" height="2" fill="rgba(0,0,0,0.08)"/>
+      <rect x="4" y="2" width="4" height="2" fill="rgba(0,0,0,0.08)"/>
+    </pattern>
+    <filter id="healthGlow">
+      <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="#ff0000" flood-opacity="0.5"/>
+    </filter>
   </defs>
-  <rect x="0" y="0" width="196" height="16" rx="3" ry="3" fill="url(#healthGrad)"/>
-  <rect x="0" y="0" width="196" height="6" rx="3" ry="3" fill="rgba(255,255,255,0.3)"/>
+  
+  <!-- 메인 체력 바 -->
+  <rect x="0" y="0" width="160" height="12" rx="2" ry="2" fill="url(#healthFill)" filter="url(#healthGlow)"/>
+  
+  <!-- 비단 텍스처 -->
+  <rect x="0" y="0" width="160" height="12" rx="2" ry="2" fill="url(#silkPatternHealth)"/>
+  
+  <!-- 상단 광택 -->
+  <rect x="2" y="1" width="156" height="4" rx="1" ry="1" fill="url(#healthSheen)"/>
+  
+  <!-- 하단 그림자 -->
+  <rect x="2" y="9" width="156" height="2" rx="1" ry="1" fill="rgba(0,0,0,0.3)"/>
+  
+  <!-- 우측 끝 하이라이트 -->
+  <rect x="155" y="2" width="3" height="8" rx="1" ry="1" fill="rgba(255,150,150,0.4)"/>
 </svg>

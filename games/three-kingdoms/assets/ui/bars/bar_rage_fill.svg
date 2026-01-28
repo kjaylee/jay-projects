@@ -1,11 +1,49 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="196" height="16" viewBox="0 0 196 16">
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="12" viewBox="0 0 160 12">
   <defs>
-    <linearGradient id="rageGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#ff4444;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#cc0000;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#880000;stop-opacity:1" />
+    <!-- 황금 불꽃 그라데이션 -->
+    <linearGradient id="rageFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffff00"/>
+      <stop offset="20%" style="stop-color:#ffd700"/>
+      <stop offset="40%" style="stop-color:#ff8c00"/>
+      <stop offset="60%" style="stop-color:#ff4500"/>
+      <stop offset="80%" style="stop-color:#dc143c"/>
+      <stop offset="100%" style="stop-color:#8b0000"/>
     </linearGradient>
+    <!-- 불꽃 패턴 -->
+    <pattern id="flamePattern" x="0" y="0" width="20" height="12" patternUnits="userSpaceOnUse">
+      <path d="M5,12 Q3,8 5,5 Q7,2 10,4 Q13,6 12,10 Q10,12 8,11" fill="rgba(255,255,0,0.2)"/>
+      <path d="M15,12 Q14,9 16,7 Q18,5 17,8 Q16,10 15,12" fill="rgba(255,200,0,0.15)"/>
+    </pattern>
+    <!-- 상단 불꽃 효과 -->
+    <filter id="flameGlow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="fireGlow">
+      <feDropShadow dx="0" dy="-1" stdDeviation="2" flood-color="#ff8800" flood-opacity="0.6"/>
+    </filter>
   </defs>
-  <rect x="0" y="0" width="196" height="16" rx="3" ry="3" fill="url(#rageGrad)"/>
-  <rect x="0" y="0" width="196" height="6" rx="3" ry="3" fill="rgba(255,255,255,0.3)"/>
+  
+  <!-- 메인 분노 바 -->
+  <rect x="0" y="0" width="160" height="12" rx="2" ry="2" fill="url(#rageFill)" filter="url(#fireGlow)"/>
+  
+  <!-- 불꽃 패턴 -->
+  <rect x="0" y="0" width="160" height="12" rx="2" ry="2" fill="url(#flamePattern)"/>
+  
+  <!-- 상단 불꽃 웨이브 -->
+  <path d="M0,4 Q10,0 20,4 Q30,8 40,4 Q50,0 60,4 Q70,8 80,4 Q90,0 100,4 Q110,8 120,4 Q130,0 140,4 Q150,8 160,4" 
+        fill="none" stroke="rgba(255,255,100,0.5)" stroke-width="2" filter="url(#flameGlow)"/>
+  
+  <!-- 불꽃 하이라이트 -->
+  <g fill="rgba(255,255,200,0.6)" filter="url(#flameGlow)">
+    <ellipse cx="30" cy="4" rx="8" ry="3"/>
+    <ellipse cx="80" cy="5" rx="10" ry="3"/>
+    <ellipse cx="130" cy="4" rx="6" ry="2"/>
+  </g>
+  
+  <!-- 우측 끝 불꽃 -->
+  <path d="M155,10 Q158,6 156,2 Q160,4 158,8 Q160,10 155,10" fill="rgba(255,200,0,0.7)" filter="url(#flameGlow)"/>
 </svg>

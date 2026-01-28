@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+  <defs>
+    <!-- 비단 그라데이션 베이스 -->
+    <linearGradient id="silkBase" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b0000"/>
+      <stop offset="25%" style="stop-color:#a50000"/>
+      <stop offset="50%" style="stop-color:#8b0000"/>
+      <stop offset="75%" style="stop-color:#6b0000"/>
+      <stop offset="100%" style="stop-color:#8b0000"/>
+    </linearGradient>
+    <!-- 비단 광택 효과 -->
+    <linearGradient id="silkSheen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0.1)"/>
+      <stop offset="45%" style="stop-color:rgba(255,255,255,0)"/>
+      <stop offset="50%" style="stop-color:rgba(255,255,255,0.15)"/>
+      <stop offset="55%" style="stop-color:rgba(255,255,255,0)"/>
+      <stop offset="100%" style="stop-color:rgba(255,255,255,0.05)"/>
+    </linearGradient>
+    <!-- 직물 텍스처 패턴 -->
+    <pattern id="weavePattern" x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="4" height="4" fill="transparent"/>
+      <rect x="0" y="0" width="2" height="2" fill="rgba(0,0,0,0.05)"/>
+      <rect x="2" y="2" width="2" height="2" fill="rgba(0,0,0,0.05)"/>
+      <rect x="0" y="2" width="2" height="2" fill="rgba(255,255,255,0.02)"/>
+      <rect x="2" y="0" width="2" height="2" fill="rgba(255,255,255,0.02)"/>
+    </pattern>
+    <!-- 금실 문양 -->
+    <pattern id="goldThread" x="0" y="0" width="50" height="50" patternUnits="userSpaceOnUse">
+      <path d="M0,25 Q12.5,20 25,25 Q37.5,30 50,25" stroke="rgba(218,165,32,0.15)" stroke-width="0.5" fill="none"/>
+      <path d="M0,50 Q12.5,45 25,50" stroke="rgba(218,165,32,0.15)" stroke-width="0.5" fill="none"/>
+      <path d="M25,0 Q20,12.5 25,25 Q30,37.5 25,50" stroke="rgba(218,165,32,0.1)" stroke-width="0.5" fill="none"/>
+    </pattern>
+  </defs>
+  <!-- 베이스 비단 색상 -->
+  <rect x="0" y="0" width="100" height="100" fill="url(#silkBase)"/>
+  <!-- 직물 텍스처 -->
+  <rect x="0" y="0" width="100" height="100" fill="url(#weavePattern)"/>
+  <!-- 금실 문양 -->
+  <rect x="0" y="0" width="100" height="100" fill="url(#goldThread)"/>
+  <!-- 광택 효과 -->
+  <rect x="0" y="0" width="100" height="100" fill="url(#silkSheen)"/>
+</svg>
