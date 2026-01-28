@@ -4,7 +4,8 @@ import { GeneralCard } from '../ui/GeneralCard';
 import { Viewport, Scrollbar } from '../ui/layout';
 import { General, GeneralGrade, GeneralClass, Faction } from '../entities/General';
 import { Formation } from '../entities/Formation';
-import { FormationManager, FormationSlot } from '../managers/FormationManager';
+import { FormationManager } from '../managers/FormationManager';
+import { drawGradientBackground, drawPanelBackground, COLORS } from '../ui/effects';
 import generalsData from '../data/generals.json';
 
 interface OwnedGeneral {
@@ -43,80 +44,75 @@ export class FormationScene extends Phaser.Scene {
     const { width, height } = this.cameras.main;
 
     // Background
-    this.add.graphics()
-      .fillGradientStyle(0x1a1a2e, 0x1a1a2e, 0x0f0f1a, 0x0f0f1a, 1)
-      .fillRect(0, 0, width, height);
+    drawGradientBackground(this, 0, 0, width, height, 0x1a1a2e, 0x0f0f1a);
 
-    // Load data
     this.loadOwnedGenerals();
     this.formationManager = FormationManager.load(this.userId);
 
-    // Header
-    this.createHeader();
+    this.createHeader(width);
+    this.createSlotTabs(width);
+    this.createFormationGrid(width);
+    this.createGeneralList(width, height);
 
-    // Slot tabs (5개 슬롯)
-    this.createSlotTabs();
-
-    // Formation grid
-    this.createFormationGrid();
-
-    // General list with Viewport + Scrollbar
-    this.createGeneralList();
-
-    // Save button
+    // Save button (중앙)
     new Button(this, width / 2, height - 40, '💾 진형 저장', {
       width: 200,
       height: 44,
-      backgroundColor: 0x006600,
+      variant: 'gold',
     }, () => this.saveFormation());
   }
 
-  private createHeader(): void {
-    const { width } = this.cameras.main;
+  private createHeader(width: number): void {
+    // Header background
+    drawPanelBackground(this, 0, 0, width, 70, {
+      fillColor: 0x0a0a14,
+      cornerRadius: 0,
+      innerGlow: false,
+    });
 
-    this.add.graphics()
-      .fillStyle(0x000000, 0.8)
-      .fillRect(0, 0, width, 70);
-
-    new Button(this, 50, 35, '←', {
+    // Back button
+    new Button(this, 45, 35, '←', {
       width: 50,
       height: 40,
       fontSize: '24px',
-      backgroundColor: 0x333333,
+      variant: 'dark',
+      useImage: false,
     }, () => {
       this.scene.start('MainScene', { userId: this.userId, isGuest: true });
     });
 
+    // Title (중앙)
     this.add.text(width / 2, 25, '⚔️ 진형 편집', {
       fontSize: '22px',
       color: '#ffd700',
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
+    // Subtitle (중앙)
     this.add.text(width / 2, 52, '장수를 그리드에 배치하세요', {
       fontSize: '12px',
       color: '#aaaaaa',
     }).setOrigin(0.5);
   }
 
-  private createSlotTabs(): void {
-    const { width } = this.cameras.main;
-    const tabY = 85;
-    const tabWidth = (width - 60) / 5;
+  private createSlotTabs(width: number): void {
+    const tabY = 95;
+    const tabCount = 5;
+    const tabTotalWidth = width - 60;
+    const tabWidth = tabTotalWidth / tabCount;
     const tabHeight = 40;
+    const startX = 30;
 
-    for (let i = 0; i < 5; i++) {
-      const x = 30 + i * tabWidth + tabWidth / 2;
+    for (let i = 0; i < tabCount; i++) {
+      const x = startX + i * tabWidth + tabWidth / 2;
       const isActive = i === this.formationManager.getActiveSlotId();
       
       const tab = this.add.container(x, tabY);
       
-      // Tab background
       const bg = this.add.graphics();
       this.drawTabBackground(bg, tabWidth, tabHeight, isActive);
       tab.add(bg);
       
-      // Slot number badge
       const badge = this.add.text(-tabWidth / 2 + 12, 0, `${i + 1}`, {
         fontSize: '14px',
         color: isActive ? '#ffd700' : '#888888',
@@ -124,7 +120,6 @@ export class FormationScene extends Phaser.Scene {
       }).setOrigin(0.5);
       tab.add(badge);
       
-      // Slot name
       const slot = this.formationManager.getSlot(i)!;
       const nameText = this.add.text(6, 0, this.truncateName(slot.slotName, 6), {
         fontSize: '12px',
@@ -133,7 +128,6 @@ export class FormationScene extends Phaser.Scene {
       tab.add(nameText);
       this.slotNameTexts.push(nameText);
       
-      // Unit count indicator
       const unitCount = slot.formation.getUnitCount();
       const countText = this.add.text(tabWidth / 2 - 14, 0, `[${unitCount}]`, {
         fontSize: '10px',
@@ -141,21 +135,16 @@ export class FormationScene extends Phaser.Scene {
       }).setOrigin(0.5);
       tab.add(countText);
       
-      // Make interactive
       tab.setSize(tabWidth - 4, tabHeight);
       tab.setInteractive({ useHandCursor: true });
       
       tab.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-        // 오른쪽 클릭 또는 더블클릭 시 이름 편집
         if (pointer.rightButtonDown() || pointer.rightButtonReleased()) {
           this.editSlotName(i);
         } else {
           this.switchSlot(i);
         }
       });
-
-      // Long press for name edit
-      tab.on('pointerup', () => {});
       
       this.slotTabs.push(tab);
       tab.setData('badge', badge);
@@ -165,13 +154,10 @@ export class FormationScene extends Phaser.Scene {
     }
 
     // Edit name button
-    const editBtn = this.add.text(width - 30, tabY, '✏️', {
+    this.add.text(width - 30, tabY, '✏️', {
       fontSize: '18px',
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    
-    editBtn.on('pointerdown', () => {
-      this.editSlotName(this.formationManager.getActiveSlotId());
-    });
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => this.editSlotName(this.formationManager.getActiveSlotId()));
   }
 
   private drawTabBackground(graphics: Phaser.GameObjects.Graphics, width: number, height: number, isActive: boolean): void {
@@ -198,8 +184,8 @@ export class FormationScene extends Phaser.Scene {
   }
 
   private refreshSlotTabs(): void {
-    const { width } = this.cameras.main;
-    const tabWidth = (width - 60) / 5;
+    const tabTotalWidth = this.cameras.main.width - 60;
+    const tabWidth = tabTotalWidth / 5;
     const tabHeight = 40;
     
     this.slotTabs.forEach((tab, i) => {
@@ -227,7 +213,6 @@ export class FormationScene extends Phaser.Scene {
     const slot = this.formationManager.getSlot(slotId);
     if (!slot) return;
     
-    // HTML input을 사용한 이름 편집
     const currentName = slot.slotName;
     const newName = window.prompt('슬롯 이름을 입력하세요 (최대 20자):', currentName);
     
@@ -279,20 +264,18 @@ export class FormationScene extends Phaser.Scene {
     return this.formationManager.getActiveFormation();
   }
 
-  private createFormationGrid(): void {
-    const { width } = this.cameras.main;
+  private createFormationGrid(width: number): void {
     const gridSize = 3;
     const cellSize = 95;
     const gridWidth = gridSize * cellSize;
     const startX = (width - gridWidth) / 2;
-    const startY = 145; // 슬롯 탭 아래로 조정
+    const startY = 140;
 
-    // Row labels
     const rowLabels = ['후열', '중열', '전열'];
 
     for (let row = 0; row < gridSize; row++) {
-      // Row label
-      this.add.text(startX - 40, startY + row * cellSize + cellSize / 2, rowLabels[row], {
+      // Row label (그리드 왼쪽)
+      this.add.text(startX - 35, startY + row * cellSize + cellSize / 2, rowLabels[row], {
         fontSize: '12px',
         color: '#888888',
       }).setOrigin(0.5);
@@ -303,7 +286,6 @@ export class FormationScene extends Phaser.Scene {
 
         const cell = this.add.container(x, y);
         
-        // Cell background
         const bg = this.add.graphics();
         bg.fillStyle(0x2a2a3e, 1);
         bg.fillRoundedRect(-cellSize / 2 + 4, -cellSize / 2 + 4, cellSize - 8, cellSize - 8, 8);
@@ -311,14 +293,12 @@ export class FormationScene extends Phaser.Scene {
         bg.strokeRoundedRect(-cellSize / 2 + 4, -cellSize / 2 + 4, cellSize - 8, cellSize - 8, 8);
         cell.add(bg);
 
-        // Cell index (for reference)
         const idx = this.add.text(0, 0, '+', {
           fontSize: '24px',
           color: '#333333',
         }).setOrigin(0.5);
         cell.add(idx);
 
-        // Make interactive
         cell.setSize(cellSize - 8, cellSize - 8);
         cell.setInteractive({ useHandCursor: true, dropZone: true });
         
@@ -328,7 +308,6 @@ export class FormationScene extends Phaser.Scene {
 
         this.gridCells.push(cell);
 
-        // Place existing unit if any
         const formation = this.getCurrentFormation();
         const generalId = formation.getUnitAt(row, col);
         if (generalId) {
@@ -340,7 +319,6 @@ export class FormationScene extends Phaser.Scene {
       }
     }
 
-    // Total power display
     this.updatePowerDisplay();
   }
 
@@ -351,10 +329,8 @@ export class FormationScene extends Phaser.Scene {
       const row = Math.floor(index / 3);
       const col = index % 3;
       
-      // 기존 카드 제거
       this.removeCardFromCell(cell);
       
-      // 새 진형에 유닛이 있으면 배치
       const generalId = formation.getUnitAt(row, col);
       if (generalId) {
         const general = this.generalMap.get(generalId);
@@ -369,13 +345,11 @@ export class FormationScene extends Phaser.Scene {
   }
 
   private placeCardInCell(cell: Phaser.GameObjects.Container, general: General): void {
-    // Remove existing card if any
     const existingCard = cell.getData('card') as GeneralCard | undefined;
     if (existingCard) {
       existingCard.destroy();
     }
 
-    // Clear the '+' sign
     cell.each((child: Phaser.GameObjects.GameObject) => {
       if (child instanceof Phaser.GameObjects.Text && (child as Phaser.GameObjects.Text).text === '+') {
         child.setVisible(false);
@@ -400,7 +374,6 @@ export class FormationScene extends Phaser.Scene {
       cell.setData('card', null);
     }
 
-    // Show '+' sign again
     cell.each((child: Phaser.GameObjects.GameObject) => {
       if (child instanceof Phaser.GameObjects.Text && (child as Phaser.GameObjects.Text).text === '+') {
         child.setVisible(true);
@@ -413,15 +386,13 @@ export class FormationScene extends Phaser.Scene {
     const generalId = formation.getUnitAt(row, col);
     
     if (generalId) {
-      // Remove unit from formation
       formation.removeUnit(row, col);
       const cell = this.gridCells[row * 3 + col];
       this.removeCardFromCell(cell);
       this.updatePowerDisplay();
       this.refreshGeneralList();
-      this.refreshSlotTabs(); // 유닛 수 업데이트
+      this.refreshSlotTabs();
     } else {
-      // Mark as selected for placing
       this.selectedSlot = { row, col };
       this.highlightSelectedSlot();
     }
@@ -442,9 +413,8 @@ export class FormationScene extends Phaser.Scene {
     });
   }
 
-  private createGeneralList(): void {
-    const { width, height } = this.cameras.main;
-    const listY = 455; // 슬롯 탭 추가로 아래로 조정
+  private createGeneralList(width: number, height: number): void {
+    const listY = 450;
     const listHeight = height - listY - 90;
     
     // Background
@@ -458,7 +428,6 @@ export class FormationScene extends Phaser.Scene {
       color: '#ffd700',
     });
 
-    // Viewport for scrollable general list
     this.generalListViewport = new Viewport(this, {
       x: 10,
       y: listY,
@@ -466,7 +435,6 @@ export class FormationScene extends Phaser.Scene {
       height: listHeight,
     });
 
-    // Scrollbar
     this.generalListScrollbar = new Scrollbar(this, this.generalListViewport, {
       x: width - 25,
       y: listY,
@@ -476,7 +444,6 @@ export class FormationScene extends Phaser.Scene {
       barColor: 0x888888,
     });
 
-    // Enable mouse wheel scroll
     this.generalListViewport.enableMouseWheelScroll(40);
     this.generalListScrollbar.syncWithViewport();
 
@@ -484,9 +451,8 @@ export class FormationScene extends Phaser.Scene {
   }
 
   private refreshGeneralList(): void {
-    const { width } = this.cameras.main;
+    const width = this.cameras.main.width;
     
-    // Clear existing cards
     this.generalListViewport.clearContent();
     this.generalCards = [];
 
@@ -496,11 +462,9 @@ export class FormationScene extends Phaser.Scene {
     const viewportWidth = width - 40;
     const spacing = (viewportWidth - cols * cardWidth) / (cols + 1);
 
-    // Filter out generals already in formation
     const formation = this.getCurrentFormation();
     const availableGenerals = this.ownedGenerals.filter(g => !formation.hasUnit(g.id));
 
-    // Create cards in rows
     const rows = Math.ceil(availableGenerals.length / cols);
     const contentContainer = this.generalListViewport.getContent();
 
@@ -521,7 +485,6 @@ export class FormationScene extends Phaser.Scene {
       this.generalCards.push(card);
     });
 
-    // Update content height and scrollbar
     const totalHeight = rows * (cardHeight + 10) + 20;
     this.generalListViewport.setContentHeight(totalHeight);
     this.generalListScrollbar.refresh();
@@ -531,7 +494,6 @@ export class FormationScene extends Phaser.Scene {
     const formation = this.getCurrentFormation();
     
     if (!this.selectedSlot) {
-      // Auto-select first empty slot
       for (let row = 2; row >= 0; row--) {
         for (let col = 0; col < 3; col++) {
           if (!formation.getUnitAt(row, col)) {
@@ -553,16 +515,15 @@ export class FormationScene extends Phaser.Scene {
         this.highlightSelectedSlot();
         this.updatePowerDisplay();
         this.refreshGeneralList();
-        this.refreshSlotTabs(); // 유닛 수 업데이트
+        this.refreshSlotTabs();
       }
     }
   }
 
   private updatePowerDisplay(): void {
-    const { width } = this.cameras.main;
+    const width = this.cameras.main.width;
     const formation = this.getCurrentFormation();
     
-    // Calculate total power
     let totalPower = 0;
     formation.getAllUnits().forEach(generalId => {
       const general = this.generalMap.get(generalId);
@@ -571,15 +532,14 @@ export class FormationScene extends Phaser.Scene {
       }
     });
 
-    // Update or create power text
     const powerTextKey = 'powerText';
     let powerText = this.children.getByName(powerTextKey) as Phaser.GameObjects.Text;
     
     if (!powerText) {
-      powerText = this.add.text(width - 20, 430, '', {
+      powerText = this.add.text(width / 2, 425, '', {
         fontSize: '16px',
         color: '#ffd700',
-      }).setOrigin(1, 0.5);
+      }).setOrigin(0.5);
       powerText.setName(powerTextKey);
     }
     
@@ -587,13 +547,9 @@ export class FormationScene extends Phaser.Scene {
   }
 
   private saveFormation(): void {
-    // FormationManager로 저장 (전체 슬롯)
     this.formationManager.save();
-    
-    // 호환성을 위해 활성 진형을 기존 형식으로도 저장
     this.formationManager.saveActiveFormationLegacy();
 
-    // Show save confirmation
     const { width, height } = this.cameras.main;
     const activeSlot = this.formationManager.getActiveSlot();
     const text = this.add.text(width / 2, height / 2, `✅ "${activeSlot.slotName}" 저장 완료!`, {

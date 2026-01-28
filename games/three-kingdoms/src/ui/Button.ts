@@ -1,46 +1,42 @@
 import Phaser from 'phaser';
-import { drawButtonGradient, COLORS } from './effects';
+import { COLORS } from './effects';
+
+export type ButtonVariant = 'red' | 'gold' | 'dark';
 
 export interface ButtonStyle {
   width?: number;
   height?: number;
-  backgroundColor?: number;
-  backgroundColorDark?: number;
-  borderColor?: number;
-  borderWidth?: number;
-  cornerRadius?: number;
+  variant?: ButtonVariant;
   fontSize?: string;
   fontColor?: string;
   hoverScale?: number;
   pressScale?: number;
-  glowOnHover?: boolean;
   disabled?: boolean;
+  useImage?: boolean;
 }
 
 const DEFAULT_STYLE: ButtonStyle = {
   width: 200,
-  height: 44,
-  backgroundColor: COLORS.UI.red,
-  backgroundColorDark: COLORS.UI.darkRed,
-  borderColor: COLORS.UI.gold,
-  borderWidth: 2,
-  cornerRadius: 8,
+  height: 50,
+  variant: 'red',
   fontSize: '18px',
   fontColor: '#ffffff',
   hoverScale: 1.05,
   pressScale: 0.95,
-  glowOnHover: true,
   disabled: false,
+  useImage: true,
 };
 
 export class Button extends Phaser.GameObjects.Container {
-  private bg: Phaser.GameObjects.Graphics;
+  private bgImage?: Phaser.GameObjects.Image;
+  private bgGraphics?: Phaser.GameObjects.Graphics;
   private glow: Phaser.GameObjects.Graphics;
   private label: Phaser.GameObjects.Text;
   private style: ButtonStyle;
   private callback?: () => void;
   private _disabled: boolean = false;
   private isPressed: boolean = false;
+  private variant: ButtonVariant;
 
   constructor(
     scene: Phaser.Scene,
@@ -53,24 +49,21 @@ export class Button extends Phaser.GameObjects.Container {
     super(scene, x, y);
 
     this.style = { ...DEFAULT_STYLE, ...style };
-    
-    // 색상 계산 (어두운 색이 없으면 자동 생성)
-    if (!this.style.backgroundColorDark) {
-      this.style.backgroundColorDark = this.darkenColor(this.style.backgroundColor!, 0.6);
-    }
-    
+    this.variant = this.style.variant ?? 'red';
     this.callback = callback;
     this._disabled = this.style.disabled ?? false;
 
     // Glow layer (hover 시 표시)
     this.glow = scene.add.graphics();
-    this.drawGlow(false);
     this.add(this.glow);
 
-    // Background
-    this.bg = scene.add.graphics();
-    this.drawBackground();
-    this.add(this.bg);
+    // Background - 이미지 사용 여부 확인
+    const imageKey = `btn_${this.variant}`;
+    if (this.style.useImage && scene.textures.exists(imageKey)) {
+      this.createImageBackground(imageKey);
+    } else {
+      this.createGraphicsBackground();
+    }
 
     // Label with shadow
     this.label = scene.add.text(0, -1, text, {
@@ -90,14 +83,72 @@ export class Button extends Phaser.GameObjects.Container {
       this.setupEvents();
     }
 
+    this.updateDisabledState();
+
     scene.add.existing(this);
   }
 
-  private darkenColor(color: number, factor: number): number {
-    const r = Math.floor(((color >> 16) & 0xff) * factor);
-    const g = Math.floor(((color >> 8) & 0xff) * factor);
-    const b = Math.floor((color & 0xff) * factor);
-    return (r << 16) | (g << 8) | b;
+  private createImageBackground(imageKey: string): void {
+    this.bgImage = this.scene.add.image(0, 0, imageKey);
+    
+    // 원하는 크기로 스케일 조정
+    const scaleX = this.style.width! / this.bgImage.width;
+    const scaleY = this.style.height! / this.bgImage.height;
+    this.bgImage.setScale(scaleX, scaleY);
+    
+    this.add(this.bgImage);
+  }
+
+  private createGraphicsBackground(): void {
+    const { width, height } = this.style;
+    const halfW = width! / 2;
+    const halfH = height! / 2;
+    const cornerRadius = 8;
+
+    this.bgGraphics = this.scene.add.graphics();
+    
+    // 그라디언트 색상 결정
+    let topColor: number, bottomColor: number, borderColor: number;
+    switch (this.variant) {
+      case 'gold':
+        topColor = 0xffd700;
+        bottomColor = 0xb8860b;
+        borderColor = 0x4a3000;
+        break;
+      case 'dark':
+        topColor = 0x3a3a3a;
+        bottomColor = 0x1a1a1a;
+        borderColor = 0xffd700;
+        break;
+      case 'red':
+      default:
+        topColor = 0xc41e3a;
+        bottomColor = 0x5c0000;
+        borderColor = 0xffd700;
+        break;
+    }
+
+    // 그림자
+    this.bgGraphics.fillStyle(0x000000, 0.4);
+    this.bgGraphics.fillRoundedRect(-halfW + 2, -halfH + 3, width!, height!, cornerRadius);
+    
+    // 메인 그라디언트 배경
+    this.bgGraphics.fillGradientStyle(topColor, topColor, bottomColor, bottomColor, 1);
+    this.bgGraphics.fillRoundedRect(-halfW, -halfH, width!, height!, cornerRadius);
+    
+    // 상단 하이라이트
+    this.bgGraphics.fillStyle(0xffffff, 0.15);
+    this.bgGraphics.fillRoundedRect(
+      -halfW + 2, -halfH + 2,
+      width! - 4, height! / 3,
+      { tl: cornerRadius - 2, tr: cornerRadius - 2, bl: 0, br: 0 }
+    );
+    
+    // 테두리
+    this.bgGraphics.lineStyle(3, borderColor);
+    this.bgGraphics.strokeRoundedRect(-halfW, -halfH, width!, height!, cornerRadius);
+
+    this.add(this.bgGraphics);
   }
 
   private setupEvents(): void {
@@ -109,56 +160,29 @@ export class Button extends Phaser.GameObjects.Container {
 
   private drawGlow(visible: boolean): void {
     this.glow.clear();
-    if (!visible || !this.style.glowOnHover) return;
+    if (!visible) return;
     
-    const { width, height, cornerRadius, borderColor } = this.style;
+    const { width, height } = this.style;
     const halfW = width! / 2;
     const halfH = height! / 2;
     
-    // 외곽 글로우
-    this.glow.fillStyle(borderColor!, 0.3);
-    this.glow.fillRoundedRect(-halfW - 4, -halfH - 4, width! + 8, height! + 8, cornerRadius! + 2);
-  }
-
-  private drawBackground(): void {
-    const { width, height, cornerRadius, backgroundColor, backgroundColorDark, borderColor, borderWidth } = this.style;
-    const halfW = width! / 2;
-    const halfH = height! / 2;
-
-    this.bg.clear();
-    
-    if (this._disabled) {
-      // 비활성화 상태
-      this.bg.fillStyle(0x444444, 1);
-      this.bg.fillRoundedRect(-halfW, -halfH, width!, height!, cornerRadius);
-      this.bg.lineStyle(borderWidth!, 0x666666);
-      this.bg.strokeRoundedRect(-halfW, -halfH, width!, height!, cornerRadius);
-      return;
+    // 글로우 색상 결정
+    let glowColor: number;
+    switch (this.variant) {
+      case 'gold':
+        glowColor = 0xffd700;
+        break;
+      case 'dark':
+        glowColor = 0xffd700;
+        break;
+      case 'red':
+      default:
+        glowColor = 0xff6666;
+        break;
     }
-
-    // 그림자
-    this.bg.fillStyle(0x000000, 0.4);
-    this.bg.fillRoundedRect(-halfW + 2, -halfH + 3, width!, height!, cornerRadius);
     
-    // 메인 그라디언트 배경
-    this.bg.fillGradientStyle(
-      backgroundColor!, backgroundColor!,
-      backgroundColorDark!, backgroundColorDark!,
-      1
-    );
-    this.bg.fillRoundedRect(-halfW, -halfH, width!, height!, cornerRadius);
-    
-    // 상단 하이라이트
-    this.bg.fillStyle(0xffffff, 0.15);
-    this.bg.fillRoundedRect(
-      -halfW + 2, -halfH + 2,
-      width! - 4, height! / 3,
-      { tl: cornerRadius! - 2, tr: cornerRadius! - 2, bl: 0, br: 0 }
-    );
-    
-    // 테두리
-    this.bg.lineStyle(borderWidth!, borderColor!);
-    this.bg.strokeRoundedRect(-halfW, -halfH, width!, height!, cornerRadius);
+    this.glow.fillStyle(glowColor, 0.3);
+    this.glow.fillRoundedRect(-halfW - 4, -halfH - 4, width! + 8, height! + 8, 10);
   }
 
   private onPointerOver(): void {
@@ -166,7 +190,6 @@ export class Button extends Phaser.GameObjects.Container {
     
     this.drawGlow(true);
     
-    // 스케일 업 애니메이션
     this.scene.tweens.add({
       targets: this,
       scaleX: this.style.hoverScale,
@@ -182,7 +205,6 @@ export class Button extends Phaser.GameObjects.Container {
     this.drawGlow(false);
     this.isPressed = false;
     
-    // 스케일 복원
     this.scene.tweens.add({
       targets: this,
       scaleX: 1,
@@ -197,7 +219,11 @@ export class Button extends Phaser.GameObjects.Container {
     
     this.isPressed = true;
     
-    // 프레스 효과
+    // 프레스 이미지로 교체 (있으면)
+    if (this.bgImage && this.scene.textures.exists(`btn_${this.variant}_pressed`)) {
+      this.bgImage.setTexture(`btn_${this.variant}_pressed`);
+    }
+    
     this.scene.tweens.add({
       targets: this,
       scaleX: this.style.pressScale,
@@ -212,7 +238,11 @@ export class Button extends Phaser.GameObjects.Container {
     
     this.isPressed = false;
     
-    // 원래 크기로 복귀 후 콜백
+    // 원래 이미지로 복귀
+    if (this.bgImage) {
+      this.bgImage.setTexture(`btn_${this.variant}`);
+    }
+    
     this.scene.tweens.add({
       targets: this,
       scaleX: this.style.hoverScale,
@@ -227,6 +257,26 @@ export class Button extends Phaser.GameObjects.Container {
     });
   }
 
+  private updateDisabledState(): void {
+    if (this._disabled) {
+      this.label.setAlpha(0.5);
+      if (this.bgImage) {
+        this.bgImage.setTint(0x666666);
+      }
+      if (this.bgGraphics) {
+        this.bgGraphics.setAlpha(0.5);
+      }
+    } else {
+      this.label.setAlpha(1);
+      if (this.bgImage) {
+        this.bgImage.clearTint();
+      }
+      if (this.bgGraphics) {
+        this.bgGraphics.setAlpha(1);
+      }
+    }
+  }
+
   setText(text: string): void {
     this.label.setText(text);
   }
@@ -239,14 +289,12 @@ export class Button extends Phaser.GameObjects.Container {
     this._disabled = disabled;
     
     if (disabled) {
-      this.label.setAlpha(0.5);
       this.disableInteractive();
     } else {
-      this.label.setAlpha(1);
       this.setInteractive({ useHandCursor: true });
     }
     
-    this.drawBackground();
+    this.updateDisabledState();
     this.drawGlow(false);
   }
 
@@ -254,10 +302,13 @@ export class Button extends Phaser.GameObjects.Container {
     return this._disabled;
   }
 
-  // 버튼 스타일 변경
-  setStyle(newStyle: Partial<ButtonStyle>): void {
-    this.style = { ...this.style, ...newStyle };
-    this.drawBackground();
+  setVariant(variant: ButtonVariant): void {
+    this.variant = variant;
+    const imageKey = `btn_${variant}`;
+    
+    if (this.bgImage && this.scene.textures.exists(imageKey)) {
+      this.bgImage.setTexture(imageKey);
+    }
   }
 
   // 펄스 애니메이션 (주목 필요한 버튼에)

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="140" viewBox="0 0 100 140">
+  <defs>
+    <linearGradient id="frameSSR" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffaa00;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#ff8800;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffaa00;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="bgSSR" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a2a1a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2a1508;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glowSSR">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect x="2" y="2" width="96" height="136" rx="8" ry="8" fill="url(#bgSSR)"/>
+  <rect x="2" y="2" width="96" height="136" rx="8" ry="8" fill="none" stroke="url(#frameSSR)" stroke-width="4" filter="url(#glowSSR)"/>
+  <rect x="6" y="6" width="88" height="128" rx="5" ry="5" fill="none" stroke="rgba(255,170,0,0.3)" stroke-width="1"/>
+</svg>

@@ -102,29 +102,24 @@ export class LoginScene extends Phaser.Scene {
     // 중앙 영웅 실루엣 (배경 장식)
     this.add.text(width / 2, 320, '🏯', { fontSize: '80px' }).setOrigin(0.5).setAlpha(0.3);
     
-    // 게스트 로그인 버튼 (메인)
+    // 게스트 로그인 버튼 (메인) - 빨간색 스타일
     const guestButton = new Button(this, width / 2, 430, '🎮  게스트로 시작', {
       width: 280,
       height: 54,
       fontSize: '20px',
-      backgroundColor: COLORS.UI.red,
-      backgroundColorDark: COLORS.UI.darkRed,
-      borderColor: COLORS.UI.gold,
-      glowOnHover: true,
+      variant: 'red',
     }, () => this.startAsGuest());
     
     // 펄스 효과로 주목
     guestButton.pulse();
     
-    // Google 로그인 버튼 (온라인 모드)
+    // Google 로그인 버튼 (온라인 모드) - 다크 스타일
     if (isOnline()) {
       new Button(this, width / 2, 510, '🔵  Google 로그인', {
         width: 280,
         height: 54,
         fontSize: '18px',
-        backgroundColor: COLORS.UI.blue,
-        backgroundColorDark: COLORS.UI.darkBlue,
-        borderColor: 0x4488ff,
+        variant: 'dark',
       }, () => this.loginWithGoogle());
     }
     

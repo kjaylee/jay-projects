@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="gemGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#88ffff;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#00ccff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0088aa;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <polygon points="16,2 28,12 24,28 8,28 4,12" fill="url(#gemGrad)" stroke="#006688" stroke-width="2"/>
+  <polygon points="16,6 22,12 16,14 10,12" fill="rgba(255,255,255,0.4)"/>
+  <line x1="16" y1="14" x2="16" y2="25" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+</svg>

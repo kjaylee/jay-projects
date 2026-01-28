@@ -1,7 +1,7 @@
 # Implementation Plan
 
 ## 현재 상태
-엔티티(General, Skill, Equipment, Formation)와 전투 시스템 기본 구조 완료. 5개 씬(Boot, Preload, Login, Main, Battle) 구현됨. 단위 테스트 기반 구축됨. **핵심 게임플레이 연동과 실제 게임 데이터가 필요한 단계.**
+엔티티(General, Skill, Equipment, Formation)와 전투 시스템 기본 구조 완료. 9개 씬(Boot, Preload, Login, Main, Battle, Formation, GeneralList, Gacha, StageSelect) 구현됨. 단위 테스트 401개 통과. **UI 씬 완성, 데이터 연동 완료. 고도화 단계로 진입.**
 
 ## TODO (우선순위순)
 
@@ -30,6 +30,9 @@
 - [x] **IdleManager 정치 스탯 연동** - Formation → General → politics 합계 계산 (2026-01-28)
 - [x] **RewardManager 테스트 추가** - 16개 테스트, 난이도별 첫 클리어 보너스 검증 (2026-01-28)
 - [x] **GameManager 자원 관리** - 금화/보석/스태미나 CRUD + 이벤트 발행 완료, 테스트 362개 (2026-01-28)
+- [x] **FreeGachaManager 클래스** - 일일 무료 가챠 체크, lastFreeDate 저장, 테스트 9개 (2026-01-28)
+- [x] **IdleRewardPopupManager 클래스** - 방치 보상 팝업 관리, 최대 12시간, 테스트 13개 (2026-01-28)
+- [x] **GachaResourceManager 클래스** - 가챠 재화 연동, 보석 소모 로직, 테스트 17개 (2026-01-28)
 
 #### 장수/장비 시스템
 - [x] **General.equipItem() 구현** - Equipment 슬롯별 장착 및 스탯 반영 완료, 테스트 362개 (2026-01-28)
@@ -37,32 +40,32 @@
 - [x] **장수 상세 정보 조합** - calculateStats()에 장비 보너스 포함 완료, 테스트 362개 (2026-01-28)
 
 #### UI 씬 구현
-- [ ] **공통 Button 컴포넌트** - 재사용 가능한 버튼 클래스 `specs/ui-scenes.md`
-- [ ] **공통 Modal/Popup 컴포넌트** - 오버레이 팝업 시스템 `specs/ui-scenes.md`
-- [ ] **FormationScene 기본 UI** - 3x3 그리드, 장수 목록 표시 `specs/ui-scenes.md`
-- [ ] **FormationScene 드래그앤드롭** - 장수 카드 → 그리드 배치 `specs/formation-system.md`
-- [ ] **GeneralListScene 기본 UI** - 보유 장수 목록, 등급/레벨 표시 `specs/ui-scenes.md`
-- [ ] **GachaScene 기본 UI** - 단차/10연차 버튼, 재화 표시, 천장 카운터 `specs/ui-scenes.md`
-- [ ] **MainScene 자원 바 연동** - GameManager에서 실시간 자원 표시 `specs/ui-scenes.md`
-- [ ] **MainScene 방치 보상 팝업** - 접속 시 누적 보상 표시 및 수령 `specs/idle-system.md`
-- [ ] **하단 네비게이션 씬 전환** - 탭 클릭 시 해당 씬으로 이동 `specs/ui-scenes.md`
+- [x] **공통 Button 컴포넌트** - src/ui/Button.ts 완료, 3가지 variant (red/gold/dark) (2026-01-28)
+- [x] **공통 Modal/Popup 컴포넌트** - src/ui/Modal.ts 완료, 애니메이션 포함 (2026-01-28)
+- [x] **FormationScene 기본 UI** - 3x3 그리드, 장수 목록 표시, 5개 슬롯 완료 (2026-01-28)
+- [x] **FormationScene 드래그앤드롭** - 클릭 기반 장수 카드 → 그리드 배치 완료 (2026-01-28)
+- [x] **GeneralListScene 기본 UI** - 보유 장수 목록, 등급/레벨 표시, 정렬 기능 완료 (2026-01-28)
+- [x] **GachaScene 기본 UI** - 단차/10연차 버튼, 재화 표시, 천장 카운터 완료 (2026-01-28)
+- [x] **MainScene 자원 바 연동** - GameManager에서 실시간 자원 표시 완료 (2026-01-28)
+- [x] **하단 네비게이션 씬 전환** - 5개 탭 클릭 시 해당 씬으로 이동 완료 (2026-01-28)
+- [ ] **MainScene 방치 보상 팝업** - IdleRewardPopupManager 씬 연동 필요 `specs/idle-system.md`
 
 #### 데이터 연동
-- [ ] **일일 무료 가챠 구현** - lastFreeGachaDate 체크, 하루 1회 무료 `specs/gacha-system.md`
-- [ ] **재화 소모 가챠** - 보석 160개 차감 후 뽑기 `specs/gacha-system.md`
-- [ ] **Formation LocalStorage 저장** - 오프라인 모드 진형 저장 `specs/formation-system.md`
-- [ ] **UserData maxClearedStage 추가** - 방치 보상 경험치 계산용 `specs/idle-system.md`
+- [x] **일일 무료 가챠 구현** - FreeGachaManager 완료, 씬 연동 필요 (2026-01-28)
+- [x] **재화 소모 가챠** - GachaResourceManager 완료, 씬 연동 필요 (2026-01-28)
+- [x] **Formation LocalStorage 저장** - FormationManager.save() 완료 (2026-01-28)
+- [x] **UserData maxClearedStage 추가** - GameManager.UserData에 포함됨 (2026-01-28)
 
 ### Low Priority (Polish)
 
 #### 가챠 시스템 고도화
-- [ ] **10연차 SR 보장 로직** - 10회 중 SR 이상 없으면 마지막을 SR로 교체 `specs/gacha-system.md`
+- [x] **10연차 SR 보장 로직** - GachaManager에 구현됨 (2026-01-28)
 - [ ] **천장 카운터 저장** - pityCount LocalStorage/DB 저장 `specs/gacha-system.md`
 - [ ] **중복 장수 → 조각 변환** - 보유 장수 뽑기 시 승급 재료 지급 `specs/gacha-system.md`
-- [ ] **가챠 연출 애니메이션** - 등급별 이펙트 (SSR/UR 특별 연출) `specs/gacha-system.md`
+- [x] **가챠 연출 애니메이션** - GachaAnimationManager 완료 (2026-01-28)
 
 #### 진형 시스템 고도화
-- [ ] **다중 진형 슬롯 (5개)** - 프리셋 저장/로드 `specs/formation-system.md`
+- [x] **다중 진형 슬롯 (5개)** - FormationManager 완료 (2026-01-28)
 - [ ] **시너지 상세화** - 2/3/4/5명 단계별 보너스 테이블 `specs/formation-system.md`
 - [ ] **클래스 배치 가이드** - 권장 위치 하이라이트 표시 `specs/formation-system.md`
 
@@ -73,17 +76,17 @@
 - [ ] **턴 제한 시스템** - N턴 초과 시 승패 판정 `specs/battle-system.md`
 
 #### 장수 시스템 고도화
-- [ ] **각성 시스템** - UR 전용, 외형 변경 + 신규 스킬 해금 `specs/general-system.md`
+- [x] **각성 시스템** - AwakenManager 완료, 25개 테스트 (2026-01-28)
 - [ ] **스킬 레벨업** - 재료 소모하여 스킬 효과 강화 `specs/skill-system.md`
 
 #### 추가 UI
-- [ ] **StageSelectScene** - 챕터/스테이지 선택 화면 `specs/ui-scenes.md`
+- [x] **StageSelectScene** - 챕터/스테이지 선택 화면 완료 (2026-01-28)
 - [ ] **GeneralDetailScene** - 장수 상세, 레벨업, 장비 장착 `specs/ui-scenes.md`
 - [ ] **Toast 알림 컴포넌트** - 획득/레벨업 등 알림 표시 `specs/ui-scenes.md`
 - [ ] **VIP 보너스 시스템** - 방치 보상/가챠 배율 적용 `specs/idle-system.md`
 
 ## IN PROGRESS
-- [ ] **UI 컴포넌트 + 씬 전환** - Button, Modal, 네비게이션 동작
+- [ ] **매니저 씬 연동** - FreeGacha/IdleRewardPopup/GachaResource를 실제 씬에 연결
 
 ## DONE
 - [x] 엔티티 기본 구조 (General, Skill, Equipment, Formation)
@@ -91,8 +94,8 @@
 - [x] 데미지 계산 공식 (물리/계략) - 테스트로 검증됨
 - [x] 가챠 확률 로직 + 천장 시스템 - 테스트로 검증됨
 - [x] 방치 보상 계산 로직 - 테스트로 검증됨
-- [x] 씬 흐름 (5개 씬: Boot, Preload, Login, Main, Battle)
-- [x] 테스트 기반 구축 (Vitest)
+- [x] 씬 흐름 (9개 씬: Boot, Preload, Login, Main, Battle, Formation, GeneralList, Gacha, StageSelect)
+- [x] 테스트 기반 구축 (Vitest) - **401개 테스트 통과**
 - [x] Formation 시너지 계산 (세력/클래스)
 - [x] General 레벨업/승급 스탯 공식
 - [x] **GachaManager 클래스** - 단차/10연차, 천장 80회, SR 보장 (2026-01-28)
@@ -101,6 +104,10 @@
 - [x] **GameManager 자원 관리** - 스태미나 CRUD, spendGold/Gems, 이벤트 발행 (2026-01-28)
 - [x] **General 장비 시스템** - equipItem/unequipItem, 장비 스탯 합산 (2026-01-28)
 - [x] **General 스킬 시스템** - loadSkills, getActiveSkills/getPassiveSkills (2026-01-28)
+- [x] **UI 컴포넌트 완료** - Button, Modal, GeneralCard, Layout, effects (2026-01-28)
+- [x] **FreeGachaManager** - 일일 무료 가챠 체크, 9개 테스트 (2026-01-28)
+- [x] **IdleRewardPopupManager** - 방치 보상 팝업 관리, 13개 테스트 (2026-01-28)
+- [x] **GachaResourceManager** - 가챠 재화 연동, 17개 테스트 (2026-01-28)
 
 ## DISCOVERIES
 - **기획서 vs 구현 불일치**: 방치 보상 공식이 테스트(×0.5, ×2)와 기획서(×10, ×5)에서 다름 - 확인 필요
