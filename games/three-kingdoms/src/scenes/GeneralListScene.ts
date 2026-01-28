@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { Button } from '../ui/Button';
 import { GeneralCard } from '../ui/GeneralCard';
-import { General, GeneralGrade, GeneralClass, Faction } from '../entities/General';
+import { General, GeneralGrade, GeneralClass, Faction, AwakenData } from '../entities/General';
+import { AwakenManager } from '../managers/AwakenManager';
 import generalsData from '../data/generals.json';
 
 interface OwnedGeneral {
@@ -9,6 +10,7 @@ interface OwnedGeneral {
   level: number;
   stars: number;
   exp: number;
+  awakened?: boolean;
 }
 
 export class GeneralListScene extends Phaser.Scene {
@@ -121,7 +123,7 @@ export class GeneralListScene extends Phaser.Scene {
 
     // Convert to General objects
     this.ownedGenerals = ownedList.map(owned => {
-      const data = generalsData.generals.find(g => g.id === owned.id);
+      const data = generalsData.generals.find(g => g.id === owned.id) as any;
       if (!data) return null;
 
       return new General({
@@ -134,6 +136,8 @@ export class GeneralListScene extends Phaser.Scene {
         level: owned.level,
         stars: owned.stars,
         exp: owned.exp,
+        awakened: owned.awakened,
+        awakenData: data.awakenData as AwakenData | undefined,
       });
     }).filter((g): g is General => g !== null);
 
@@ -252,11 +256,24 @@ export class GeneralListScene extends Phaser.Scene {
       }).setOrigin(0.5)
     );
 
+    // 각성 상태 표시 (UR 장수만)
+    if (general.grade === 'UR') {
+      const awakenStatus = general.awakened ? '✨ 각성 완료' : '⭐ 각성 가능';
+      const awakenColor = general.awakened ? '#ff00ff' : '#ffaa00';
+      this.detailContainer.add(
+        this.add.text(centerX, statsY + 165, awakenStatus, {
+          fontSize: '14px',
+          color: awakenColor,
+          fontStyle: 'bold',
+        }).setOrigin(0.5)
+      );
+    }
+
     // Level up button
-    const levelUpBtn = new Button(this, centerX - 80, panelY + panelHeight - 50, '레벨업', {
-      width: 120,
-      height: 40,
-      fontSize: '14px',
+    const levelUpBtn = new Button(this, centerX - 80, panelY + panelHeight - 90, '레벨업', {
+      width: 100,
+      height: 36,
+      fontSize: '13px',
       backgroundColor: 0x006600,
     }, () => {
       // TODO: Implement level up
@@ -265,10 +282,10 @@ export class GeneralListScene extends Phaser.Scene {
     this.detailContainer.add(levelUpBtn);
 
     // Upgrade button
-    const upgradeBtn = new Button(this, centerX + 80, panelY + panelHeight - 50, '승급', {
-      width: 120,
-      height: 40,
-      fontSize: '14px',
+    const upgradeBtn = new Button(this, centerX + 80, panelY + panelHeight - 90, '승급', {
+      width: 100,
+      height: 36,
+      fontSize: '13px',
       backgroundColor: 0x884400,
     }, () => {
       // TODO: Implement upgrade
@@ -276,6 +293,243 @@ export class GeneralListScene extends Phaser.Scene {
     });
     this.detailContainer.add(upgradeBtn);
 
+    // 각성 버튼 (UR 장수만, 각성 전에만 표시)
+    if (general.grade === 'UR' && !general.awakened) {
+      const awakenBtn = new Button(this, centerX, panelY + panelHeight - 45, '🌟 각성', {
+        width: 220,
+        height: 40,
+        fontSize: '16px',
+        backgroundColor: general.canAwaken() ? 0x990099 : 0x333333,
+      }, () => {
+        this.showAwakenConfirm(general);
+      });
+      this.detailContainer.add(awakenBtn);
+    }
+
     this.detailContainer.setVisible(true);
+  }
+
+  /**
+   * 각성 확인 팝업 표시
+   */
+  private showAwakenConfirm(general: General): void {
+    const { width, height } = this.cameras.main;
+    const awakenManager = AwakenManager.getInstance();
+
+    // 임시 재료 (실제로는 GameManager에서 가져와야 함)
+    const resources = { gold: 200000, awakenStones: 100 };
+    const check = awakenManager.checkAwaken(general, resources);
+
+    // 확인 팝업 컨테이너
+    const confirmContainer = this.add.container(0, 0);
+
+    // 오버레이
+    const overlay = this.add.graphics();
+    overlay.fillStyle(0x000000, 0.8);
+    overlay.fillRect(0, 0, width, height);
+    overlay.setInteractive(new Phaser.Geom.Rectangle(0, 0, width, height), Phaser.Geom.Rectangle.Contains);
+    confirmContainer.add(overlay);
+
+    // 팝업 패널
+    const popupWidth = 320;
+    const popupHeight = 350;
+    const popupX = (width - popupWidth) / 2;
+    const popupY = (height - popupHeight) / 2;
+
+    const popup = this.add.graphics();
+    popup.fillStyle(0x1a1a2e, 1);
+    popup.fillRoundedRect(popupX, popupY, popupWidth, popupHeight, 12);
+    popup.lineStyle(3, 0xff00ff);
+    popup.strokeRoundedRect(popupX, popupY, popupWidth, popupHeight, 12);
+    confirmContainer.add(popup);
+
+    // 제목
+    confirmContainer.add(
+      this.add.text(width / 2, popupY + 30, `🌟 ${general.name} 각성`, {
+        fontSize: '20px',
+        color: '#ff00ff',
+        fontStyle: 'bold',
+      }).setOrigin(0.5)
+    );
+
+    // 각성 효과 미리보기
+    if (general.awakenData) {
+      const bonus = general.awakenData.awakenStats;
+      const bonusText = [
+        `⚔️ 공격 +${bonus.attack ?? 0}`,
+        `🛡️ 방어 +${bonus.defense ?? 0}`,
+        `📜 지력 +${bonus.intelligence ?? 0}`,
+        `💨 속도 +${bonus.speed ?? 0}`,
+      ];
+
+      confirmContainer.add(
+        this.add.text(width / 2, popupY + 65, '각성 보너스', {
+          fontSize: '14px',
+          color: '#ffaa00',
+        }).setOrigin(0.5)
+      );
+
+      bonusText.forEach((text, i) => {
+        confirmContainer.add(
+          this.add.text(popupX + 40, popupY + 90 + i * 22, text, {
+            fontSize: '13px',
+            color: '#00ff00',
+          })
+        );
+      });
+
+      // 새로운 스킬 표시
+      confirmContainer.add(
+        this.add.text(popupX + 40, popupY + 180, `🔮 신규 스킬: ${general.awakenData.awakenSkillId}`, {
+          fontSize: '12px',
+          color: '#00ffff',
+        })
+      );
+
+      // 비용 표시
+      const cost = general.awakenData.awakenCost;
+      confirmContainer.add(
+        this.add.text(popupX + 40, popupY + 210, `💰 골드: ${cost.gold.toLocaleString()}`, {
+          fontSize: '12px',
+          color: '#ffffff',
+        })
+      );
+      confirmContainer.add(
+        this.add.text(popupX + 40, popupY + 232, `💎 각성석: ${cost.awakenStones}`, {
+          fontSize: '12px',
+          color: '#ffffff',
+        })
+      );
+    }
+
+    // 가능 여부 표시
+    if (!check.canAwaken) {
+      confirmContainer.add(
+        this.add.text(width / 2, popupY + 265, check.reasons[0], {
+          fontSize: '11px',
+          color: '#ff4444',
+        }).setOrigin(0.5)
+      );
+    }
+
+    // 버튼들
+    const cancelBtn = new Button(this, width / 2 - 70, popupY + popupHeight - 40, '취소', {
+      width: 100,
+      height: 36,
+      fontSize: '14px',
+      backgroundColor: 0x666666,
+    }, () => {
+      confirmContainer.destroy();
+    });
+    confirmContainer.add(cancelBtn);
+
+    const confirmBtn = new Button(this, width / 2 + 70, popupY + popupHeight - 40, '각성!', {
+      width: 100,
+      height: 36,
+      fontSize: '14px',
+      backgroundColor: check.canAwaken ? 0x990099 : 0x333333,
+    }, () => {
+      if (!check.canAwaken) return;
+      
+      const result = awakenManager.executeAwaken(general, resources);
+      if (result.success) {
+        this.showAwakenAnimation(general, confirmContainer);
+      }
+    });
+    confirmContainer.add(confirmBtn);
+  }
+
+  /**
+   * 각성 연출 애니메이션
+   */
+  private showAwakenAnimation(general: General, container: Phaser.GameObjects.Container): void {
+    const { width, height } = this.cameras.main;
+    
+    // 컨테이너 클리어
+    container.removeAll(true);
+
+    // 풀스크린 오버레이
+    const overlay = this.add.graphics();
+    overlay.fillStyle(0x000000, 1);
+    overlay.fillRect(0, 0, width, height);
+    container.add(overlay);
+
+    // 중앙 이펙트
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    // 빛나는 원 이펙트
+    const circle = this.add.graphics();
+    circle.fillStyle(0xff00ff, 0.5);
+    circle.fillCircle(centerX, centerY, 10);
+    container.add(circle);
+
+    // 확장 애니메이션
+    this.tweens.add({
+      targets: circle,
+      scaleX: 30,
+      scaleY: 30,
+      alpha: 0,
+      duration: 1500,
+      ease: 'Expo.easeOut',
+    });
+
+    // 이름 텍스트
+    const nameText = this.add.text(centerX, centerY - 50, general.name, {
+      fontSize: '32px',
+      color: '#ffffff',
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setAlpha(0);
+    container.add(nameText);
+
+    // 각성 완료 텍스트
+    const awakenText = this.add.text(centerX, centerY + 20, '✨ 각성 완료! ✨', {
+      fontSize: '28px',
+      color: '#ff00ff',
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setAlpha(0);
+    container.add(awakenText);
+
+    // 텍스트 페이드 인
+    this.tweens.add({
+      targets: [nameText, awakenText],
+      alpha: 1,
+      duration: 500,
+      delay: 800,
+    });
+
+    // 3초 후 닫기
+    this.time.delayedCall(3000, () => {
+      container.destroy();
+      this.detailContainer.setVisible(false);
+      
+      // 저장 및 새로고침
+      this.saveOwnedGenerals();
+      this.refreshCardGrid();
+    });
+  }
+
+  /**
+   * 소유 장수 저장
+   */
+  private saveOwnedGenerals(): void {
+    const savedKey = `ownedGenerals_${this.userId}`;
+    const ownedList = this.ownedGenerals.map(g => ({
+      id: g.id,
+      level: g.level,
+      stars: g.stars,
+      exp: g.exp,
+      awakened: g.awakened,
+    }));
+    localStorage.setItem(savedKey, JSON.stringify(ownedList));
+  }
+
+  /**
+   * 카드 그리드 새로고침
+   */
+  private refreshCardGrid(): void {
+    this.cardContainer.removeAll(true);
+    this.loadOwnedGenerals();
+    this.createCardGrid();
   }
 }

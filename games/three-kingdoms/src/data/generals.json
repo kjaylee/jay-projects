@@ -559,7 +559,21 @@
         "politics": 95
       },
       "skillIds": ["skill_god_of_war", "skill_divine_blade", "skill_eternal_loyalty"],
-      "portrait": "assets/generals/guan_yu_god.png"
+      "portrait": "assets/generals/guan_yu_god.png",
+      "awakenData": {
+        "awakenStats": {
+          "attack": 200,
+          "defense": 150,
+          "intelligence": 100,
+          "speed": 120,
+          "politics": 80
+        },
+        "awakenSkillId": "skill_divine_judgment",
+        "awakenCost": {
+          "gold": 150000,
+          "awakenStones": 80
+        }
+      }
     },
     {
       "id": "lu_bu_unrivaled",
@@ -576,7 +590,21 @@
         "politics": 45
       },
       "skillIds": ["skill_peerless", "skill_chaos_incarnate", "skill_flying_general"],
-      "portrait": "assets/generals/lu_bu_unrivaled.png"
+      "portrait": "assets/generals/lu_bu_unrivaled.png",
+      "awakenData": {
+        "awakenStats": {
+          "attack": 250,
+          "defense": 120,
+          "intelligence": 50,
+          "speed": 180,
+          "politics": 30
+        },
+        "awakenSkillId": "skill_godslayer",
+        "awakenCost": {
+          "gold": 200000,
+          "awakenStones": 100
+        }
+      }
     },
     {
       "id": "zhuge_liang_dragon",
@@ -593,7 +621,21 @@
         "politics": 135
       },
       "skillIds": ["skill_sleeping_dragon", "skill_divine_strategy", "skill_star_fall"],
-      "portrait": "assets/generals/zhuge_liang_dragon.png"
+      "portrait": "assets/generals/zhuge_liang_dragon.png",
+      "awakenData": {
+        "awakenStats": {
+          "attack": 50,
+          "defense": 100,
+          "intelligence": 250,
+          "speed": 100,
+          "politics": 180
+        },
+        "awakenSkillId": "skill_heavens_will",
+        "awakenCost": {
+          "gold": 180000,
+          "awakenStones": 90
+        }
+      }
     },
     {
       "id": "cao_cao_hegemon",
@@ -610,7 +652,21 @@
         "politics": 140
       },
       "skillIds": ["skill_hegemon", "skill_supreme_command", "skill_world_order"],
-      "portrait": "assets/generals/cao_cao_hegemon.png"
+      "portrait": "assets/generals/cao_cao_hegemon.png",
+      "awakenData": {
+        "awakenStats": {
+          "attack": 150,
+          "defense": 160,
+          "intelligence": 170,
+          "speed": 140,
+          "politics": 200
+        },
+        "awakenSkillId": "skill_unify_realm",
+        "awakenCost": {
+          "gold": 200000,
+          "awakenStones": 100
+        }
+      }
     },
     {
       "id": "zhou_yu_fire",
@@ -627,7 +683,21 @@
         "politics": 115
       },
       "skillIds": ["skill_fire_god", "skill_inferno", "skill_wind_and_fire"],
-      "portrait": "assets/generals/zhou_yu_fire.png"
+      "portrait": "assets/generals/zhou_yu_fire.png",
+      "awakenData": {
+        "awakenStats": {
+          "attack": 100,
+          "defense": 110,
+          "intelligence": 220,
+          "speed": 130,
+          "politics": 140
+        },
+        "awakenSkillId": "skill_infernal_blaze",
+        "awakenCost": {
+          "gold": 180000,
+          "awakenStones": 90
+        }
+      }
     },
     {
       "id": "sun_ce",
@@ -644,7 +714,21 @@
         "politics": 100
       },
       "skillIds": ["skill_little_conqueror", "skill_jiangdong_might", "skill_heroic_charge"],
-      "portrait": "assets/generals/sun_ce.png"
+      "portrait": "assets/generals/sun_ce.png",
+      "awakenData": {
+        "awakenStats": {
+          "attack": 200,
+          "defense": 130,
+          "intelligence": 90,
+          "speed": 170,
+          "politics": 110
+        },
+        "awakenSkillId": "skill_conquerors_legacy",
+        "awakenCost": {
+          "gold": 180000,
+          "awakenStones": 90
+        }
+      }
     }
   ]
 }

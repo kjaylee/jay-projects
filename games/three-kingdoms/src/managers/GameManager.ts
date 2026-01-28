@@ -12,10 +12,22 @@ export interface UserData {
   clearedStages: string[];
 }
 
+export interface ResourceChangeEvent {
+  previous: number;
+  current: number;
+  delta: number;
+}
+
+export type GameEventType = 'goldChanged' | 'gemsChanged' | 'staminaChanged';
+export type GameEventCallback = (event: ResourceChangeEvent) => void;
+
+const MAX_STAMINA = 200;
+
 export class GameManager {
   private static instance: GameManager;
   private userData: UserData | null = null;
   private isGuest: boolean = false;
+  private eventListeners: Map<GameEventType, Set<GameEventCallback>> = new Map();
 
   private constructor() {}
 
@@ -140,7 +152,20 @@ export class GameManager {
    */
   async addGold(amount: number): Promise<void> {
     if (!this.userData || amount <= 0) return;
-    await this.updateGold(amount);
+
+    const previous = this.userData.gold;
+    this.userData.gold += amount;
+
+    if (this.isGuest) {
+      this.saveGuestData(this.userData.id, this.userData);
+    } else {
+      await supabase
+        .from('users')
+        .update({ gold: this.userData.gold })
+        .eq('id', this.userData.id);
+    }
+
+    this.emit('goldChanged', { previous, current: this.userData.gold, delta: amount });
   }
 
   /**
@@ -149,7 +174,8 @@ export class GameManager {
    */
   async addGems(amount: number): Promise<void> {
     if (!this.userData || amount <= 0) return;
-    
+
+    const previous = this.userData.gems;
     this.userData.gems += amount;
     
     if (this.isGuest) {
@@ -160,6 +186,8 @@ export class GameManager {
         .update({ gems: this.userData.gems })
         .eq('id', this.userData.id);
     }
+
+    this.emit('gemsChanged', { previous, current: this.userData.gems, delta: amount });
   }
 
   /**
@@ -242,5 +270,181 @@ export class GameManager {
       gems: this.userData.gems,
       maxClearedStage: this.userData.maxClearedStage,
     };
+  }
+
+  // ============ 스태미나 관리 ============
+
+  /**
+   * 현재 스태미나 조회
+   */
+  getStamina(): number {
+    return this.userData?.stamina ?? 0;
+  }
+
+  /**
+   * 스태미나 보유 여부 확인
+   */
+  hasStamina(amount: number): boolean {
+    return (this.userData?.stamina ?? 0) >= amount;
+  }
+
+  /**
+   * 스태미나 추가 (최대 200 제한)
+   */
+  async addStamina(amount: number): Promise<void> {
+    if (!this.userData || amount <= 0) return;
+
+    const previous = this.userData.stamina;
+    this.userData.stamina = Math.min(this.userData.stamina + amount, MAX_STAMINA);
+    const delta = this.userData.stamina - previous;
+
+    if (delta > 0) {
+      if (this.isGuest) {
+        this.saveGuestData(this.userData.id, this.userData);
+      } else {
+        await supabase
+          .from('users')
+          .update({ stamina: this.userData.stamina })
+          .eq('id', this.userData.id);
+      }
+      this.emit('staminaChanged', { previous, current: this.userData.stamina, delta });
+    }
+  }
+
+  /**
+   * 스태미나 소모
+   * @returns 성공 여부
+   */
+  async useStamina(amount: number): Promise<boolean> {
+    if (!this.userData || amount <= 0) return false;
+    if (this.userData.stamina < amount) return false;
+
+    const previous = this.userData.stamina;
+    this.userData.stamina -= amount;
+
+    if (this.isGuest) {
+      this.saveGuestData(this.userData.id, this.userData);
+    } else {
+      await supabase
+        .from('users')
+        .update({ stamina: this.userData.stamina })
+        .eq('id', this.userData.id);
+    }
+
+    this.emit('staminaChanged', { previous, current: this.userData.stamina, delta: -amount });
+    return true;
+  }
+
+  // ============ 자원 소모 CRUD ============
+
+  /**
+   * 골드 보유 여부 확인
+   */
+  hasGold(amount: number): boolean {
+    return (this.userData?.gold ?? 0) >= amount;
+  }
+
+  /**
+   * 골드 소모
+   * @returns 성공 여부
+   */
+  async spendGold(amount: number): Promise<boolean> {
+    if (!this.userData || amount <= 0) return false;
+    if (this.userData.gold < amount) return false;
+
+    const previous = this.userData.gold;
+    this.userData.gold -= amount;
+
+    if (this.isGuest) {
+      this.saveGuestData(this.userData.id, this.userData);
+    } else {
+      await supabase
+        .from('users')
+        .update({ gold: this.userData.gold })
+        .eq('id', this.userData.id);
+    }
+
+    this.emit('goldChanged', { previous, current: this.userData.gold, delta: -amount });
+    return true;
+  }
+
+  /**
+   * 보석 보유 여부 확인
+   */
+  hasGems(amount: number): boolean {
+    return (this.userData?.gems ?? 0) >= amount;
+  }
+
+  /**
+   * 보석 소모
+   * @returns 성공 여부
+   */
+  async spendGems(amount: number): Promise<boolean> {
+    if (!this.userData || amount <= 0) return false;
+    if (this.userData.gems < amount) return false;
+
+    const previous = this.userData.gems;
+    this.userData.gems -= amount;
+
+    if (this.isGuest) {
+      this.saveGuestData(this.userData.id, this.userData);
+    } else {
+      await supabase
+        .from('users')
+        .update({ gems: this.userData.gems })
+        .eq('id', this.userData.id);
+    }
+
+    this.emit('gemsChanged', { previous, current: this.userData.gems, delta: -amount });
+    return true;
+  }
+
+  // ============ 이벤트 시스템 ============
+
+  /**
+   * 이벤트 리스너 등록
+   */
+  on(eventType: GameEventType, callback: GameEventCallback): void {
+    if (!this.eventListeners.has(eventType)) {
+      this.eventListeners.set(eventType, new Set());
+    }
+    this.eventListeners.get(eventType)!.add(callback);
+  }
+
+  /**
+   * 이벤트 리스너 제거
+   */
+  off(eventType: GameEventType, callback: GameEventCallback): void {
+    this.eventListeners.get(eventType)?.delete(callback);
+  }
+
+  /**
+   * 이벤트 발행
+   */
+  private emit(eventType: GameEventType, event: ResourceChangeEvent): void {
+    this.eventListeners.get(eventType)?.forEach(callback => callback(event));
+  }
+
+  // ============ 기존 메소드 이벤트 보강 ============
+
+  /**
+   * 골드 변경 (이벤트 발행 버전)
+   */
+  async updateGoldWithEvent(amount: number): Promise<void> {
+    if (!this.userData) return;
+
+    const previous = this.userData.gold;
+    this.userData.gold += amount;
+
+    if (this.isGuest) {
+      this.saveGuestData(this.userData.id, this.userData);
+    } else {
+      await supabase
+        .from('users')
+        .update({ gold: this.userData.gold })
+        .eq('id', this.userData.id);
+    }
+
+    this.emit('goldChanged', { previous, current: this.userData.gold, delta: amount });
   }
 }

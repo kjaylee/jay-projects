@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
 import { Button } from '../ui/Button';
 import { GeneralCard } from '../ui/GeneralCard';
-import { Viewport, Scrollbar, Row } from '../ui/layout';
+import { Viewport, Scrollbar } from '../ui/layout';
 import { General, GeneralGrade, GeneralClass, Faction } from '../entities/General';
-import { Formation, Position } from '../entities/Formation';
+import { Formation } from '../entities/Formation';
+import { FormationManager, FormationSlot } from '../managers/FormationManager';
 import generalsData from '../data/generals.json';
 
 interface OwnedGeneral {
@@ -15,11 +16,15 @@ interface OwnedGeneral {
 
 export class FormationScene extends Phaser.Scene {
   private userId!: string;
-  private formation!: Formation;
+  private formationManager!: FormationManager;
   private ownedGenerals: General[] = [];
   private generalMap: Map<string, General> = new Map();
   private gridCells: Phaser.GameObjects.Container[] = [];
   private selectedSlot: { row: number; col: number } | null = null;
+  
+  // Slot tabs
+  private slotTabs: Phaser.GameObjects.Container[] = [];
+  private slotNameTexts: Phaser.GameObjects.Text[] = [];
   
   // Layout components
   private generalListViewport!: Viewport;
@@ -44,10 +49,13 @@ export class FormationScene extends Phaser.Scene {
 
     // Load data
     this.loadOwnedGenerals();
-    this.loadFormation();
+    this.formationManager = FormationManager.load(this.userId);
 
     // Header
     this.createHeader();
+
+    // Slot tabs (5개 슬롯)
+    this.createSlotTabs();
 
     // Formation grid
     this.createFormationGrid();
@@ -91,6 +99,145 @@ export class FormationScene extends Phaser.Scene {
     }).setOrigin(0.5);
   }
 
+  private createSlotTabs(): void {
+    const { width } = this.cameras.main;
+    const tabY = 85;
+    const tabWidth = (width - 60) / 5;
+    const tabHeight = 40;
+
+    for (let i = 0; i < 5; i++) {
+      const x = 30 + i * tabWidth + tabWidth / 2;
+      const isActive = i === this.formationManager.getActiveSlotId();
+      
+      const tab = this.add.container(x, tabY);
+      
+      // Tab background
+      const bg = this.add.graphics();
+      this.drawTabBackground(bg, tabWidth, tabHeight, isActive);
+      tab.add(bg);
+      
+      // Slot number badge
+      const badge = this.add.text(-tabWidth / 2 + 12, 0, `${i + 1}`, {
+        fontSize: '14px',
+        color: isActive ? '#ffd700' : '#888888',
+        fontStyle: 'bold',
+      }).setOrigin(0.5);
+      tab.add(badge);
+      
+      // Slot name
+      const slot = this.formationManager.getSlot(i)!;
+      const nameText = this.add.text(6, 0, this.truncateName(slot.slotName, 6), {
+        fontSize: '12px',
+        color: isActive ? '#ffffff' : '#aaaaaa',
+      }).setOrigin(0.5);
+      tab.add(nameText);
+      this.slotNameTexts.push(nameText);
+      
+      // Unit count indicator
+      const unitCount = slot.formation.getUnitCount();
+      const countText = this.add.text(tabWidth / 2 - 14, 0, `[${unitCount}]`, {
+        fontSize: '10px',
+        color: unitCount > 0 ? '#00ff00' : '#666666',
+      }).setOrigin(0.5);
+      tab.add(countText);
+      
+      // Make interactive
+      tab.setSize(tabWidth - 4, tabHeight);
+      tab.setInteractive({ useHandCursor: true });
+      
+      tab.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        // 오른쪽 클릭 또는 더블클릭 시 이름 편집
+        if (pointer.rightButtonDown() || pointer.rightButtonReleased()) {
+          this.editSlotName(i);
+        } else {
+          this.switchSlot(i);
+        }
+      });
+
+      // Long press for name edit
+      tab.on('pointerup', () => {});
+      
+      this.slotTabs.push(tab);
+      tab.setData('badge', badge);
+      tab.setData('nameText', nameText);
+      tab.setData('countText', countText);
+      tab.setData('bg', bg);
+    }
+
+    // Edit name button
+    const editBtn = this.add.text(width - 30, tabY, '✏️', {
+      fontSize: '18px',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    
+    editBtn.on('pointerdown', () => {
+      this.editSlotName(this.formationManager.getActiveSlotId());
+    });
+  }
+
+  private drawTabBackground(graphics: Phaser.GameObjects.Graphics, width: number, height: number, isActive: boolean): void {
+    graphics.clear();
+    graphics.fillStyle(isActive ? 0x2a4a2a : 0x1a1a2e, 1);
+    graphics.fillRoundedRect(-width / 2 + 2, -height / 2, width - 4, height, 6);
+    graphics.lineStyle(2, isActive ? 0x00ff00 : 0x333333);
+    graphics.strokeRoundedRect(-width / 2 + 2, -height / 2, width - 4, height, 6);
+  }
+
+  private truncateName(name: string, maxLen: number): string {
+    if (name.length <= maxLen) return name;
+    return name.slice(0, maxLen - 1) + '…';
+  }
+
+  private switchSlot(slotId: number): void {
+    if (slotId === this.formationManager.getActiveSlotId()) return;
+    
+    this.formationManager.setActiveSlot(slotId);
+    this.refreshSlotTabs();
+    this.refreshFormationGrid();
+    this.refreshGeneralList();
+    this.updatePowerDisplay();
+  }
+
+  private refreshSlotTabs(): void {
+    const { width } = this.cameras.main;
+    const tabWidth = (width - 60) / 5;
+    const tabHeight = 40;
+    
+    this.slotTabs.forEach((tab, i) => {
+      const isActive = i === this.formationManager.getActiveSlotId();
+      const slot = this.formationManager.getSlot(i)!;
+      
+      const bg = tab.getData('bg') as Phaser.GameObjects.Graphics;
+      this.drawTabBackground(bg, tabWidth, tabHeight, isActive);
+      
+      const badge = tab.getData('badge') as Phaser.GameObjects.Text;
+      badge.setColor(isActive ? '#ffd700' : '#888888');
+      
+      const nameText = tab.getData('nameText') as Phaser.GameObjects.Text;
+      nameText.setText(this.truncateName(slot.slotName, 6));
+      nameText.setColor(isActive ? '#ffffff' : '#aaaaaa');
+      
+      const countText = tab.getData('countText') as Phaser.GameObjects.Text;
+      const unitCount = slot.formation.getUnitCount();
+      countText.setText(`[${unitCount}]`);
+      countText.setColor(unitCount > 0 ? '#00ff00' : '#666666');
+    });
+  }
+
+  private editSlotName(slotId: number): void {
+    const slot = this.formationManager.getSlot(slotId);
+    if (!slot) return;
+    
+    // HTML input을 사용한 이름 편집
+    const currentName = slot.slotName;
+    const newName = window.prompt('슬롯 이름을 입력하세요 (최대 20자):', currentName);
+    
+    if (newName !== null && newName.trim().length > 0) {
+      if (this.formationManager.setSlotName(slotId, newName)) {
+        this.refreshSlotTabs();
+      }
+    }
+  }
+
   private loadOwnedGenerals(): void {
     const savedKey = `ownedGenerals_${this.userId}`;
     const saved = localStorage.getItem(savedKey);
@@ -128,26 +275,8 @@ export class FormationScene extends Phaser.Scene {
     }).filter((g): g is General => g !== null);
   }
 
-  private loadFormation(): void {
-    const savedKey = `formation_${this.userId}`;
-    const saved = localStorage.getItem(savedKey);
-    
-    if (saved) {
-      const json = JSON.parse(saved);
-      this.formation = Formation.fromJSON(json);
-    } else {
-      this.formation = new Formation(this.userId);
-      // Place default generals
-      if (this.ownedGenerals.length > 0) {
-        this.formation.placeUnit(this.ownedGenerals[0].id, 2, 1);
-      }
-      if (this.ownedGenerals.length > 1) {
-        this.formation.placeUnit(this.ownedGenerals[1].id, 1, 0);
-      }
-      if (this.ownedGenerals.length > 2) {
-        this.formation.placeUnit(this.ownedGenerals[2].id, 1, 2);
-      }
-    }
+  private getCurrentFormation(): Formation {
+    return this.formationManager.getActiveFormation();
   }
 
   private createFormationGrid(): void {
@@ -156,7 +285,7 @@ export class FormationScene extends Phaser.Scene {
     const cellSize = 95;
     const gridWidth = gridSize * cellSize;
     const startX = (width - gridWidth) / 2;
-    const startY = 100;
+    const startY = 145; // 슬롯 탭 아래로 조정
 
     // Row labels
     const rowLabels = ['후열', '중열', '전열'];
@@ -200,7 +329,8 @@ export class FormationScene extends Phaser.Scene {
         this.gridCells.push(cell);
 
         // Place existing unit if any
-        const generalId = this.formation.getUnitAt(row, col);
+        const formation = this.getCurrentFormation();
+        const generalId = formation.getUnitAt(row, col);
         if (generalId) {
           const general = this.generalMap.get(generalId);
           if (general) {
@@ -212,6 +342,30 @@ export class FormationScene extends Phaser.Scene {
 
     // Total power display
     this.updatePowerDisplay();
+  }
+
+  private refreshFormationGrid(): void {
+    const formation = this.getCurrentFormation();
+    
+    this.gridCells.forEach((cell, index) => {
+      const row = Math.floor(index / 3);
+      const col = index % 3;
+      
+      // 기존 카드 제거
+      this.removeCardFromCell(cell);
+      
+      // 새 진형에 유닛이 있으면 배치
+      const generalId = formation.getUnitAt(row, col);
+      if (generalId) {
+        const general = this.generalMap.get(generalId);
+        if (general) {
+          this.placeCardInCell(cell, general);
+        }
+      }
+    });
+    
+    this.selectedSlot = null;
+    this.highlightSelectedSlot();
   }
 
   private placeCardInCell(cell: Phaser.GameObjects.Container, general: General): void {
@@ -255,15 +409,17 @@ export class FormationScene extends Phaser.Scene {
   }
 
   private onCellClick(row: number, col: number): void {
-    const generalId = this.formation.getUnitAt(row, col);
+    const formation = this.getCurrentFormation();
+    const generalId = formation.getUnitAt(row, col);
     
     if (generalId) {
       // Remove unit from formation
-      this.formation.removeUnit(row, col);
+      formation.removeUnit(row, col);
       const cell = this.gridCells[row * 3 + col];
       this.removeCardFromCell(cell);
       this.updatePowerDisplay();
       this.refreshGeneralList();
+      this.refreshSlotTabs(); // 유닛 수 업데이트
     } else {
       // Mark as selected for placing
       this.selectedSlot = { row, col };
@@ -288,7 +444,7 @@ export class FormationScene extends Phaser.Scene {
 
   private createGeneralList(): void {
     const { width, height } = this.cameras.main;
-    const listY = 420;
+    const listY = 455; // 슬롯 탭 추가로 아래로 조정
     const listHeight = height - listY - 90;
     
     // Background
@@ -341,7 +497,8 @@ export class FormationScene extends Phaser.Scene {
     const spacing = (viewportWidth - cols * cardWidth) / (cols + 1);
 
     // Filter out generals already in formation
-    const availableGenerals = this.ownedGenerals.filter(g => !this.formation.hasUnit(g.id));
+    const formation = this.getCurrentFormation();
+    const availableGenerals = this.ownedGenerals.filter(g => !formation.hasUnit(g.id));
 
     // Create cards in rows
     const rows = Math.ceil(availableGenerals.length / cols);
@@ -371,11 +528,13 @@ export class FormationScene extends Phaser.Scene {
   }
 
   private onGeneralSelect(general: General): void {
+    const formation = this.getCurrentFormation();
+    
     if (!this.selectedSlot) {
       // Auto-select first empty slot
       for (let row = 2; row >= 0; row--) {
         for (let col = 0; col < 3; col++) {
-          if (!this.formation.getUnitAt(row, col)) {
+          if (!formation.getUnitAt(row, col)) {
             this.selectedSlot = { row, col };
             break;
           }
@@ -387,23 +546,25 @@ export class FormationScene extends Phaser.Scene {
     if (this.selectedSlot) {
       const { row, col } = this.selectedSlot;
       
-      if (this.formation.placeUnit(general.id, row, col)) {
+      if (formation.placeUnit(general.id, row, col)) {
         const cell = this.gridCells[row * 3 + col];
         this.placeCardInCell(cell, general);
         this.selectedSlot = null;
         this.highlightSelectedSlot();
         this.updatePowerDisplay();
         this.refreshGeneralList();
+        this.refreshSlotTabs(); // 유닛 수 업데이트
       }
     }
   }
 
   private updatePowerDisplay(): void {
     const { width } = this.cameras.main;
+    const formation = this.getCurrentFormation();
     
     // Calculate total power
     let totalPower = 0;
-    this.formation.getAllUnits().forEach(generalId => {
+    formation.getAllUnits().forEach(generalId => {
       const general = this.generalMap.get(generalId);
       if (general) {
         totalPower += general.combatPower;
@@ -415,7 +576,7 @@ export class FormationScene extends Phaser.Scene {
     let powerText = this.children.getByName(powerTextKey) as Phaser.GameObjects.Text;
     
     if (!powerText) {
-      powerText = this.add.text(width - 20, 390, '', {
+      powerText = this.add.text(width - 20, 430, '', {
         fontSize: '16px',
         color: '#ffd700',
       }).setOrigin(1, 0.5);
@@ -426,12 +587,16 @@ export class FormationScene extends Phaser.Scene {
   }
 
   private saveFormation(): void {
-    const json = this.formation.toJSON();
-    localStorage.setItem(`formation_${this.userId}`, JSON.stringify(json));
+    // FormationManager로 저장 (전체 슬롯)
+    this.formationManager.save();
+    
+    // 호환성을 위해 활성 진형을 기존 형식으로도 저장
+    this.formationManager.saveActiveFormationLegacy();
 
     // Show save confirmation
     const { width, height } = this.cameras.main;
-    const text = this.add.text(width / 2, height / 2, '✅ 진형이 저장되었습니다!', {
+    const activeSlot = this.formationManager.getActiveSlot();
+    const text = this.add.text(width / 2, height / 2, `✅ "${activeSlot.slotName}" 저장 완료!`, {
       fontSize: '20px',
       color: '#00ff00',
       backgroundColor: '#000000',

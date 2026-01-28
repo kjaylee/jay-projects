@@ -190,4 +190,152 @@ describe('GameManager', () => {
       expect(playerData?.maxClearedStage).toBe('1-5');
     });
   });
+
+  describe('스태미나 관리', () => {
+    beforeEach(async () => {
+      await gameManager.init(testGuestId, true);
+    });
+
+    it('addStamina - 스태미나를 추가한다', async () => {
+      const initialStamina = gameManager.getUserData()?.stamina ?? 0;
+
+      await gameManager.addStamina(10);
+
+      expect(gameManager.getUserData()?.stamina).toBe(initialStamina + 10);
+    });
+
+    it('addStamina - 최대 스태미나(200)를 초과하지 않는다', async () => {
+      await gameManager.addStamina(500);
+
+      expect(gameManager.getUserData()?.stamina).toBe(200);
+    });
+
+    it('useStamina - 스태미나를 소모한다', async () => {
+      const initialStamina = gameManager.getUserData()?.stamina ?? 0;
+
+      const result = await gameManager.useStamina(10);
+
+      expect(result).toBe(true);
+      expect(gameManager.getUserData()?.stamina).toBe(initialStamina - 10);
+    });
+
+    it('useStamina - 스태미나가 부족하면 false 반환하고 소모하지 않는다', async () => {
+      const initialStamina = gameManager.getUserData()?.stamina ?? 0;
+
+      const result = await gameManager.useStamina(initialStamina + 100);
+
+      expect(result).toBe(false);
+      expect(gameManager.getUserData()?.stamina).toBe(initialStamina);
+    });
+
+    it('hasStamina - 스태미나 보유 여부 확인', () => {
+      expect(gameManager.hasStamina(10)).toBe(true);
+      expect(gameManager.hasStamina(1000)).toBe(false);
+    });
+
+    it('getStamina - 현재 스태미나 조회', () => {
+      expect(gameManager.getStamina()).toBe(50); // 초기값
+    });
+  });
+
+  describe('자원 소모 (CRUD)', () => {
+    beforeEach(async () => {
+      await gameManager.init(testGuestId, true);
+    });
+
+    it('spendGold - 골드를 소모한다', async () => {
+      const initialGold = gameManager.getUserData()?.gold ?? 0;
+
+      const result = await gameManager.spendGold(1000);
+
+      expect(result).toBe(true);
+      expect(gameManager.getUserData()?.gold).toBe(initialGold - 1000);
+    });
+
+    it('spendGold - 골드가 부족하면 false 반환', async () => {
+      const result = await gameManager.spendGold(99999999);
+
+      expect(result).toBe(false);
+    });
+
+    it('spendGems - 보석을 소모한다', async () => {
+      const initialGems = gameManager.getUserData()?.gems ?? 0;
+
+      const result = await gameManager.spendGems(50);
+
+      expect(result).toBe(true);
+      expect(gameManager.getUserData()?.gems).toBe(initialGems - 50);
+    });
+
+    it('spendGems - 보석이 부족하면 false 반환', async () => {
+      const result = await gameManager.spendGems(99999999);
+
+      expect(result).toBe(false);
+    });
+
+    it('hasGold - 골드 보유 여부 확인', () => {
+      expect(gameManager.hasGold(1000)).toBe(true);
+      expect(gameManager.hasGold(99999999)).toBe(false);
+    });
+
+    it('hasGems - 보석 보유 여부 확인', () => {
+      expect(gameManager.hasGems(50)).toBe(true);
+      expect(gameManager.hasGems(99999999)).toBe(false);
+    });
+  });
+
+  describe('이벤트 발행', () => {
+    beforeEach(async () => {
+      await gameManager.init(testGuestId, true);
+    });
+
+    it('on/emit - 골드 변경 이벤트를 발행한다', async () => {
+      const callback = vi.fn();
+      gameManager.on('goldChanged', callback);
+
+      await gameManager.addGold(100);
+
+      expect(callback).toHaveBeenCalledWith({ 
+        previous: 10000, 
+        current: 10100, 
+        delta: 100 
+      });
+    });
+
+    it('on/emit - 보석 변경 이벤트를 발행한다', async () => {
+      const callback = vi.fn();
+      gameManager.on('gemsChanged', callback);
+
+      await gameManager.spendGems(50);
+
+      expect(callback).toHaveBeenCalledWith({
+        previous: 100,
+        current: 50,
+        delta: -50
+      });
+    });
+
+    it('on/emit - 스태미나 변경 이벤트를 발행한다', async () => {
+      const callback = vi.fn();
+      gameManager.on('staminaChanged', callback);
+
+      await gameManager.useStamina(10);
+
+      expect(callback).toHaveBeenCalledWith({
+        previous: 50,
+        current: 40,
+        delta: -10
+      });
+    });
+
+    it('off - 이벤트 리스너를 제거한다', async () => {
+      const callback = vi.fn();
+      gameManager.on('goldChanged', callback);
+      gameManager.off('goldChanged', callback);
+
+      await gameManager.addGold(100);
+
+      expect(callback).not.toHaveBeenCalled();
+    });
+  });
 });

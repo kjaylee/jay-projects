@@ -1,6 +1,13 @@
 import Phaser from 'phaser';
 import { supabase, isOnline } from '../services/SupabaseClient';
-import { AuthService } from '../services/AuthService';
+import { Button } from '../ui/Button';
+import { 
+  drawGradientBackground, 
+  createStarfieldParticles, 
+  createFloatingClouds,
+  createGlowText,
+  COLORS 
+} from '../ui/effects';
 
 export class LoginScene extends Phaser.Scene {
   constructor() {
@@ -11,70 +18,167 @@ export class LoginScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    // 타이틀
-    this.add.text(width / 2, 150, '⚔️ 삼국지 패왕전', {
-      fontSize: '36px',
-      color: '#ffd700',
-      fontStyle: 'bold',
-    }).setOrigin(0.5);
+    // === 동적 배경 ===
+    this.createAnimatedBackground(width, height);
 
-    this.add.text(width / 2, 200, 'Three Kingdoms: Warlord', {
-      fontSize: '16px',
-      color: '#888888',
-    }).setOrigin(0.5);
+    // === 타이틀 로고 ===
+    this.createTitle(width);
 
-    // 게스트 로그인 버튼
-    const guestButton = this.createButton(width / 2, 400, '🎮 게스트로 시작', () => {
-      this.startAsGuest();
-    });
+    // === 버튼 영역 ===
+    this.createButtons(width, height);
 
-    // Google 로그인 버튼 (온라인 모드)
-    if (isOnline()) {
-      this.createButton(width / 2, 480, '🔵 Google 로그인', () => {
-        this.loginWithGoogle();
-      });
-    }
-
-    // 오프라인 모드 표시
-    if (!isOnline()) {
-      this.add.text(width / 2, 700, '⚠️ 오프라인 모드', {
-        fontSize: '14px',
-        color: '#ff6b6b',
-      }).setOrigin(0.5);
-    }
+    // === 하단 상태 ===
+    this.createStatusInfo(width, height);
   }
 
-  private createButton(x: number, y: number, text: string, callback: () => void): Phaser.GameObjects.Container {
-    const button = this.add.container(x, y);
+  private createAnimatedBackground(width: number, height: number): void {
+    // 기본 그라디언트 배경 (진한 보라색 계열)
+    drawGradientBackground(this, 0, 0, width, height, 0x1a0f2e, 0x0a0514);
     
-    const bg = this.add.graphics();
-    bg.fillStyle(0x8b0000, 1);
-    bg.fillRoundedRect(-140, -25, 280, 50, 10);
-    bg.lineStyle(2, 0xffd700);
-    bg.strokeRoundedRect(-140, -25, 280, 50, 10);
+    // 별 파티클
+    createStarfieldParticles(this, width, height, 60);
     
-    const label = this.add.text(0, 0, text, {
-      fontSize: '20px',
-      color: '#ffffff',
+    // 떠다니는 구름/안개
+    createFloatingClouds(this, width, height, 4);
+    
+    // 하단 안개 효과
+    const fog = this.add.graphics();
+    fog.fillGradientStyle(0x1a0f2e, 0x1a0f2e, 0x0a0514, 0x0a0514, 0.5, 0.5, 0, 0);
+    fog.fillRect(0, height - 150, width, 150);
+  }
+
+  private createTitle(width: number): void {
+    // 메인 타이틀 (글로우 효과)
+    const titleContainer = createGlowText(
+      this, 
+      width / 2, 
+      120, 
+      '삼국지 패왕전', 
+      '42px', 
+      '#ffd700', 
+      0xffa500
+    );
+    
+    // 검 아이콘 (양쪽)
+    const swordLeft = this.add.text(width / 2 - 160, 120, '⚔️', { fontSize: '32px' }).setOrigin(0.5);
+    const swordRight = this.add.text(width / 2 + 160, 120, '⚔️', { fontSize: '32px' }).setOrigin(0.5);
+    
+    // 검 흔들림 애니메이션
+    this.tweens.add({
+      targets: swordLeft,
+      angle: -15,
+      duration: 1500,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+    this.tweens.add({
+      targets: swordRight,
+      angle: 15,
+      duration: 1500,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+    
+    // 서브타이틀
+    this.add.text(width / 2, 175, 'Three Kingdoms: Warlord', {
+      fontSize: '16px',
+      color: '#888888',
+      fontStyle: 'italic',
     }).setOrigin(0.5);
-
-    button.add([bg, label]);
-    button.setSize(280, 50);
-    button.setInteractive({ useHandCursor: true });
     
-    button.on('pointerover', () => bg.setAlpha(0.8));
-    button.on('pointerout', () => bg.setAlpha(1));
-    button.on('pointerdown', callback);
+    // 장식 라인
+    const line = this.add.graphics();
+    line.lineStyle(2, 0xffd700, 0.5);
+    line.lineBetween(width / 2 - 120, 200, width / 2 + 120, 200);
+    line.fillStyle(0xffd700, 1);
+    line.fillCircle(width / 2 - 120, 200, 4);
+    line.fillCircle(width / 2 + 120, 200, 4);
+    line.fillCircle(width / 2, 200, 6);
+  }
 
-    return button;
+  private createButtons(width: number, height: number): void {
+    // 중앙 영웅 실루엣 (배경 장식)
+    this.add.text(width / 2, 320, '🏯', { fontSize: '80px' }).setOrigin(0.5).setAlpha(0.3);
+    
+    // 게스트 로그인 버튼 (메인)
+    const guestButton = new Button(this, width / 2, 430, '🎮  게스트로 시작', {
+      width: 280,
+      height: 54,
+      fontSize: '20px',
+      backgroundColor: COLORS.UI.red,
+      backgroundColorDark: COLORS.UI.darkRed,
+      borderColor: COLORS.UI.gold,
+      glowOnHover: true,
+    }, () => this.startAsGuest());
+    
+    // 펄스 효과로 주목
+    guestButton.pulse();
+    
+    // Google 로그인 버튼 (온라인 모드)
+    if (isOnline()) {
+      new Button(this, width / 2, 510, '🔵  Google 로그인', {
+        width: 280,
+        height: 54,
+        fontSize: '18px',
+        backgroundColor: COLORS.UI.blue,
+        backgroundColorDark: COLORS.UI.darkBlue,
+        borderColor: 0x4488ff,
+      }, () => this.loginWithGoogle());
+    }
+    
+    // 하단 안내 텍스트
+    this.add.text(width / 2, 590, '계정 없이도 즉시 플레이 가능!', {
+      fontSize: '13px',
+      color: '#666666',
+    }).setOrigin(0.5);
+  }
+
+  private createStatusInfo(width: number, height: number): void {
+    // 버전 정보
+    this.add.text(10, height - 25, 'v0.1.0 beta', {
+      fontSize: '11px',
+      color: '#444444',
+    });
+    
+    // 온라인/오프라인 상태
+    if (isOnline()) {
+      const onlineIndicator = this.add.container(width - 80, height - 25);
+      const dot = this.add.graphics();
+      dot.fillStyle(0x00ff00, 1);
+      dot.fillCircle(0, 5, 4);
+      const text = this.add.text(10, 0, '온라인', {
+        fontSize: '11px',
+        color: '#00ff00',
+      });
+      onlineIndicator.add([dot, text]);
+    } else {
+      const offlineContainer = this.add.container(width / 2, height - 50);
+      
+      const bg = this.add.graphics();
+      bg.fillStyle(0x442222, 0.8);
+      bg.fillRoundedRect(-100, -12, 200, 24, 12);
+      
+      const text = this.add.text(0, 0, '⚠️ 오프라인 모드', {
+        fontSize: '13px',
+        color: '#ff6b6b',
+      }).setOrigin(0.5);
+      
+      offlineContainer.add([bg, text]);
+    }
   }
 
   private async startAsGuest(): Promise<void> {
-    // 게스트 모드로 시작 (로컬 저장)
-    const guestId = localStorage.getItem('guestId') || `guest_${Date.now()}`;
-    localStorage.setItem('guestId', guestId);
+    // 페이드 아웃 전환
+    this.cameras.main.fadeOut(500, 0, 0, 0);
     
-    this.scene.start('MainScene', { userId: guestId, isGuest: true });
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      const guestId = localStorage.getItem('guestId') || `guest_${Date.now()}`;
+      localStorage.setItem('guestId', guestId);
+      
+      this.scene.start('MainScene', { userId: guestId, isGuest: true });
+    });
   }
 
   private async loginWithGoogle(): Promise<void> {
@@ -85,6 +189,15 @@ export class LoginScene extends Phaser.Scene {
       if (error) throw error;
     } catch (err) {
       console.error('Login error:', err);
+      // 에러 표시
+      const errorText = this.add.text(
+        this.cameras.main.width / 2, 
+        640, 
+        '로그인 실패. 다시 시도해주세요.', 
+        { fontSize: '14px', color: '#ff4444' }
+      ).setOrigin(0.5);
+      
+      this.time.delayedCall(3000, () => errorText.destroy());
     }
   }
 }

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BattleManager, BattleState } from '../managers/BattleManager';
 import { GameManager } from '../managers/GameManager';
 import { Formation } from '../entities/Formation';
+import { FormationManager } from '../managers/FormationManager';
 import { Button } from '../ui/Button';
 import stagesData from '../data/stages.json';
 import generalsData from '../data/generals.json';
@@ -30,6 +31,7 @@ export class BattleScene extends Phaser.Scene {
   private stageId!: string;
   private stageData!: StageData;
   private formation!: Formation;
+  private formationSlotId?: number;
 
   // UI containers for units
   private playerUnitContainers: Map<string, Phaser.GameObjects.Container> = new Map();
@@ -43,9 +45,10 @@ export class BattleScene extends Phaser.Scene {
     super({ key: 'BattleScene' });
   }
 
-  init(data: { userId: string; stageId: string; stageData?: StageData }): void {
+  init(data: { userId: string; stageId: string; stageData?: StageData; formationSlotId?: number }): void {
     this.userId = data.userId;
     this.stageId = data.stageId;
+    this.formationSlotId = data.formationSlotId;
     
     // Load stage data
     if (data.stageData) {
@@ -63,7 +66,7 @@ export class BattleScene extends Phaser.Scene {
     this.battleManager = new BattleManager(this);
     this.battleManager.setGameManager(this.gameManager);
 
-    // Load player formation
+    // Load player formation (선택된 슬롯 또는 활성 슬롯 사용)
     this.loadFormation();
 
     // Create UI
@@ -84,24 +87,45 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private loadFormation(): void {
+    // FormationManager를 통해 진형 로드
+    const formationManager = FormationManager.load(this.userId);
+    
+    // 전달된 슬롯 ID가 있으면 해당 슬롯 사용, 아니면 활성 슬롯 사용
+    if (this.formationSlotId !== undefined) {
+      const slot = formationManager.getSlot(this.formationSlotId);
+      if (slot && slot.formation.isValid()) {
+        this.formation = slot.formation;
+        return;
+      }
+    }
+    
+    // 활성 슬롯 사용
+    const activeSlot = formationManager.getActiveSlot();
+    if (activeSlot.formation.isValid()) {
+      this.formation = activeSlot.formation;
+      return;
+    }
+    
+    // 폴백: 기존 레거시 형식 시도
     const savedKey = `formation_${this.userId}`;
     const saved = localStorage.getItem(savedKey);
     
     if (saved) {
       const json = JSON.parse(saved);
       this.formation = Formation.fromJSON(json);
-    } else {
-      // Create default formation with starter generals
-      this.formation = new Formation(this.userId);
-      const ownedKey = `ownedGenerals_${this.userId}`;
-      const ownedSaved = localStorage.getItem(ownedKey);
-      
-      if (ownedSaved) {
-        const owned = JSON.parse(ownedSaved);
-        if (owned.length > 0) this.formation.placeUnit(owned[0].id, 2, 1);
-        if (owned.length > 1) this.formation.placeUnit(owned[1].id, 1, 0);
-        if (owned.length > 2) this.formation.placeUnit(owned[2].id, 1, 2);
-      }
+      return;
+    }
+    
+    // 최종 폴백: 기본 진형 생성
+    this.formation = new Formation(this.userId);
+    const ownedKey = `ownedGenerals_${this.userId}`;
+    const ownedSaved = localStorage.getItem(ownedKey);
+    
+    if (ownedSaved) {
+      const owned = JSON.parse(ownedSaved);
+      if (owned.length > 0) this.formation.placeUnit(owned[0].id, 2, 1);
+      if (owned.length > 1) this.formation.placeUnit(owned[1].id, 1, 0);
+      if (owned.length > 2) this.formation.placeUnit(owned[2].id, 1, 2);
     }
   }
 
