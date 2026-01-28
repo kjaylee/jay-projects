@@ -29,12 +29,12 @@
 - [x] **IdleManager 클래스 생성** - 테스트 함수를 서비스 레이어로 분리, VIP 보너스 포함 (2026-01-28)
 - [x] **IdleManager 정치 스탯 연동** - Formation → General → politics 합계 계산 (2026-01-28)
 - [x] **RewardManager 테스트 추가** - 16개 테스트, 난이도별 첫 클리어 보너스 검증 (2026-01-28)
-- [ ] **GameManager 자원 관리** - 금화/보석/스태미나 CRUD 및 이벤트 발행 `specs/gacha-system.md`
+- [x] **GameManager 자원 관리** - 금화/보석/스태미나 CRUD + 이벤트 발행 완료, 테스트 362개 (2026-01-28)
 
 #### 장수/장비 시스템
-- [ ] **General.equipItem() 구현** - Equipment 슬롯별 장착 및 스탯 반영 `specs/general-system.md`
-- [ ] **General.loadSkills() 구현** - skillIds → Skill 객체 배열 로드 `specs/general-system.md`
-- [ ] **장수 상세 정보 조합** - calculateStats()에 장비 보너스 포함 `specs/general-system.md`
+- [x] **General.equipItem() 구현** - Equipment 슬롯별 장착 및 스탯 반영 완료, 테스트 362개 (2026-01-28)
+- [x] **General.loadSkills() 구현** - skillIds → Skill 객체 배열 로드 완료, 테스트 362개 (2026-01-28)
+- [x] **장수 상세 정보 조합** - calculateStats()에 장비 보너스 포함 완료, 테스트 362개 (2026-01-28)
 
 #### UI 씬 구현
 - [ ] **공통 Button 컴포넌트** - 재사용 가능한 버튼 클래스 `specs/ui-scenes.md`
@@ -98,6 +98,9 @@
 - [x] **GachaManager 클래스** - 단차/10연차, 천장 80회, SR 보장 (2026-01-28)
 - [x] **IdleManager 클래스** - 방치 보상 계산, VIP 보너스, 정치 스탯 연동 (2026-01-28)
 - [x] **RewardManager 테스트 완료** - 16개 테스트, 전투 보상/경험치 분배 검증 (2026-01-28)
+- [x] **GameManager 자원 관리** - 스태미나 CRUD, spendGold/Gems, 이벤트 발행 (2026-01-28)
+- [x] **General 장비 시스템** - equipItem/unequipItem, 장비 스탯 합산 (2026-01-28)
+- [x] **General 스킬 시스템** - loadSkills, getActiveSkills/getPassiveSkills (2026-01-28)
 
 ## DISCOVERIES
 - **기획서 vs 구현 불일치**: 방치 보상 공식이 테스트(×0.5, ×2)와 기획서(×10, ×5)에서 다름 - 확인 필요
