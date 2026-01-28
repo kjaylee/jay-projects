@@ -41,12 +41,85 @@ export const SINGLE_COST = 160;
 /** 10연차 비용 (보석) */
 export const MULTI_COST = 1600;
 
+/** LocalStorage 키 prefix */
+const PITY_STORAGE_PREFIX = 'gacha_pity_';
+
+/** 등급별 조각 변환 수치 */
+export const SHARD_CONVERSION: Record<GeneralGrade, number> = {
+  N: 5,
+  R: 10,
+  SR: 20,
+  SSR: 50,
+  UR: 100,
+};
+
 export class GachaManager {
   private pityCount: number = 0;
   private pool: GachaPool;
+  private userId: string | null = null;
+  private ownedGenerals: Set<string> = new Set();
 
-  constructor(pool: GachaPool) {
+  constructor(pool: GachaPool, userId?: string) {
     this.pool = pool;
+    if (userId) {
+      this.userId = userId;
+      this.loadPityCount();
+    }
+  }
+
+  /**
+   * 유저 ID 설정 및 천장 카운터 로드
+   */
+  setUserId(userId: string): void {
+    this.userId = userId;
+    this.loadPityCount();
+  }
+
+  /**
+   * LocalStorage에서 천장 카운터 로드
+   */
+  private loadPityCount(): void {
+    if (!this.userId) return;
+    
+    try {
+      const saved = localStorage.getItem(PITY_STORAGE_PREFIX + this.userId);
+      if (saved) {
+        const data = JSON.parse(saved);
+        this.pityCount = data.pityCount ?? 0;
+      }
+    } catch (e) {
+      console.error('Failed to load pity count:', e);
+    }
+  }
+
+  /**
+   * LocalStorage에 천장 카운터 저장
+   */
+  private savePityCount(): void {
+    if (!this.userId) return;
+    
+    try {
+      localStorage.setItem(PITY_STORAGE_PREFIX + this.userId, JSON.stringify({
+        pityCount: this.pityCount,
+        lastUpdated: Date.now(),
+      }));
+    } catch (e) {
+      console.error('Failed to save pity count:', e);
+    }
+  }
+
+  /**
+   * 보유 장수 목록 설정 (중복 체크용)
+   */
+  setOwnedGenerals(owned: Set<string>): void {
+    this.ownedGenerals = owned;
+  }
+
+  /**
+   * 보유 장수 목록 조회
+   */
+  getOwnedGenerals(): Set<string> {
+    return this.ownedGenerals;
   }
 
   /**
@@ -64,11 +137,23 @@ export class GachaManager {
       this.pityCount = 0;
     }
 
-    return {
+    // 천장 카운터 저장
+    this.savePityCount();
+
+    // 중복 체크
+    const isNew = !this.ownedGenerals.has(generalId);
+    const result: GachaResult = {
       generalId,
       grade,
-      isNew: true, // TODO: 보유 여부 확인 연동
+      isNew,
     };
+
+    // 중복이면 조각 지급
+    if (!isNew) {
+      result.duplicateShards = SHARD_CONVERSION[grade];
+    }
+
+    return result;
   }
 
   /**
@@ -91,15 +176,24 @@ export class GachaManager {
       if (!hasSROrHigher) {
         // 마지막 슬롯을 SR로 교체
         const srId = this.selectGeneral('SR');
+        const isNew = !this.ownedGenerals.has(srId);
         results[9] = {
           generalId: srId,
           grade: 'SR',
-          isNew: true,
+          isNew,
+          duplicateShards: isNew ? undefined : SHARD_CONVERSION.SR,
         };
       }
     }
 
     return results;
+  }
+
+  /**
+   * 뽑기 결과의 총 조각 합계 계산
+   */
+  getTotalDuplicateShards(results: GachaResult[]): number {
+    return results.reduce((sum, r) => sum + (r.duplicateShards ?? 0), 0);
   }
 
   /**
@@ -146,10 +240,11 @@ export class GachaManager {
   }
 
   /**
-   * 천장 카운트 설정 (로드용)
+   * 천장 카운트 설정 (로드용/테스트용)
    */
   setPityCount(count: number): void {
     this.pityCount = count;
+    this.savePityCount();
   }
 
   /**

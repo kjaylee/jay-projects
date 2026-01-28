@@ -1,5 +1,5 @@
 /**
- * 방치 보상 팝업 관리자
+ * 방치 보상 팝업 시스템
  * - 마지막 접속 시간 기록
  * - 경과 시간에 따른 보상 계산
  * - 최대 12시간 제한
@@ -28,7 +28,10 @@ const STAGE_REWARDS: Record<string, { goldPerMin: number; expPerMin: number }> =
   '1-10': { goldPerMin: 25, expPerMin: 12 },
   '2-1': { goldPerMin: 30, expPerMin: 15 },
   '2-5': { goldPerMin: 40, expPerMin: 20 },
+  '2-10': { goldPerMin: 50, expPerMin: 25 },
   '3-1': { goldPerMin: 50, expPerMin: 25 },
+  '3-5': { goldPerMin: 60, expPerMin: 30 },
+  '3-10': { goldPerMin: 75, expPerMin: 40 },
 };
 
 export class IdleRewardPopupManager {
@@ -48,7 +51,7 @@ export class IdleRewardPopupManager {
       try {
         return JSON.parse(saved);
       } catch {
-        console.error('Failed to parse IdleRewardPopupManager state');
+        console.error('Failed to parse IdlePopupManager state');
       }
     }
     return { lastLoginTime: Date.now(), userId: this.userId };
@@ -136,8 +139,8 @@ export class IdleRewardPopupManager {
   /**
    * 보상 수령 처리 (시간 리셋)
    */
-  claimReward(maxClearedStage: string | null = null): IdleRewardData {
-    const reward = this.calculateReward(maxClearedStage);
+  claimReward(): IdleRewardData {
+    const reward = this.calculateReward(null);
     this.updateLastLoginTime();
     return reward;
   }
@@ -169,12 +172,5 @@ export class IdleRewardPopupManager {
   setLastLoginTime(time: number): void {
     this.state.lastLoginTime = time;
     this.save();
-  }
-
-  /**
-   * 최대 방치 시간 (시간)
-   */
-  static getMaxIdleHours(): number {
-    return MAX_IDLE_HOURS;
   }
 }

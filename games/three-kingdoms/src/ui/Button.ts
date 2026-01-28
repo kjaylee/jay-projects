@@ -13,6 +13,11 @@ export interface ButtonStyle {
   pressScale?: number;
   disabled?: boolean;
   useImage?: boolean;
+  // Custom colors (override variant)
+  backgroundColor?: number;
+  backgroundColorDark?: number;
+  borderColor?: number;
+  glowOnHover?: boolean;
 }
 
 const DEFAULT_STYLE: ButtonStyle = {
@@ -100,32 +105,39 @@ export class Button extends Phaser.GameObjects.Container {
   }
 
   private createGraphicsBackground(): void {
-    const { width, height } = this.style;
+    const { width, height, backgroundColor, backgroundColorDark, borderColor: customBorderColor } = this.style;
     const halfW = width! / 2;
     const halfH = height! / 2;
     const cornerRadius = 8;
 
     this.bgGraphics = this.scene.add.graphics();
     
-    // 그라디언트 색상 결정
+    // 커스텀 색상 또는 variant 기반 색상 결정
     let topColor: number, bottomColor: number, borderColor: number;
-    switch (this.variant) {
-      case 'gold':
-        topColor = 0xffd700;
-        bottomColor = 0xb8860b;
-        borderColor = 0x4a3000;
-        break;
-      case 'dark':
-        topColor = 0x3a3a3a;
-        bottomColor = 0x1a1a1a;
-        borderColor = 0xffd700;
-        break;
-      case 'red':
-      default:
-        topColor = 0xc41e3a;
-        bottomColor = 0x5c0000;
-        borderColor = 0xffd700;
-        break;
+    
+    if (backgroundColor !== undefined) {
+      topColor = backgroundColor;
+      bottomColor = backgroundColorDark ?? backgroundColor;
+      borderColor = customBorderColor ?? 0xffd700;
+    } else {
+      switch (this.variant) {
+        case 'gold':
+          topColor = 0xffd700;
+          bottomColor = 0xb8860b;
+          borderColor = 0x4a3000;
+          break;
+        case 'dark':
+          topColor = 0x3a3a3a;
+          bottomColor = 0x1a1a1a;
+          borderColor = 0xffd700;
+          break;
+        case 'red':
+        default:
+          topColor = 0xc41e3a;
+          bottomColor = 0x5c0000;
+          borderColor = 0xffd700;
+          break;
+      }
     }
 
     // 그림자
@@ -161,6 +173,9 @@ export class Button extends Phaser.GameObjects.Container {
   private drawGlow(visible: boolean): void {
     this.glow.clear();
     if (!visible) return;
+    
+    // glowOnHover가 false면 글로우 표시 안함
+    if (this.style.glowOnHover === false) return;
     
     const { width, height } = this.style;
     const halfW = width! / 2;

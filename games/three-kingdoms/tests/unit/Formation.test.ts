@@ -164,17 +164,43 @@ describe('Formation', () => {
   });
 
   describe('시너지 계산', () => {
-    it('같은 세력 3명 → 공격력 +10%', () => {
+    it('같은 세력 2명 → 공격력 +5%', () => {
       const formation = new Formation('user-1');
       
-      // 촉 세력 장수 3명 배치 (세력 정보는 외부에서 제공)
+      const factions = { 'guan-yu': 'shu', 'zhang-fei': 'shu' };
+      formation.placeUnit('guan-yu', 0, 0);
+      formation.placeUnit('zhang-fei', 0, 1);
+      
+      const synergy = formation.calculateSynergy(factions);
+      expect(synergy.attackBonus).toBe(0.05);
+      expect(synergy.details).toHaveLength(1);
+      expect(synergy.details[0].count).toBe(2);
+    });
+
+    it('같은 세력 3명 → 공격력 +12%', () => {
+      const formation = new Formation('user-1');
+      
       const factions = { 'guan-yu': 'shu', 'zhang-fei': 'shu', 'zhao-yun': 'shu' };
       formation.placeUnit('guan-yu', 0, 0);
       formation.placeUnit('zhang-fei', 0, 1);
       formation.placeUnit('zhao-yun', 0, 2);
       
       const synergy = formation.calculateSynergy(factions);
-      expect(synergy.attackBonus).toBeGreaterThanOrEqual(0.1);
+      expect(synergy.attackBonus).toBe(0.12);
+    });
+
+    it('같은 세력 5명 → 공격력 +30%', () => {
+      const formation = new Formation('user-1');
+      
+      const factions = { 'a': 'shu', 'b': 'shu', 'c': 'shu', 'd': 'shu', 'e': 'shu' };
+      formation.placeUnit('a', 0, 0);
+      formation.placeUnit('b', 0, 1);
+      formation.placeUnit('c', 0, 2);
+      formation.placeUnit('d', 1, 0);
+      formation.placeUnit('e', 1, 1);
+      
+      const synergy = formation.calculateSynergy(factions);
+      expect(synergy.attackBonus).toBe(0.30);
     });
 
     it('같은 클래스 3명 → 클래스 보너스', () => {
@@ -186,7 +212,36 @@ describe('Formation', () => {
       formation.placeUnit('c', 0, 2);
       
       const synergy = formation.calculateSynergy({}, classes);
-      expect(synergy.classBonus).toBeGreaterThan(0);
+      expect(synergy.classBonus).toBe(0.15); // warrior 3명 = 15%
+    });
+
+    it('방패병 3명 → 방어력 +20%', () => {
+      const formation = new Formation('user-1');
+      
+      const classes = { 'a': 'shield', 'b': 'shield', 'c': 'shield' };
+      formation.placeUnit('a', 0, 0);
+      formation.placeUnit('b', 0, 1);
+      formation.placeUnit('c', 0, 2);
+      
+      const synergy = formation.calculateSynergy({}, classes);
+      expect(synergy.defenseBonus).toBe(0.20);
+    });
+
+    it('혼합 시너지 (세력 + 클래스)', () => {
+      const formation = new Formation('user-1');
+      
+      const factions = { 'a': 'shu', 'b': 'shu', 'c': 'wei' };
+      const classes = { 'a': 'warrior', 'b': 'warrior', 'c': 'warrior' };
+      
+      formation.placeUnit('a', 0, 0);
+      formation.placeUnit('b', 0, 1);
+      formation.placeUnit('c', 0, 2);
+      
+      const synergy = formation.calculateSynergy(factions, classes);
+      // shu 2명 = 5%, warrior 3명 = 15%
+      expect(synergy.factionBonus).toBe(0.05);
+      expect(synergy.classBonus).toBe(0.15);
+      expect(synergy.details).toHaveLength(2);
     });
   });
 

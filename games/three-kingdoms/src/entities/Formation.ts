@@ -14,13 +14,55 @@ export interface SynergyResult {
   defenseBonus: number;
   classBonus: number;
   factionBonus: number;
+  details: SynergyDetail[];
+}
+
+export interface SynergyDetail {
+  type: 'faction' | 'class';
+  name: string;
+  count: number;
+  bonus: number;
+  description: string;
 }
 
 const GRID_SIZE = 3;
-const FACTION_SYNERGY_THRESHOLD = 3;
-const CLASS_SYNERGY_THRESHOLD = 3;
-const FACTION_BONUS = 0.1;
-const CLASS_BONUS = 0.1;
+
+/**
+ * 세력 시너지 보너스 테이블
+ * 2명: 5%, 3명: 12%, 4명: 20%, 5명+: 30%
+ */
+const FACTION_SYNERGY_TABLE: Record<number, { bonus: number; desc: string }> = {
+  2: { bonus: 0.05, desc: '공격력 +5%' },
+  3: { bonus: 0.12, desc: '공격력 +12%' },
+  4: { bonus: 0.20, desc: '공격력 +20%' },
+  5: { bonus: 0.30, desc: '공격력 +30%' },
+};
+
+/**
+ * 클래스 시너지 보너스 테이블
+ */
+const CLASS_SYNERGY_TABLE: Record<string, Record<number, { bonus: number; stat: string; desc: string }>> = {
+  warrior: {
+    2: { bonus: 0.08, stat: 'attack', desc: '공격력 +8%' },
+    3: { bonus: 0.15, stat: 'attack', desc: '공격력 +15%' },
+  },
+  cavalry: {
+    2: { bonus: 0.06, stat: 'speed', desc: '속도 +6%' },
+    3: { bonus: 0.12, stat: 'speed', desc: '속도 +12%' },
+  },
+  strategist: {
+    2: { bonus: 0.08, stat: 'intelligence', desc: '지력 +8%' },
+    3: { bonus: 0.15, stat: 'intelligence', desc: '지력 +15%' },
+  },
+  archer: {
+    2: { bonus: 0.05, stat: 'attack', desc: '공격력 +5%, 치명타 +5%' },
+    3: { bonus: 0.10, stat: 'attack', desc: '공격력 +10%, 치명타 +10%' },
+  },
+  shield: {
+    2: { bonus: 0.10, stat: 'defense', desc: '방어력 +10%' },
+    3: { bonus: 0.20, stat: 'defense', desc: '방어력 +20%' },
+  },
+};
 
 /**
  * 진형 클래스 (3x3 그리드)
@@ -180,7 +222,7 @@ export class Formation {
   }
 
   /**
-   * 시너지 계산
+   * 시너지 계산 (2/3/4/5명 단계별)
    */
   calculateSynergy(
     factions: Record<string, string> = {},
@@ -191,6 +233,7 @@ export class Formation {
     let defenseBonus = 0;
     let factionBonus = 0;
     let classBonus = 0;
+    const details: SynergyDetail[] = [];
 
     // 세력 시너지 계산
     const factionCounts: Record<string, number> = {};
@@ -201,10 +244,20 @@ export class Formation {
       }
     }
 
-    for (const count of Object.values(factionCounts)) {
-      if (count >= FACTION_SYNERGY_THRESHOLD) {
-        attackBonus += FACTION_BONUS;
-        factionBonus += FACTION_BONUS;
+    for (const [factionName, count] of Object.entries(factionCounts)) {
+      // 가장 높은 단계 보너스 적용
+      const tier = Math.min(count, 5);
+      const synergyData = FACTION_SYNERGY_TABLE[tier];
+      if (synergyData) {
+        attackBonus += synergyData.bonus;
+        factionBonus += synergyData.bonus;
+        details.push({
+          type: 'faction',
+          name: factionName,
+          count,
+          bonus: synergyData.bonus,
+          description: synergyData.desc,
+        });
       }
     }
 
@@ -217,9 +270,28 @@ export class Formation {
       }
     }
 
-    for (const count of Object.values(classCounts)) {
-      if (count >= CLASS_SYNERGY_THRESHOLD) {
-        classBonus += CLASS_BONUS;
+    for (const [className, count] of Object.entries(classCounts)) {
+      const classData = CLASS_SYNERGY_TABLE[className];
+      if (!classData) continue;
+      
+      // 가장 높은 단계 보너스 적용
+      const tier = Math.min(count, 3);
+      const synergyData = classData[tier];
+      if (synergyData) {
+        if (synergyData.stat === 'attack') {
+          attackBonus += synergyData.bonus;
+        } else if (synergyData.stat === 'defense') {
+          defenseBonus += synergyData.bonus;
+        }
+        classBonus += synergyData.bonus;
+        
+        details.push({
+          type: 'class',
+          name: className,
+          count,
+          bonus: synergyData.bonus,
+          description: synergyData.desc,
+        });
       }
     }
 
@@ -228,6 +300,7 @@ export class Formation {
       defenseBonus,
       classBonus,
       factionBonus,
+      details,
     };
   }
 

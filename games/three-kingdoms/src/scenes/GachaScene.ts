@@ -4,15 +4,21 @@ import { Modal } from '../ui/Modal';
 import { GeneralCard } from '../ui/GeneralCard';
 import { GachaManager, GachaResult, GachaPool, SINGLE_COST, MULTI_COST, GeneralGrade as GachaGrade } from '../managers/GachaManager';
 import { GachaAnimationManager, GRADE_EFFECTS } from '../managers/GachaAnimationManager';
+import { OwnedGeneralsManager, ShardConversionResult, getDuplicateShards } from '../managers/OwnedGeneralsManager';
 import { General, GeneralGrade } from '../entities/General';
 import { GameManager } from '../managers/GameManager';
 import { drawGradientBackground, createStarfieldParticles, drawPanelBackground, COLORS } from '../ui/effects';
 import generalsData from '../data/generals.json';
 
+interface ProcessedGachaResult extends GachaResult {
+  shardConversion?: ShardConversionResult;
+}
+
 export class GachaScene extends Phaser.Scene {
   private userId!: string;
   private gachaManager!: GachaManager;
   private gameManager!: GameManager;
+  private ownedGeneralsManager!: OwnedGeneralsManager;
   private animationManager!: GachaAnimationManager;
   private resultModal!: Modal;
   private gems: number = 100;
@@ -43,7 +49,8 @@ export class GachaScene extends Phaser.Scene {
     this.gems = userData?.gems ?? 100;
 
     const pool = this.createGachaPool();
-    this.gachaManager = new GachaManager(pool);
+    this.gachaManager = new GachaManager(pool, this.userId);
+    this.ownedGeneralsManager = new OwnedGeneralsManager(this.userId);
 
     this.animationManager = new GachaAnimationManager(this);
     this.animationManager.setOnSkipCallback(() => this.onAnimationSkipped());
@@ -226,7 +233,8 @@ export class GachaScene extends Phaser.Scene {
     this.updateGemsDisplay();
     
     const result = this.gachaManager.pull();
-    this.playSinglePullAnimation([result]);
+    const processedResult = this.processGachaResult(result);
+    this.playSinglePullAnimation([processedResult]);
   }
 
   private doMultiPull(): void {
@@ -241,14 +249,33 @@ export class GachaScene extends Phaser.Scene {
     this.updateGemsDisplay();
     
     const results = this.gachaManager.pullMulti(10);
-    this.playMultiPullAnimation(results);
+    const processedResults = results.map(r => this.processGachaResult(r));
+    this.playMultiPullAnimation(processedResults);
   }
 
   private doFreePull(): void {
     if (this.isAnimating) return;
     
     const result = this.gachaManager.pull();
-    this.playSinglePullAnimation([result]);
+    const processedResult = this.processGachaResult(result);
+    this.playSinglePullAnimation([processedResult]);
+  }
+
+  /**
+   * 가챠 결과 처리 - 보유 여부 확인 및 중복 시 조각 변환
+   */
+  private processGachaResult(result: GachaResult): ProcessedGachaResult {
+    const shardConversion = this.ownedGeneralsManager.acquireGeneral(
+      result.generalId,
+      result.grade as GachaGrade
+    );
+    
+    return {
+      ...result,
+      isNew: !shardConversion.isDuplicate,
+      duplicateShards: shardConversion.isDuplicate ? shardConversion.shardsGained : undefined,
+      shardConversion,
+    };
   }
 
   private updateGemsDisplay(): void {
@@ -471,7 +498,7 @@ export class GachaScene extends Phaser.Scene {
     return new Promise(resolve => this.time.delayedCall(ms, resolve));
   }
 
-  private showResults(results: GachaResult[]): void {
+  private showResults(results: ProcessedGachaResult[]): void {
     this.resultModal.clearContent();
     const container = this.resultModal.getContentContainer();
     
@@ -481,6 +508,8 @@ export class GachaScene extends Phaser.Scene {
     const spacing = results.length > 1 ? 80 : 0;
     const startX = -((cols - 1) * spacing) / 2;
     const startY = results.length > 1 ? -80 : -40;
+
+    let totalShards = 0;
 
     results.forEach((result, index) => {
       const generalData = generalsData.generals.find(g => g.id === result.generalId);
@@ -520,6 +549,17 @@ export class GachaScene extends Phaser.Scene {
           padding: { x: 2, y: 1 },
         }).setOrigin(1, 0);
         container.add(newBadge);
+      } else if (result.duplicateShards) {
+        // 중복 시 조각 획득 표시
+        totalShards += result.duplicateShards;
+        const shardBadge = this.add.text(x + cardWidth / 2 - 5, y - cardHeight / 2, 
+          `+${result.duplicateShards}⭐`, {
+          fontSize: '9px',
+          color: '#ffffff',
+          backgroundColor: '#ff8800',
+          padding: { x: 2, y: 1 },
+        }).setOrigin(1, 0);
+        container.add(shardBadge);
       }
     });
 
@@ -527,17 +567,27 @@ export class GachaScene extends Phaser.Scene {
     const urCount = results.filter(r => r.grade === 'UR').length;
     const ssrCount = results.filter(r => r.grade === 'SSR').length;
     const srCount = results.filter(r => r.grade === 'SR').length;
+    const newCount = results.filter(r => r.isNew).length;
     
-    let summaryText = `총 ${results.length}장`;
+    let summaryText = `총 ${results.length}장 (신규 ${newCount})`;
     if (urCount > 0) summaryText = `🔴 UR: ${urCount}  |  ` + summaryText;
     if (ssrCount > 0) summaryText = `🟨 SSR: ${ssrCount}  |  ` + summaryText;
     if (srCount > 0) summaryText = `🟪 SR: ${srCount}  |  ` + summaryText;
 
-    const summary = this.add.text(0, 130, summaryText, {
+    const summary = this.add.text(0, 120, summaryText, {
       fontSize: '13px',
       color: '#ffd700',
     }).setOrigin(0.5);
     container.add(summary);
+
+    // 중복 조각 획득 표시
+    if (totalShards > 0) {
+      const shardText = this.add.text(0, 145, `⭐ 승급 조각 +${totalShards} 획득`, {
+        fontSize: '12px',
+        color: '#ff8800',
+      }).setOrigin(0.5);
+      container.add(shardText);
+    }
 
     this.resultModal.show();
   }

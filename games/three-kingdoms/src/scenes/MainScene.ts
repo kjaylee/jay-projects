@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { GameManager, UserData } from '../managers/GameManager';
+import { IdleRewardPopupManager, IdleRewardData } from '../managers/IdleRewardPopupManager';
 import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
 import { 
   drawGradientBackground, 
   createStarfieldParticles,
@@ -11,6 +13,7 @@ import {
 
 export class MainScene extends Phaser.Scene {
   private gameManager!: GameManager;
+  private idleRewardManager!: IdleRewardPopupManager;
   private userId!: string;
   private isGuest!: boolean;
   private userData!: UserData | null;
@@ -20,6 +23,7 @@ export class MainScene extends Phaser.Scene {
   private gemsText!: Phaser.GameObjects.Text;
   private staminaText!: Phaser.GameObjects.Text;
   private staminaBar!: Phaser.GameObjects.Graphics;
+  private idleRewardModal!: Modal;
 
   constructor() {
     super({ key: 'MainScene' });
@@ -38,7 +42,16 @@ export class MainScene extends Phaser.Scene {
     await this.gameManager.init(this.userId, this.isGuest);
     this.userData = this.gameManager.getUserData();
 
+    // 방치 보상 매니저 초기화
+    this.idleRewardManager = new IdleRewardPopupManager(this.userId);
+
     this.createUI();
+    
+    // 방치 보상 팝업 모달 생성
+    this.createIdleRewardModal();
+    
+    // 방치 보상 체크 및 표시
+    this.checkAndShowIdleReward();
   }
 
   private createUI(): void {
@@ -411,5 +424,116 @@ export class MainScene extends Phaser.Scene {
       this.staminaText.setText(`${this.userData.stamina}/50`);
       this.drawStaminaBar(this.userData.stamina, 50, 252, 28, 80, 8);
     }
+  }
+
+  private createIdleRewardModal(): void {
+    this.idleRewardModal = new Modal(this, {
+      title: '🎁 방치 보상',
+      width: 350,
+      height: 350,
+    });
+  }
+
+  private checkAndShowIdleReward(): void {
+    if (!this.idleRewardManager.shouldShowPopup()) {
+      return;
+    }
+
+    const maxClearedStage = this.userData?.maxClearedStage ?? null;
+    const reward = this.idleRewardManager.calculateReward(maxClearedStage);
+    
+    this.showIdleRewardPopup(reward);
+  }
+
+  private showIdleRewardPopup(reward: IdleRewardData): void {
+    this.idleRewardModal.clearContent();
+    const container = this.idleRewardModal.getContentContainer();
+
+    // 경과 시간 표시
+    const timeText = this.add.text(0, -80, `⏰ ${this.idleRewardManager.formatIdleTime()} 방치`, {
+      fontSize: '16px',
+      color: '#ffffff',
+    }).setOrigin(0.5);
+    container.add(timeText);
+
+    // 보상 아이콘 및 수치
+    const goldIcon = this.add.text(-50, -30, '💰', { fontSize: '32px' }).setOrigin(0.5);
+    const goldAmount = this.add.text(10, -30, `+${reward.gold.toLocaleString()}`, {
+      fontSize: '22px',
+      color: '#ffd700',
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5);
+    container.add([goldIcon, goldAmount]);
+
+    const expIcon = this.add.text(-50, 20, '✨', { fontSize: '32px' }).setOrigin(0.5);
+    const expAmount = this.add.text(10, 20, `+${reward.exp.toLocaleString()} EXP`, {
+      fontSize: '22px',
+      color: '#88ff88',
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5);
+    container.add([expIcon, expAmount]);
+
+    // 수령 버튼
+    const claimBtn = new Button(this, 0, 90, '수령하기', {
+      width: 180,
+      height: 50,
+      fontSize: '18px',
+      variant: 'gold',
+    }, () => this.claimIdleReward(reward));
+    container.add(claimBtn);
+
+    // 안내 문구
+    const infoText = this.add.text(0, 140, '최대 12시간까지 누적됩니다', {
+      fontSize: '11px',
+      color: '#888888',
+    }).setOrigin(0.5);
+    container.add(infoText);
+
+    this.idleRewardModal.show();
+  }
+
+  private async claimIdleReward(reward: IdleRewardData): Promise<void> {
+    // 보상 지급
+    await this.gameManager.addGold(reward.gold);
+    // TODO: 경험치는 진형 장수들에게 분배 필요
+    
+    // 시간 리셋
+    this.idleRewardManager.claimReward();
+    
+    // 모달 닫기
+    this.idleRewardModal.hide();
+    
+    // UI 업데이트
+    this.updateResources();
+    
+    // 획득 알림 표시
+    this.showRewardToast(reward);
+  }
+
+  private showRewardToast(reward: IdleRewardData): void {
+    const { width } = this.cameras.main;
+    
+    const toastBg = this.add.graphics();
+    toastBg.fillStyle(0x000000, 0.8);
+    toastBg.fillRoundedRect(width / 2 - 120, 120, 240, 50, 10);
+    toastBg.setDepth(100);
+
+    const toastText = this.add.text(width / 2, 145, 
+      `💰 ${reward.gold.toLocaleString()} 획득!`, {
+      fontSize: '16px',
+      color: '#ffd700',
+    }).setOrigin(0.5).setDepth(101);
+
+    this.tweens.add({
+      targets: [toastBg, toastText],
+      alpha: 0,
+      y: '-=30',
+      delay: 2000,
+      duration: 500,
+      onComplete: () => {
+        toastBg.destroy();
+        toastText.destroy();
+      }
+    });
   }
 }
