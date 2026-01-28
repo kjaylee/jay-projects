@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { Button } from '../ui/Button';
 import { GeneralCard } from '../ui/GeneralCard';
+import { Viewport, Scrollbar, Row } from '../ui/layout';
 import { General, GeneralGrade, GeneralClass, Faction } from '../entities/General';
 import { Formation, Position } from '../entities/Formation';
 import generalsData from '../data/generals.json';
@@ -19,10 +20,11 @@ export class FormationScene extends Phaser.Scene {
   private generalMap: Map<string, General> = new Map();
   private gridCells: Phaser.GameObjects.Container[] = [];
   private selectedSlot: { row: number; col: number } | null = null;
-  private generalListContainer!: Phaser.GameObjects.Container;
-  private scrollY: number = 0;
-  private draggingCard: GeneralCard | null = null;
-  private dragStartPos: { x: number; y: number } | null = null;
+  
+  // Layout components
+  private generalListViewport!: Viewport;
+  private generalListScrollbar!: Scrollbar;
+  private generalCards: GeneralCard[] = [];
 
   constructor() {
     super({ key: 'FormationScene' });
@@ -50,7 +52,7 @@ export class FormationScene extends Phaser.Scene {
     // Formation grid
     this.createFormationGrid();
 
-    // General list (bottom)
+    // General list with Viewport + Scrollbar
     this.createGeneralList();
 
     // Save button
@@ -287,6 +289,7 @@ export class FormationScene extends Phaser.Scene {
   private createGeneralList(): void {
     const { width, height } = this.cameras.main;
     const listY = 420;
+    const listHeight = height - listY - 90;
     
     // Background
     this.add.graphics()
@@ -299,33 +302,50 @@ export class FormationScene extends Phaser.Scene {
       color: '#ffd700',
     });
 
-    // Container for scrolling
-    this.generalListContainer = this.add.container(0, listY);
-    this.refreshGeneralList();
-
-    // Scroll for general list
-    this.input.on('wheel', (_pointer: Phaser.Input.Pointer, gameObjects: Phaser.GameObjects.GameObject[], _deltaX: number, deltaY: number) => {
-      // Only scroll if hovering over list area
-      const pointer = this.input.activePointer;
-      if (pointer.y > listY) {
-        const maxScroll = Math.max(0, Math.ceil(this.ownedGenerals.length / 4) * 80 - 120);
-        this.scrollY = Phaser.Math.Clamp(this.scrollY + deltaY * 0.5, 0, maxScroll);
-        this.generalListContainer.y = listY - this.scrollY;
-      }
+    // Viewport for scrollable general list
+    this.generalListViewport = new Viewport(this, {
+      x: 10,
+      y: listY,
+      width: width - 40,
+      height: listHeight,
     });
+
+    // Scrollbar
+    this.generalListScrollbar = new Scrollbar(this, this.generalListViewport, {
+      x: width - 25,
+      y: listY,
+      width: 12,
+      height: listHeight,
+      trackColor: 0x333333,
+      barColor: 0x888888,
+    });
+
+    // Enable mouse wheel scroll
+    this.generalListViewport.enableMouseWheelScroll(40);
+    this.generalListScrollbar.syncWithViewport();
+
+    this.refreshGeneralList();
   }
 
   private refreshGeneralList(): void {
-    this.generalListContainer.removeAll(true);
-
     const { width } = this.cameras.main;
+    
+    // Clear existing cards
+    this.generalListViewport.clearContent();
+    this.generalCards = [];
+
     const cols = 4;
     const cardWidth = 80;
     const cardHeight = 100;
-    const spacing = (width - cols * cardWidth) / (cols + 1);
+    const viewportWidth = width - 40;
+    const spacing = (viewportWidth - cols * cardWidth) / (cols + 1);
 
     // Filter out generals already in formation
     const availableGenerals = this.ownedGenerals.filter(g => !this.formation.hasUnit(g.id));
+
+    // Create cards in rows
+    const rows = Math.ceil(availableGenerals.length / cols);
+    const contentContainer = this.generalListViewport.getContent();
 
     availableGenerals.forEach((general, index) => {
       const col = index % cols;
@@ -340,8 +360,14 @@ export class FormationScene extends Phaser.Scene {
 
       card.on('pointerdown', () => this.onGeneralSelect(general));
 
-      this.generalListContainer.add(card);
+      contentContainer.add(card);
+      this.generalCards.push(card);
     });
+
+    // Update content height and scrollbar
+    const totalHeight = rows * (cardHeight + 10) + 20;
+    this.generalListViewport.setContentHeight(totalHeight);
+    this.generalListScrollbar.refresh();
   }
 
   private onGeneralSelect(general: General): void {
