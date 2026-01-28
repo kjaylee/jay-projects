@@ -1,7 +1,7 @@
 # Implementation Plan
 
 ## 현재 상태
-엔티티(General, Skill, Equipment, Formation)와 전투 시스템 기본 구조 완료. 9개 씬(Boot, Preload, Login, Main, Battle, Formation, GeneralList, Gacha, StageSelect) 구현됨. **단위 테스트 478개 통과. 출시 준비 단계.**
+엔티티(General, Skill, Equipment, Formation)와 전투 시스템 기본 구조 완료. 9개 씬(Boot, Preload, Login, Main, Battle, Formation, GeneralList, Gacha, StageSelect) 구현됨. **단위 테스트 521개 통과. 출시 준비 단계.**
 
 ## TODO (우선순위순)
 
@@ -66,11 +66,13 @@
 #### 진형 시스템 고도화
 - [x] **다중 진형 슬롯 (5개)** - FormationManager 완료 (2026-01-28)
 - [x] **시너지 상세화** - 2/3/4/5명 단계별 보너스 테이블 완료 (2026-01-28)
-- [ ] **클래스 배치 가이드** - 권장 위치 하이라이트 표시 `specs/formation-system.md`
+- [x] **클래스 배치 가이드** - FormationGuide 유틸리티 완료 (2026-01-28)
 
 #### 스킬/전투 고도화
 - [ ] **스킬 연출** - 발동 시 이름 표시 + 이펙트 애니메이션 `specs/skill-system.md`
-- [ ] **특수 효과 구현** - 스턴(행동불가), 선제 기습, 쿨다운 초기화 `specs/skill-system.md`
+- [x] **스턴(행동불가) 효과** - StunManager 완료 (2026-01-28)
+- [x] **연환계 (쿨다운 초기화)** - CooldownResetManager 완료 (2026-01-28)
+- [ ] **선제 기습 효과** - 첫 턴 특수 효과 미구현 `specs/skill-system.md`
 - [ ] **전투 리플레이** - 행동 기록 저장 및 재생 `specs/battle-system.md`
 - [x] **턴 제한 시스템** - TurnLimitChecker 유틸리티 완료, BattleManager 연동 예정 (2026-01-28)
 
@@ -103,6 +105,8 @@
 - [x] AwakenManager - UR 장수 각성
 - [x] OwnedGeneralsManager - 보유 장수, 조각 변환
 - [x] IdleRewardPopupManager - 방치 보상 팝업
+- [x] StunManager - 스턴(행동불가) 효과 관리
+- [x] CooldownResetManager - 연환계/쿨다운 초기화
 
 ### UI 컴포넌트
 - [x] Button (3가지 variant + 커스텀 색상)
@@ -128,8 +132,8 @@
 - [x] 10개 스테이지 데이터 (1-1 ~ 1-10)
 
 ### 테스트
-- **478개 테스트 통과** (Vitest)
-- 26개 테스트 파일
+- **521개 테스트 통과** (Vitest)
+- 31개 테스트 파일
 
 ## 출시 준비 상태
 
@@ -145,7 +149,7 @@
 - 스킬 연출 강화
 - 전투 리플레이
 - VIP 시스템
-- 클래스 배치 가이드
+- 선제 기습 효과
 - GeneralDetailScene
 
 ## DISCOVERIES
