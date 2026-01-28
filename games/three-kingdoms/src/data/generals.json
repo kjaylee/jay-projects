@@ -1,0 +1,650 @@
+{
+  "generals": [
+    {
+      "id": "diao_chan",
+      "name": "초선",
+      "nameEn": "Diao Chan",
+      "grade": "SR",
+      "class": "strategist",
+      "faction": "other",
+      "baseStats": {
+        "attack": 25,
+        "defense": 40,
+        "intelligence": 85,
+        "speed": 75,
+        "politics": 90
+      },
+      "skillIds": ["skill_chain_beauty"],
+      "portrait": "assets/generals/diao_chan.png"
+    },
+    {
+      "id": "jia_xu",
+      "name": "가후",
+      "nameEn": "Jia Xu",
+      "grade": "SR",
+      "class": "strategist",
+      "faction": "wei",
+      "baseStats": {
+        "attack": 30,
+        "defense": 55,
+        "intelligence": 96,
+        "speed": 68,
+        "politics": 88
+      },
+      "skillIds": ["skill_poison_plot"],
+      "portrait": "assets/generals/jia_xu.png"
+    },
+    {
+      "id": "tao_qian",
+      "name": "도겸",
+      "nameEn": "Tao Qian",
+      "grade": "R",
+      "class": "guardian",
+      "faction": "other",
+      "baseStats": {
+        "attack": 45,
+        "defense": 65,
+        "intelligence": 70,
+        "speed": 50,
+        "politics": 80
+      },
+      "skillIds": ["skill_xuzhou_lord"],
+      "portrait": "assets/generals/tao_qian.png"
+    },
+    {
+      "id": "wen_chou",
+      "name": "문추",
+      "nameEn": "Wen Chou",
+      "grade": "R",
+      "class": "cavalry",
+      "faction": "other",
+      "baseStats": {
+        "attack": 87,
+        "defense": 72,
+        "intelligence": 40,
+        "speed": 78,
+        "politics": 35
+      },
+      "skillIds": ["skill_fierce_charge"],
+      "portrait": "assets/generals/wen_chou.png"
+    },
+    {
+      "id": "yan_liang",
+      "name": "안량",
+      "nameEn": "Yan Liang",
+      "grade": "R",
+      "class": "warrior",
+      "faction": "other",
+      "baseStats": {
+        "attack": 90,
+        "defense": 70,
+        "intelligence": 38,
+        "speed": 75,
+        "politics": 32
+      },
+      "skillIds": ["skill_fierce_general"],
+      "portrait": "assets/generals/yan_liang.png"
+    },
+    {
+      "id": "liu_xie",
+      "name": "헌제",
+      "nameEn": "Emperor Xian",
+      "grade": "R",
+      "class": "strategist",
+      "faction": "han",
+      "baseStats": {
+        "attack": 20,
+        "defense": 35,
+        "intelligence": 72,
+        "speed": 45,
+        "politics": 85
+      },
+      "skillIds": ["skill_imperial_decree"],
+      "portrait": "assets/generals/liu_xie.png"
+    },
+    {
+      "id": "lu_xun",
+      "name": "육손",
+      "nameEn": "Lu Xun",
+      "grade": "SR",
+      "class": "strategist",
+      "faction": "wu",
+      "baseStats": {
+        "attack": 55,
+        "defense": 68,
+        "intelligence": 95,
+        "speed": 80,
+        "politics": 88
+      },
+      "skillIds": ["skill_yiling_fire", "skill_patience"],
+      "portrait": "assets/generals/lu_xun.png"
+    },
+    {
+      "id": "xiahou_yuan",
+      "name": "하후연",
+      "nameEn": "Xiahou Yuan",
+      "grade": "R",
+      "class": "cavalry",
+      "faction": "wei",
+      "baseStats": {
+        "attack": 86,
+        "defense": 70,
+        "intelligence": 55,
+        "speed": 88,
+        "politics": 48
+      },
+      "skillIds": ["skill_swift_strike"],
+      "portrait": "assets/generals/xiahou_yuan.png"
+    },
+    {
+      "id": "zhang_song",
+      "name": "장송",
+      "nameEn": "Zhang Song",
+      "grade": "N",
+      "class": "strategist",
+      "faction": "shu",
+      "baseStats": {
+        "attack": 35,
+        "defense": 40,
+        "intelligence": 75,
+        "speed": 50,
+        "politics": 70
+      },
+      "skillIds": ["skill_map_memory"],
+      "portrait": "assets/generals/zhang_song.png"
+    },
+    {
+      "id": "mi_zhu",
+      "name": "미축",
+      "nameEn": "Mi Zhu",
+      "grade": "N",
+      "class": "strategist",
+      "faction": "shu",
+      "baseStats": {
+        "attack": 30,
+        "defense": 45,
+        "intelligence": 60,
+        "speed": 45,
+        "politics": 80
+      },
+      "skillIds": ["skill_merchant"],
+      "portrait": "assets/generals/mi_zhu.png"
+    },
+    {
+      "id": "sun_qian",
+      "name": "손건",
+      "nameEn": "Sun Qian",
+      "grade": "N",
+      "class": "strategist",
+      "faction": "shu",
+      "baseStats": {
+        "attack": 25,
+        "defense": 40,
+        "intelligence": 65,
+        "speed": 50,
+        "politics": 75
+      },
+      "skillIds": ["skill_diplomacy"],
+      "portrait": "assets/generals/sun_qian.png"
+    },
+    {
+      "id": "xu_you",
+      "name": "허유",
+      "nameEn": "Xu You",
+      "grade": "N",
+      "class": "strategist",
+      "faction": "wei",
+      "baseStats": {
+        "attack": 20,
+        "defense": 35,
+        "intelligence": 80,
+        "speed": 55,
+        "politics": 65
+      },
+      "skillIds": ["skill_wu_chao_fire"],
+      "portrait": "assets/generals/xu_you.png"
+    },
+    {
+      "id": "cai_mao",
+      "name": "채모",
+      "nameEn": "Cai Mao",
+      "grade": "N",
+      "class": "guardian",
+      "faction": "wei",
+      "baseStats": {
+        "attack": 55,
+        "defense": 60,
+        "intelligence": 50,
+        "speed": 45,
+        "politics": 55
+      },
+      "skillIds": ["skill_naval_command"],
+      "portrait": "assets/generals/cai_mao.png"
+    },
+    {
+      "id": "zhang_yun",
+      "name": "장윤",
+      "nameEn": "Zhang Yun",
+      "grade": "N",
+      "class": "guardian",
+      "faction": "wei",
+      "baseStats": {
+        "attack": 50,
+        "defense": 65,
+        "intelligence": 45,
+        "speed": 50,
+        "politics": 50
+      },
+      "skillIds": ["skill_water_defense"],
+      "portrait": "assets/generals/zhang_yun.png"
+    },
+    {
+      "id": "zhang_liao",
+      "name": "장료",
+      "nameEn": "Zhang Liao",
+      "grade": "R",
+      "class": "cavalry",
+      "faction": "wei",
+      "baseStats": {
+        "attack": 88,
+        "defense": 75,
+        "intelligence": 65,
+        "speed": 80,
+        "politics": 55
+      },
+      "skillIds": ["skill_hefei_charge"],
+      "portrait": "assets/generals/zhang_liao.png"
+    },
+    {
+      "id": "xiahou_dun",
+      "name": "하후돈",
+      "nameEn": "Xiahou Dun",
+      "grade": "R",
+      "class": "warrior",
+      "faction": "wei",
+      "baseStats": {
+        "attack": 85,
+        "defense": 80,
+        "intelligence": 55,
+        "speed": 70,
+        "politics": 60
+      },
+      "skillIds": ["skill_one_eye_fury"],
+      "portrait": "assets/generals/xiahou_dun.png"
+    },
+    {
+      "id": "gan_ning",
+      "name": "감녕",
+      "nameEn": "Gan Ning",
+      "grade": "R",
+      "class": "warrior",
+      "faction": "wu",
+      "baseStats": {
+        "attack": 90,
+        "defense": 70,
+        "intelligence": 50,
+        "speed": 85,
+        "politics": 45
+      },
+      "skillIds": ["skill_bell_raid"],
+      "portrait": "assets/generals/gan_ning.png"
+    },
+    {
+      "id": "huang_zhong",
+      "name": "황충",
+      "nameEn": "Huang Zhong",
+      "grade": "R",
+      "class": "archer",
+      "faction": "shu",
+      "baseStats": {
+        "attack": 92,
+        "defense": 65,
+        "intelligence": 60,
+        "speed": 60,
+        "politics": 50
+      },
+      "skillIds": ["skill_deadly_arrow"],
+      "portrait": "assets/generals/huang_zhong.png"
+    },
+    {
+      "id": "taishi_ci",
+      "name": "태사자",
+      "nameEn": "Taishi Ci",
+      "grade": "R",
+      "class": "archer",
+      "faction": "wu",
+      "baseStats": {
+        "attack": 88,
+        "defense": 70,
+        "intelligence": 55,
+        "speed": 75,
+        "politics": 50
+      },
+      "skillIds": ["skill_twin_halberds"],
+      "portrait": "assets/generals/taishi_ci.png"
+    },
+    {
+      "id": "pang_tong",
+      "name": "방통",
+      "nameEn": "Pang Tong",
+      "grade": "R",
+      "class": "strategist",
+      "faction": "shu",
+      "baseStats": {
+        "attack": 35,
+        "defense": 50,
+        "intelligence": 95,
+        "speed": 65,
+        "politics": 80
+      },
+      "skillIds": ["skill_chain_strategy"],
+      "portrait": "assets/generals/pang_tong.png"
+    },
+    {
+      "id": "guan_yu",
+      "name": "관우",
+      "nameEn": "Guan Yu",
+      "grade": "SR",
+      "class": "warrior",
+      "faction": "shu",
+      "baseStats": {
+        "attack": 97,
+        "defense": 85,
+        "intelligence": 75,
+        "speed": 80,
+        "politics": 65
+      },
+      "skillIds": ["skill_green_dragon", "skill_loyalty"],
+      "portrait": "assets/generals/guan_yu.png"
+    },
+    {
+      "id": "zhang_fei",
+      "name": "장비",
+      "nameEn": "Zhang Fei",
+      "grade": "SR",
+      "class": "warrior",
+      "faction": "shu",
+      "baseStats": {
+        "attack": 98,
+        "defense": 80,
+        "intelligence": 45,
+        "speed": 85,
+        "politics": 40
+      },
+      "skillIds": ["skill_roar", "skill_serpent_spear"],
+      "portrait": "assets/generals/zhang_fei.png"
+    },
+    {
+      "id": "zhao_yun",
+      "name": "조운",
+      "nameEn": "Zhao Yun",
+      "grade": "SR",
+      "class": "cavalry",
+      "faction": "shu",
+      "baseStats": {
+        "attack": 95,
+        "defense": 88,
+        "intelligence": 70,
+        "speed": 92,
+        "politics": 55
+      },
+      "skillIds": ["skill_dragon_courage", "skill_changban"],
+      "portrait": "assets/generals/zhao_yun.png"
+    },
+    {
+      "id": "zhou_yu",
+      "name": "주유",
+      "nameEn": "Zhou Yu",
+      "grade": "SR",
+      "class": "strategist",
+      "faction": "wu",
+      "baseStats": {
+        "attack": 70,
+        "defense": 72,
+        "intelligence": 97,
+        "speed": 78,
+        "politics": 85
+      },
+      "skillIds": ["skill_fire_attack", "skill_red_cliff"],
+      "portrait": "assets/generals/zhou_yu.png"
+    },
+    {
+      "id": "sima_yi",
+      "name": "사마의",
+      "nameEn": "Sima Yi",
+      "grade": "SR",
+      "class": "strategist",
+      "faction": "wei",
+      "baseStats": {
+        "attack": 55,
+        "defense": 75,
+        "intelligence": 98,
+        "speed": 72,
+        "politics": 95
+      },
+      "skillIds": ["skill_patience", "skill_counter_strategy"],
+      "portrait": "assets/generals/sima_yi.png"
+    },
+    {
+      "id": "lu_meng",
+      "name": "여몽",
+      "nameEn": "Lu Meng",
+      "grade": "SR",
+      "class": "guardian",
+      "faction": "wu",
+      "baseStats": {
+        "attack": 80,
+        "defense": 85,
+        "intelligence": 88,
+        "speed": 70,
+        "politics": 72
+      },
+      "skillIds": ["skill_white_robe", "skill_study"],
+      "portrait": "assets/generals/lu_meng.png"
+    },
+    {
+      "id": "cao_cao",
+      "name": "조조",
+      "nameEn": "Cao Cao",
+      "grade": "SSR",
+      "class": "cavalry",
+      "faction": "wei",
+      "baseStats": {
+        "attack": 85,
+        "defense": 90,
+        "intelligence": 96,
+        "speed": 88,
+        "politics": 99
+      },
+      "skillIds": ["skill_hero_decree", "skill_talent_scout", "skill_ambition"],
+      "portrait": "assets/generals/cao_cao.png"
+    },
+    {
+      "id": "liu_bei",
+      "name": "유비",
+      "nameEn": "Liu Bei",
+      "grade": "SSR",
+      "class": "guardian",
+      "faction": "shu",
+      "baseStats": {
+        "attack": 78,
+        "defense": 88,
+        "intelligence": 82,
+        "speed": 75,
+        "politics": 95
+      },
+      "skillIds": ["skill_benevolence", "skill_oath_brothers", "skill_peoples_heart"],
+      "portrait": "assets/generals/liu_bei.png"
+    },
+    {
+      "id": "sun_quan",
+      "name": "손권",
+      "nameEn": "Sun Quan",
+      "grade": "SSR",
+      "class": "guardian",
+      "faction": "wu",
+      "baseStats": {
+        "attack": 75,
+        "defense": 92,
+        "intelligence": 88,
+        "speed": 78,
+        "politics": 98
+      },
+      "skillIds": ["skill_jiangdong_tiger", "skill_balance", "skill_heir_legacy"],
+      "portrait": "assets/generals/sun_quan.png"
+    },
+    {
+      "id": "lu_bu",
+      "name": "여포",
+      "nameEn": "Lu Bu",
+      "grade": "SSR",
+      "class": "cavalry",
+      "faction": "other",
+      "baseStats": {
+        "attack": 100,
+        "defense": 85,
+        "intelligence": 35,
+        "speed": 95,
+        "politics": 25
+      },
+      "skillIds": ["skill_unrivaled", "skill_red_hare", "skill_sky_piercer"],
+      "portrait": "assets/generals/lu_bu.png"
+    },
+    {
+      "id": "zhuge_liang",
+      "name": "제갈량",
+      "nameEn": "Zhuge Liang",
+      "grade": "SSR",
+      "class": "strategist",
+      "faction": "shu",
+      "baseStats": {
+        "attack": 45,
+        "defense": 70,
+        "intelligence": 100,
+        "speed": 80,
+        "politics": 98
+      },
+      "skillIds": ["skill_empty_fort", "skill_eight_formations", "skill_dongfeng"],
+      "portrait": "assets/generals/zhuge_liang.png"
+    },
+    {
+      "id": "jiang_wei",
+      "name": "강유",
+      "nameEn": "Jiang Wei",
+      "grade": "SSR",
+      "class": "cavalry",
+      "faction": "shu",
+      "baseStats": {
+        "attack": 90,
+        "defense": 82,
+        "intelligence": 92,
+        "speed": 85,
+        "politics": 75
+      },
+      "skillIds": ["skill_northern_expedition", "skill_successor", "skill_bold_strategy"],
+      "portrait": "assets/generals/jiang_wei.png"
+    },
+    {
+      "id": "guan_yu_god",
+      "name": "관우(신)",
+      "nameEn": "Guan Yu (Divine)",
+      "grade": "UR",
+      "class": "warrior",
+      "faction": "shu",
+      "baseStats": {
+        "attack": 130,
+        "defense": 115,
+        "intelligence": 100,
+        "speed": 110,
+        "politics": 95
+      },
+      "skillIds": ["skill_god_of_war", "skill_divine_blade", "skill_eternal_loyalty"],
+      "portrait": "assets/generals/guan_yu_god.png"
+    },
+    {
+      "id": "lu_bu_unrivaled",
+      "name": "여포(천하무쌍)",
+      "nameEn": "Lu Bu (Unrivaled)",
+      "grade": "UR",
+      "class": "cavalry",
+      "faction": "other",
+      "baseStats": {
+        "attack": 145,
+        "defense": 110,
+        "intelligence": 60,
+        "speed": 130,
+        "politics": 45
+      },
+      "skillIds": ["skill_peerless", "skill_chaos_incarnate", "skill_flying_general"],
+      "portrait": "assets/generals/lu_bu_unrivaled.png"
+    },
+    {
+      "id": "zhuge_liang_dragon",
+      "name": "제갈량(와룡)",
+      "nameEn": "Zhuge Liang (Sleeping Dragon)",
+      "grade": "UR",
+      "class": "strategist",
+      "faction": "shu",
+      "baseStats": {
+        "attack": 65,
+        "defense": 95,
+        "intelligence": 145,
+        "speed": 105,
+        "politics": 135
+      },
+      "skillIds": ["skill_sleeping_dragon", "skill_divine_strategy", "skill_star_fall"],
+      "portrait": "assets/generals/zhuge_liang_dragon.png"
+    },
+    {
+      "id": "cao_cao_hegemon",
+      "name": "조조(패왕)",
+      "nameEn": "Cao Cao (Hegemon)",
+      "grade": "UR",
+      "class": "cavalry",
+      "faction": "wei",
+      "baseStats": {
+        "attack": 115,
+        "defense": 120,
+        "intelligence": 125,
+        "speed": 115,
+        "politics": 140
+      },
+      "skillIds": ["skill_hegemon", "skill_supreme_command", "skill_world_order"],
+      "portrait": "assets/generals/cao_cao_hegemon.png"
+    },
+    {
+      "id": "zhou_yu_fire",
+      "name": "주유(화신)",
+      "nameEn": "Zhou Yu (Fire God)",
+      "grade": "UR",
+      "class": "strategist",
+      "faction": "wu",
+      "baseStats": {
+        "attack": 95,
+        "defense": 100,
+        "intelligence": 140,
+        "speed": 110,
+        "politics": 115
+      },
+      "skillIds": ["skill_fire_god", "skill_inferno", "skill_wind_and_fire"],
+      "portrait": "assets/generals/zhou_yu_fire.png"
+    },
+    {
+      "id": "sun_ce",
+      "name": "손책",
+      "nameEn": "Sun Ce",
+      "grade": "UR",
+      "class": "warrior",
+      "faction": "wu",
+      "baseStats": {
+        "attack": 135,
+        "defense": 105,
+        "intelligence": 85,
+        "speed": 125,
+        "politics": 100
+      },
+      "skillIds": ["skill_little_conqueror", "skill_jiangdong_might", "skill_heroic_charge"],
+      "portrait": "assets/generals/sun_ce.png"
+    }
+  ]
+}

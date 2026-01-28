@@ -1,0 +1,165 @@
+{
+  "skills": [
+    {
+      "id": "fire_attack",
+      "name": "화계",
+      "nameEn": "Fire Attack",
+      "type": "attack",
+      "target": "all_enemies",
+      "cooldown": 4,
+      "mpCost": 50,
+      "effects": [
+        {
+          "type": "damage",
+          "formula": "intelligence * 1.5",
+          "scaling": "intelligence",
+          "value": 150
+        }
+      ],
+      "description": "불을 질러 적 전체에 지력 비례 피해를 입힌다.",
+      "descriptionEn": "Set fire to deal intelligence-scaled damage to all enemies."
+    },
+    {
+      "id": "water_attack",
+      "name": "수계",
+      "nameEn": "Water Attack",
+      "type": "attack",
+      "target": "column",
+      "cooldown": 3,
+      "mpCost": 40,
+      "effects": [
+        {
+          "type": "damage",
+          "formula": "intelligence * 2.0",
+          "scaling": "intelligence",
+          "value": 200
+        }
+      ],
+      "description": "물줄기로 적 종렬을 관통하여 피해를 입힌다.",
+      "descriptionEn": "Unleash a torrent to pierce through an enemy column."
+    },
+    {
+      "id": "rockfall",
+      "name": "낙석",
+      "nameEn": "Rockfall",
+      "type": "attack",
+      "target": "single",
+      "cooldown": 5,
+      "mpCost": 60,
+      "effects": [
+        {
+          "type": "damage",
+          "formula": "300",
+          "scaling": "fixed",
+          "value": 300
+        },
+        {
+          "type": "stun",
+          "duration": 1
+        }
+      ],
+      "description": "바위를 떨어뜨려 적 하나에게 고정 피해를 입히고 1턴간 기절시킨다.",
+      "descriptionEn": "Drop boulders to deal fixed damage and stun a single enemy for 1 turn."
+    },
+    {
+      "id": "confusion",
+      "name": "혼란",
+      "nameEn": "Confusion",
+      "type": "debuff",
+      "target": "all_enemies",
+      "cooldown": 4,
+      "mpCost": 45,
+      "effects": [
+        {
+          "type": "debuff",
+          "stat": "attack",
+          "value": -0.5,
+          "duration": 2
+        }
+      ],
+      "description": "적 전체를 혼란에 빠뜨려 2턴간 공격력을 50% 감소시킨다.",
+      "descriptionEn": "Confuse all enemies, reducing their attack by 50% for 2 turns."
+    },
+    {
+      "id": "ambush",
+      "name": "매복",
+      "nameEn": "Ambush",
+      "type": "special",
+      "target": "self",
+      "cooldown": 5,
+      "mpCost": 55,
+      "effects": [
+        {
+          "type": "ambush",
+          "damageMultiplier": 2.0,
+          "duration": 1,
+          "triggerCondition": "first_turn"
+        }
+      ],
+      "description": "매복을 준비하여 첫 턴에 2배의 피해를 입힌다.",
+      "descriptionEn": "Prepare an ambush to deal double damage on the first turn."
+    },
+    {
+      "id": "heal",
+      "name": "치료",
+      "nameEn": "Heal",
+      "type": "heal",
+      "target": "all_allies",
+      "cooldown": 4,
+      "mpCost": 45,
+      "effects": [
+        {
+          "type": "heal",
+          "formula": "maxHp * 0.3",
+          "scaling": "maxHp",
+          "value": 30
+        }
+      ],
+      "description": "아군 전체의 HP를 최대 체력의 30% 회복한다.",
+      "descriptionEn": "Restore 30% of max HP to all allies."
+    },
+    {
+      "id": "iron_wall",
+      "name": "철벽",
+      "nameEn": "Iron Wall",
+      "type": "buff",
+      "target": "front_allies",
+      "cooldown": 5,
+      "mpCost": 40,
+      "effects": [
+        {
+          "type": "buff",
+          "stat": "defense",
+          "value": 0.5,
+          "duration": 2
+        }
+      ],
+      "description": "아군 전열의 방어력을 2턴간 50% 증가시킨다.",
+      "descriptionEn": "Increase front row allies' defense by 50% for 2 turns."
+    },
+    {
+      "id": "chain_strategy",
+      "name": "연환계",
+      "nameEn": "Chain Strategy",
+      "type": "chain",
+      "target": "self",
+      "cooldown": 5,
+      "mpCost": 60,
+      "effects": [
+        {
+          "type": "cooldown_reset",
+          "targetSkill": "next",
+          "value": 0
+        }
+      ],
+      "description": "연환계를 발동하여 다음 계략의 쿨타임을 즉시 초기화한다.",
+      "descriptionEn": "Activate chain strategy to instantly reset the cooldown of the next skill."
+    }
+  ],
+  "meta": {
+    "version": "1.0.0",
+    "count": 8,
+    "types": ["attack", "debuff", "special", "heal", "buff", "chain"],
+    "targets": ["all_enemies", "column", "single", "all_allies", "front_allies", "self"]
+  }
+}

@@ -1,0 +1,381 @@
+{
+  "chapters": [
+    {
+      "id": 1,
+      "name": "황건의 난",
+      "nameEn": "Yellow Turban Rebellion",
+      "description": "후한 말기, 장각이 이끄는 황건적이 난을 일으켰다. 영웅들이여, 난을 평정하라!"
+    }
+  ],
+  "stages": [
+    {
+      "id": "1-1",
+      "chapter": 1,
+      "chapterName": "황건의 난",
+      "stageName": "영천 전투",
+      "stageNameEn": "Battle of Yingchuan",
+      "difficulty": "normal",
+      "enemies": [
+        { "generalId": "yellow_soldier_1", "level": 1, "position": { "row": 0, "col": 1 } }
+      ],
+      "rewards": {
+        "gold": 100,
+        "exp": 50,
+        "items": []
+      },
+      "recommendedPower": 500,
+      "unlockCondition": null,
+      "storyText": "황건적이 영천을 습격했다! 백성들을 구하라!"
+    },
+    {
+      "id": "1-2",
+      "chapter": 1,
+      "chapterName": "황건의 난",
+      "stageName": "남양 전투",
+      "stageNameEn": "Battle of Nanyang",
+      "difficulty": "normal",
+      "enemies": [
+        { "generalId": "yellow_soldier_1", "level": 2, "position": { "row": 0, "col": 0 } },
+        { "generalId": "yellow_soldier_2", "level": 2, "position": { "row": 0, "col": 2 } }
+      ],
+      "rewards": {
+        "gold": 150,
+        "exp": 80,
+        "items": []
+      },
+      "recommendedPower": 800,
+      "unlockCondition": { "type": "clear", "stageId": "1-1" },
+      "storyText": "남양에서 황건적 무리가 약탈을 자행하고 있다!"
+    },
+    {
+      "id": "1-3",
+      "chapter": 1,
+      "chapterName": "황건의 난",
+      "stageName": "광종 외곽",
+      "stageNameEn": "Outskirts of Guangzong",
+      "difficulty": "normal",
+      "enemies": [
+        { "generalId": "yellow_soldier_1", "level": 3, "position": { "row": 0, "col": 0 } },
+        { "generalId": "yellow_soldier_2", "level": 3, "position": { "row": 0, "col": 1 } },
+        { "generalId": "yellow_soldier_3", "level": 3, "position": { "row": 0, "col": 2 } }
+      ],
+      "rewards": {
+        "gold": 200,
+        "exp": 100,
+        "items": []
+      },
+      "recommendedPower": 1200,
+      "unlockCondition": { "type": "clear", "stageId": "1-2" },
+      "storyText": "광종 외곽에서 황건적 본대를 마주쳤다!"
+    },
+    {
+      "id": "1-4",
+      "chapter": 1,
+      "chapterName": "황건의 난",
+      "stageName": "동군 습격",
+      "stageNameEn": "Dongjun Raid",
+      "difficulty": "normal",
+      "enemies": [
+        { "generalId": "yellow_captain_1", "level": 4, "position": { "row": 1, "col": 1 } },
+        { "generalId": "yellow_soldier_1", "level": 4, "position": { "row": 0, "col": 0 } },
+        { "generalId": "yellow_soldier_2", "level": 4, "position": { "row": 0, "col": 2 } }
+      ],
+      "rewards": {
+        "gold": 280,
+        "exp": 140,
+        "items": []
+      },
+      "recommendedPower": 1600,
+      "unlockCondition": { "type": "clear", "stageId": "1-3" },
+      "storyText": "황건적 부장이 이끄는 정예 부대가 동군을 습격했다!"
+    },
+    {
+      "id": "1-5",
+      "chapter": 1,
+      "chapterName": "황건의 난",
+      "stageName": "장보의 진격",
+      "stageNameEn": "Zhang Bao's Advance",
+      "difficulty": "hard",
+      "enemies": [
+        { "generalId": "zhang_bao", "level": 5, "position": { "row": 1, "col": 1 } },
+        { "generalId": "yellow_captain_1", "level": 5, "position": { "row": 0, "col": 0 } },
+        { "generalId": "yellow_captain_2", "level": 5, "position": { "row": 0, "col": 2 } },
+        { "generalId": "yellow_soldier_1", "level": 5, "position": { "row": 0, "col": 1 } }
+      ],
+      "rewards": {
+        "gold": 500,
+        "exp": 250,
+        "items": [
+          { "itemId": "iron_sword", "count": 1 }
+        ]
+      },
+      "recommendedPower": 2200,
+      "unlockCondition": { "type": "clear", "stageId": "1-4" },
+      "storyText": "장각의 동생 장보가 대군을 이끌고 온다! 중간 보스 출현!",
+      "isBoss": true
+    },
+    {
+      "id": "1-6",
+      "chapter": 1,
+      "chapterName": "황건의 난",
+      "stageName": "북해 포위",
+      "stageNameEn": "Siege of Beihai",
+      "difficulty": "normal",
+      "enemies": [
+        { "generalId": "yellow_captain_1", "level": 6, "position": { "row": 1, "col": 0 } },
+        { "generalId": "yellow_captain_2", "level": 6, "position": { "row": 1, "col": 2 } },
+        { "generalId": "yellow_soldier_1", "level": 6, "position": { "row": 0, "col": 0 } },
+        { "generalId": "yellow_soldier_2", "level": 6, "position": { "row": 0, "col": 2 } }
+      ],
+      "rewards": {
+        "gold": 380,
+        "exp": 180,
+        "items": []
+      },
+      "recommendedPower": 2800,
+      "unlockCondition": { "type": "clear", "stageId": "1-5" },
+      "storyText": "황건적이 북해를 포위했다! 공융을 구해야 한다!"
+    },
+    {
+      "id": "1-7",
+      "chapter": 1,
+      "chapterName": "황건의 난",
+      "stageName": "청주 함락",
+      "stageNameEn": "Fall of Qingzhou",
+      "difficulty": "normal",
+      "enemies": [
+        { "generalId": "yellow_captain_1", "level": 7, "position": { "row": 1, "col": 1 } },
+        { "generalId": "yellow_captain_2", "level": 7, "position": { "row": 1, "col": 2 } },
+        { "generalId": "yellow_soldier_1", "level": 7, "position": { "row": 0, "col": 0 } },
+        { "generalId": "yellow_soldier_2", "level": 7, "position": { "row": 0, "col": 1 } },
+        { "generalId": "yellow_soldier_3", "level": 7, "position": { "row": 0, "col": 2 } }
+      ],
+      "rewards": {
+        "gold": 450,
+        "exp": 220,
+        "items": []
+      },
+      "recommendedPower": 3400,
+      "unlockCondition": { "type": "clear", "stageId": "1-6" },
+      "storyText": "황건적이 청주를 장악했다! 탈환 작전을 개시하라!"
+    },
+    {
+      "id": "1-8",
+      "chapter": 1,
+      "chapterName": "황건의 난",
+      "stageName": "장량의 맹공",
+      "stageNameEn": "Zhang Liang's Assault",
+      "difficulty": "hard",
+      "enemies": [
+        { "generalId": "zhang_liang_yellow", "level": 8, "position": { "row": 1, "col": 1 } },
+        { "generalId": "yellow_captain_1", "level": 8, "position": { "row": 1, "col": 0 } },
+        { "generalId": "yellow_captain_2", "level": 8, "position": { "row": 1, "col": 2 } },
+        { "generalId": "yellow_soldier_1", "level": 8, "position": { "row": 0, "col": 0 } },
+        { "generalId": "yellow_soldier_2", "level": 8, "position": { "row": 0, "col": 2 } }
+      ],
+      "rewards": {
+        "gold": 550,
+        "exp": 280,
+        "items": []
+      },
+      "recommendedPower": 4000,
+      "unlockCondition": { "type": "clear", "stageId": "1-7" },
+      "storyText": "장각의 또 다른 동생 장량이 맹렬히 공격해온다!"
+    },
+    {
+      "id": "1-9",
+      "chapter": 1,
+      "chapterName": "황건의 난",
+      "stageName": "거록 전초전",
+      "stageNameEn": "Julu Prelude",
+      "difficulty": "hard",
+      "enemies": [
+        { "generalId": "yellow_captain_1", "level": 9, "position": { "row": 2, "col": 1 } },
+        { "generalId": "yellow_captain_2", "level": 9, "position": { "row": 1, "col": 0 } },
+        { "generalId": "yellow_captain_3", "level": 9, "position": { "row": 1, "col": 2 } },
+        { "generalId": "yellow_soldier_1", "level": 9, "position": { "row": 0, "col": 0 } },
+        { "generalId": "yellow_soldier_2", "level": 9, "position": { "row": 0, "col": 1 } },
+        { "generalId": "yellow_soldier_3", "level": 9, "position": { "row": 0, "col": 2 } }
+      ],
+      "rewards": {
+        "gold": 700,
+        "exp": 350,
+        "items": []
+      },
+      "recommendedPower": 4800,
+      "unlockCondition": { "type": "clear", "stageId": "1-8" },
+      "storyText": "거록성 앞에서 황건적 정예 부대와 맞닥뜨렸다!"
+    },
+    {
+      "id": "1-10",
+      "chapter": 1,
+      "chapterName": "황건의 난",
+      "stageName": "장각 토벌",
+      "stageNameEn": "Subjugation of Zhang Jiao",
+      "difficulty": "boss",
+      "enemies": [
+        { "generalId": "zhang_jiao", "level": 10, "position": { "row": 2, "col": 1 } },
+        { "generalId": "zhang_bao", "level": 10, "position": { "row": 1, "col": 0 } },
+        { "generalId": "zhang_liang_yellow", "level": 10, "position": { "row": 1, "col": 2 } },
+        { "generalId": "yellow_captain_1", "level": 10, "position": { "row": 0, "col": 0 } },
+        { "generalId": "yellow_captain_2", "level": 10, "position": { "row": 0, "col": 1 } },
+        { "generalId": "yellow_captain_3", "level": 10, "position": { "row": 0, "col": 2 } }
+      ],
+      "rewards": {
+        "gold": 1000,
+        "exp": 500,
+        "items": [
+          { "itemId": "yellow_turban_relic", "count": 1 },
+          { "itemId": "general_summon_ticket_r", "count": 1 }
+        ]
+      },
+      "recommendedPower": 6000,
+      "unlockCondition": { "type": "clear", "stageId": "1-9" },
+      "storyText": "드디어 태평도의 수장 장각과 최후의 결전! 창천이사, 세상을 바로잡아라!",
+      "isBoss": true
+    }
+  ],
+  "enemyGenerals": [
+    {
+      "id": "yellow_soldier_1",
+      "name": "황건 병졸",
+      "nameEn": "Yellow Turban Soldier",
+      "grade": "N",
+      "class": "warrior",
+      "faction": "yellow_turban",
+      "baseStats": {
+        "attack": 30,
+        "defense": 25,
+        "intelligence": 15,
+        "speed": 35,
+        "hp": 200
+      }
+    },
+    {
+      "id": "yellow_soldier_2",
+      "name": "황건 창병",
+      "nameEn": "Yellow Turban Spearman",
+      "grade": "N",
+      "class": "warrior",
+      "faction": "yellow_turban",
+      "baseStats": {
+        "attack": 35,
+        "defense": 20,
+        "intelligence": 15,
+        "speed": 40,
+        "hp": 180
+      }
+    },
+    {
+      "id": "yellow_soldier_3",
+      "name": "황건 궁수",
+      "nameEn": "Yellow Turban Archer",
+      "grade": "N",
+      "class": "archer",
+      "faction": "yellow_turban",
+      "baseStats": {
+        "attack": 40,
+        "defense": 15,
+        "intelligence": 20,
+        "speed": 45,
+        "hp": 150
+      }
+    },
+    {
+      "id": "yellow_captain_1",
+      "name": "황건 부장",
+      "nameEn": "Yellow Turban Captain",
+      "grade": "R",
+      "class": "warrior",
+      "faction": "yellow_turban",
+      "baseStats": {
+        "attack": 55,
+        "defense": 45,
+        "intelligence": 30,
+        "speed": 50,
+        "hp": 400
+      }
+    },
+    {
+      "id": "yellow_captain_2",
+      "name": "황건 도사",
+      "nameEn": "Yellow Turban Priest",
+      "grade": "R",
+      "class": "strategist",
+      "faction": "yellow_turban",
+      "baseStats": {
+        "attack": 30,
+        "defense": 35,
+        "intelligence": 65,
+        "speed": 45,
+        "hp": 350
+      }
+    },
+    {
+      "id": "yellow_captain_3",
+      "name": "황건 기병장",
+      "nameEn": "Yellow Turban Cavalry Commander",
+      "grade": "R",
+      "class": "cavalry",
+      "faction": "yellow_turban",
+      "baseStats": {
+        "attack": 60,
+        "defense": 40,
+        "intelligence": 25,
+        "speed": 65,
+        "hp": 380
+      }
+    },
+    {
+      "id": "zhang_bao",
+      "name": "장보",
+      "nameEn": "Zhang Bao",
+      "grade": "R",
+      "class": "strategist",
+      "faction": "yellow_turban",
+      "baseStats": {
+        "attack": 45,
+        "defense": 50,
+        "intelligence": 75,
+        "speed": 55,
+        "hp": 500
+      },
+      "skillIds": ["skill_earth_magic"],
+      "description": "장각의 동생. 지공장군(地公將軍)이라 불린다."
+    },
+    {
+      "id": "zhang_liang_yellow",
+      "name": "장량",
+      "nameEn": "Zhang Liang",
+      "grade": "R",
+      "class": "strategist",
+      "faction": "yellow_turban",
+      "baseStats": {
+        "attack": 40,
+        "defense": 55,
+        "intelligence": 70,
+        "speed": 50,
+        "hp": 480
+      },
+      "skillIds": ["skill_people_magic"],
+      "description": "장각의 동생. 인공장군(人公將軍)이라 불린다."
+    },
+    {
+      "id": "zhang_jiao",
+      "name": "장각",
+      "nameEn": "Zhang Jiao",
+      "grade": "SR",
+      "class": "strategist",
+      "faction": "yellow_turban",
+      "baseStats": {
+        "attack": 50,
+        "defense": 60,
+        "intelligence": 90,
+        "speed": 65,
+        "hp": 800
+      },
+      "skillIds": ["skill_heaven_magic", "skill_yellow_turban_blessing"],
+      "description": "태평도의 교주이자 황건적의 수장. 천공장군(天公將軍)이라 불리며 창천이사(蒼天已死)를 외쳤다."
+    }
+  ]
+}

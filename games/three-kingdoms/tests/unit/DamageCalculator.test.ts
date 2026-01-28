@@ -1,16 +1,9 @@
 import { describe, it, expect } from 'vitest';
-
-// 데미지 공식: ATK * (1 - DEF/(DEF+100))
-function calculateDamage(attack: number, defense: number): number {
-  const damageReduction = defense / (defense + 100);
-  return Math.floor(attack * (1 - damageReduction));
-}
-
-// 계략 데미지: INT * multiplier * (1 - RES/(RES+80))
-function calculateSkillDamage(intelligence: number, multiplier: number, resistance: number): number {
-  const resistReduction = resistance / (resistance + 80);
-  return Math.floor(intelligence * multiplier * (1 - resistReduction));
-}
+import { 
+  DamageCalculator, 
+  calculateDamage, 
+  calculateSkillDamage 
+} from '../../src/utils/DamageCalculator';
 
 describe('DamageCalculator', () => {
   describe('calculateDamage (물리)', () => {
@@ -48,6 +41,80 @@ describe('DamageCalculator', () => {
 
     it('배수 적용 테스트', () => {
       expect(calculateSkillDamage(100, 3.0, 0)).toBe(300);
+    });
+  });
+
+  describe('DamageCalculator class methods', () => {
+    describe('calculatePhysicalDamage', () => {
+      it('works the same as calculateDamage', () => {
+        expect(DamageCalculator.calculatePhysicalDamage(100, 0)).toBe(100);
+        expect(DamageCalculator.calculatePhysicalDamage(100, 100)).toBe(50);
+        expect(DamageCalculator.calculatePhysicalDamage(100, 200)).toBe(33);
+      });
+    });
+
+    describe('calculateMagicalDamage', () => {
+      it('works the same as calculateSkillDamage', () => {
+        expect(DamageCalculator.calculateMagicalDamage(100, 0, 2.0)).toBe(200);
+        expect(DamageCalculator.calculateMagicalDamage(100, 80, 2.0)).toBe(100);
+        expect(DamageCalculator.calculateMagicalDamage(100, 0, 3.0)).toBe(300);
+      });
+    });
+
+    describe('rollCritical', () => {
+      it('속도 0일 때 약 10% 확률', () => {
+        // 확률 테스트는 여러번 실행하여 통계적으로 확인
+        let crits = 0;
+        const iterations = 1000;
+        for (let i = 0; i < iterations; i++) {
+          if (DamageCalculator.rollCritical(0)) crits++;
+        }
+        // 10% 기대, ±5% 허용 (5~15%)
+        expect(crits).toBeGreaterThanOrEqual(50);
+        expect(crits).toBeLessThanOrEqual(150);
+      });
+
+      it('속도 90 이상일 때 거의 100% 크리티컬', () => {
+        let crits = 0;
+        const iterations = 100;
+        for (let i = 0; i < iterations; i++) {
+          if (DamageCalculator.rollCritical(90)) crits++;
+        }
+        // 100% 기대
+        expect(crits).toBe(100);
+      });
+    });
+
+    describe('calculateFinalDamage', () => {
+      it('치명타 아닐 때 기본 데미지', () => {
+        expect(DamageCalculator.calculateFinalDamage(100, false)).toBe(100);
+      });
+
+      it('치명타일 때 1.5배 데미지', () => {
+        expect(DamageCalculator.calculateFinalDamage(100, true)).toBe(150);
+      });
+
+      it('소수점 버림', () => {
+        expect(DamageCalculator.calculateFinalDamage(101, true)).toBe(151);
+      });
+    });
+
+    describe('calculatePhysicalAttack', () => {
+      it('returns DamageResult with physical type', () => {
+        const result = DamageCalculator.calculatePhysicalAttack(100, 100, 0);
+        expect(result.damageType).toBe('physical');
+        expect(typeof result.damage).toBe('number');
+        expect(typeof result.isCritical).toBe('boolean');
+      });
+    });
+
+    describe('calculateMagicalAttack', () => {
+      it('returns DamageResult with magical type', () => {
+        const result = DamageCalculator.calculateMagicalAttack(100, 0, 2.0, 0);
+        expect(result.damageType).toBe('magical');
+        expect(typeof result.damage).toBe('number');
+        expect(typeof result.isCritical).toBe('boolean');
+      });
     });
   });
 });

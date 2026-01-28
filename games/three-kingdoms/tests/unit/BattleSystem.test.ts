@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { DamageCalculator } from '../../src/utils/DamageCalculator';
 
 interface Unit {
   id: string;
@@ -26,8 +27,7 @@ function isUnitAlive(unit: Unit): boolean {
 }
 
 function calculateDamage(attacker: Unit, defender: Unit): number {
-  const reduction = defender.defense / (defender.defense + 100);
-  return Math.floor(attacker.attack * (1 - reduction));
+  return DamageCalculator.calculatePhysicalDamage(attacker.attack, defender.defense);
 }
 
 describe('BattleSystem', () => {
