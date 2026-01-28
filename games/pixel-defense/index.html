@@ -74,6 +74,7 @@
             margin-bottom: 10px;
             position: relative;
             min-height: 300px;
+            overflow: hidden;
         }
         
         .castle {
@@ -715,8 +716,8 @@
             
             const enemy = {
                 type,
-                x: -30,
-                y: 30 + Math.random() * 200,
+                x: 5,
+                y: 50 + Math.random() * 150,
                 hp: Math.floor(def.hp * waveMultiplier),
                 maxHp: Math.floor(def.hp * waveMultiplier),
                 atk: Math.floor(def.atk * waveMultiplier),
