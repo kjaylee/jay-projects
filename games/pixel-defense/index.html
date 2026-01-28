@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>픽셀 디펜스 타이쿤 | Pixel Defense Tycoon</title>
+    <meta name="description" content="귀여운 픽셀 기사단으로 성을 지키는 타워 디펜스 게임">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            image-rendering: pixelated;
+        }
+        
+        #game-container {
+            width: 100%;
+            max-width: 480px;
+            padding: 10px;
+        }
+        
+        /* Header */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: linear-gradient(180deg, #4a4a6a 0%, #2a2a4a 100%);
+            border: 4px solid #6a6a8a;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .resource {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 10px;
+            color: #ffd700;
+        }
+        
+        .resource-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        
+        .wave-info {
+            font-size: 8px;
+            color: #aaa;
+            text-align: center;
+        }
+        
+        /* Battle Field */
+        .battle-area {
+            background: linear-gradient(180deg, #3d6b3d 0%, #2d5a2d 50%, #4a7a4a 100%);
+            border: 4px solid #5a8a5a;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            position: relative;
+            min-height: 300px;
+        }
+        
+        .castle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 60px;
+            height: 80px;
+            background: linear-gradient(180deg, #8b7355 0%, #6b5344 100%);
+            border: 3px solid #5a4a3a;
+            border-radius: 4px 4px 0 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .castle::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            width: 70px;
+            height: 15px;
+            background: repeating-linear-gradient(90deg, #8b7355 0px, #8b7355 10px, transparent 10px, transparent 14px);
+            border: 2px solid #5a4a3a;
+        }
+        
+        .castle-hp {
+            position: absolute;
+            bottom: -20px;
+            width: 100%;
+            height: 8px;
+            background: #333;
+            border: 2px solid #555;
+            border-radius: 2px;
+        }
+        
+        .castle-hp-fill {
+            height: 100%;
+            background: linear-gradient(180deg, #ff6b6b, #c92a2a);
+            transition: width 0.3s;
+            width: 100%;
+        }
+        
+        /* Grid */
+        .unit-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 5px;
+            width: calc(100% - 80px);
+            height: 180px;
+        }
+        
+        .grid-cell {
+            background: rgba(255,255,255,0.1);
+            border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .grid-cell:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.5);
+        }
+        
+        .grid-cell.has-unit {
+            background: rgba(100,150,255,0.2);
+            border: 2px solid rgba(100,150,255,0.5);
+        }
+        
+        /* Units */
+        .unit {
+            width: 36px;
+            height: 36px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            position: relative;
+            animation: idle 0.5s infinite alternate;
+        }
+        
+        @keyframes idle {
+            from { transform: translateY(0); }
+            to { transform: translateY(-2px); }
+        }
+        
+        .unit.attacking {
+            animation: attack 0.2s ease-out;
+        }
+        
+        @keyframes attack {
+            0% { transform: translateX(0); }
+            50% { transform: translateX(10px); }
+            100% { transform: translateX(0); }
+        }
+        
+        .unit-hp {
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+        }
+        
+        .unit-hp-fill {
+            height: 100%;
+            background: #4ade80;
+            border-radius: 2px;
+            transition: width 0.2s;
+        }
+        
+        /* Enemies */
+        .enemies-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .enemy {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: left 0.1s linear;
+            animation: enemyWalk 0.3s infinite alternate;
+        }
+        
+        @keyframes enemyWalk {
+            from { transform: translateY(0) scaleX(-1); }
+            to { transform: translateY(-2px) scaleX(-1); }
+        }
+        
+        .enemy.hit {
+            animation: enemyHit 0.1s;
+        }
+        
+        @keyframes enemyHit {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(2); }
+        }
+        
+        .enemy-hp {
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 28px;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+        }
+        
+        .enemy-hp-fill {
+            height: 100%;
+            background: #ef4444;
+            border-radius: 2px;
+            transition: width 0.2s;
+        }
+        
+        /* Projectiles */
+        .projectile {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #ffd700;
+            border-radius: 50%;
+            pointer-events: none;
+            box-shadow: 0 0 10px #ffd700;
+        }
+        
+        /* Unit Selection */
+        .unit-shop {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            padding: 10px;
+            background: linear-gradient(180deg, #4a4a6a 0%, #2a2a4a 100%);
+            border: 4px solid #6a6a8a;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .shop-unit {
+            width: 60px;
+            padding: 8px;
+            background: linear-gradient(180deg, #3a3a5a, #2a2a4a);
+            border: 3px solid #5a5a7a;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        
+        .shop-unit:hover {
+            transform: translateY(-3px);
+            border-color: #8a8aaa;
+        }
+        
+        .shop-unit.selected {
+            border-color: #ffd700;
+            box-shadow: 0 0 10px rgba(255,215,0,0.5);
+        }
+        
+        .shop-unit.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .shop-unit-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        
+        .shop-unit-cost {
+            font-size: 8px;
+            color: #ffd700;
+        }
+        
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            border: 4px solid;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-start {
+            background: linear-gradient(180deg, #4ade80, #22c55e);
+            border-color: #16a34a;
+            color: #fff;
+        }
+        
+        .btn-speed {
+            background: linear-gradient(180deg, #60a5fa, #3b82f6);
+            border-color: #2563eb;
+            color: #fff;
+        }
+        
+        /* Damage Numbers */
+        .damage-number {
+            position: absolute;
+            font-size: 12px;
+            color: #ff6b6b;
+            pointer-events: none;
+            animation: damageFloat 0.8s ease-out forwards;
+            text-shadow: 2px 2px 0 #000;
+        }
+        
+        @keyframes damageFloat {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-30px); }
+        }
+        
+        /* Game Over / Victory */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .overlay.show {
+            display: flex;
+        }
+        
+        .overlay-content {
+            background: linear-gradient(180deg, #4a4a6a, #2a2a4a);
+            border: 4px solid #6a6a8a;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .overlay-title {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        
+        .overlay-title.victory {
+            color: #ffd700;
+        }
+        
+        .overlay-title.defeat {
+            color: #ef4444;
+        }
+        
+        .overlay-stats {
+            font-size: 10px;
+            color: #aaa;
+            margin-bottom: 20px;
+            line-height: 2;
+        }
+        
+        /* Wave Announcement */
+        .wave-announce {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 16px;
+            color: #ffd700;
+            text-shadow: 3px 3px 0 #000;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 50;
+        }
+        
+        .wave-announce.show {
+            animation: waveAnnounce 2s ease-out;
+        }
+        
+        @keyframes waveAnnounce {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        /* Gold earn animation */
+        .gold-earn {
+            position: absolute;
+            font-size: 10px;
+            color: #ffd700;
+            pointer-events: none;
+            animation: goldFloat 1s ease-out forwards;
+            text-shadow: 1px 1px 0 #000;
+        }
+        
+        @keyframes goldFloat {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-40px); }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div class="game-header">
+            <div class="resource">
+                <span class="resource-icon">💰</span>
+                <span id="gold">100</span>
+            </div>
+            <div class="wave-info">
+                <div>WAVE <span id="wave">1</span>/10</div>
+                <div>STAGE <span id="stage">1</span></div>
+            </div>
+            <div class="resource">
+                <span class="resource-icon">⚔️</span>
+                <span id="kills">0</span>
+            </div>
+        </div>
+        
+        <div class="battle-area" id="battle-area">
+            <div class="unit-grid" id="unit-grid"></div>
+            <div class="castle">
+                <div style="font-size: 24px; margin-top: 15px;">🏰</div>
+                <div class="castle-hp">
+                    <div class="castle-hp-fill" id="castle-hp"></div>
+                </div>
+            </div>
+            <div class="enemies-area" id="enemies-area"></div>
+            <div class="wave-announce" id="wave-announce">WAVE 1</div>
+        </div>
+        
+        <div class="unit-shop" id="unit-shop">
+            <div class="shop-unit" data-unit="knight" data-cost="30">
+                <div class="shop-unit-icon">🗡️</div>
+                <div class="shop-unit-cost">30</div>
+            </div>
+            <div class="shop-unit" data-unit="archer" data-cost="40">
+                <div class="shop-unit-icon">🏹</div>
+                <div class="shop-unit-cost">40</div>
+            </div>
+            <div class="shop-unit" data-unit="tank" data-cost="60">
+                <div class="shop-unit-icon">🛡️</div>
+                <div class="shop-unit-cost">60</div>
+            </div>
+            <div class="shop-unit" data-unit="mage" data-cost="80">
+                <div class="shop-unit-icon">🧙</div>
+                <div class="shop-unit-cost">80</div>
+            </div>
+            <div class="shop-unit" data-unit="hero" data-cost="150">
+                <div class="shop-unit-icon">👑</div>
+                <div class="shop-unit-cost">150</div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn btn-start" id="btn-start">START</button>
+            <button class="btn btn-speed" id="btn-speed">1X</button>
+        </div>
+    </div>
+    
+    <div class="overlay" id="overlay">
+        <div class="overlay-content">
+            <div class="overlay-title" id="overlay-title">VICTORY!</div>
+            <div class="overlay-stats" id="overlay-stats"></div>
+            <button class="btn btn-start" id="btn-restart">RESTART</button>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        const state = {
+            gold: 100,
+            wave: 1,
+            stage: 1,
+            kills: 0,
+            castleHp: 100,
+            maxCastleHp: 100,
+            selectedUnit: null,
+            units: [],
+            enemies: [],
+            projectiles: [],
+            isRunning: false,
+            isPaused: false,
+            speed: 1,
+            waveInProgress: false,
+            enemiesSpawned: 0,
+            enemiesPerWave: 5
+        };
+        
+        // Unit definitions
+        const unitTypes = {
+            knight: { 
+                icon: '🗡️', 
+                hp: 80, 
+                atk: 15, 
+                range: 1, 
+                speed: 1.0,
+                cost: 30,
+                name: 'Knight'
+            },
+            archer: { 
+                icon: '🏹', 
+                hp: 40, 
+                atk: 20, 
+                range: 4, 
+                speed: 0.8,
+                cost: 40,
+                name: 'Archer'
+            },
+            tank: { 
+                icon: '🛡️', 
+                hp: 150, 
+                atk: 8, 
+                range: 1, 
+                speed: 1.2,
+                cost: 60,
+                name: 'Tank'
+            },
+            mage: { 
+                icon: '🧙', 
+                hp: 50, 
+                atk: 30, 
+                range: 3, 
+                speed: 1.5,
+                aoe: true,
+                cost: 80,
+                name: 'Mage'
+            },
+            hero: { 
+                icon: '👑', 
+                hp: 200, 
+                atk: 40, 
+                range: 2, 
+                speed: 0.7,
+                cost: 150,
+                name: 'Hero'
+            }
+        };
+        
+        // Enemy definitions
+        const enemyTypes = {
+            goblin: { icon: '👺', hp: 30, atk: 5, speed: 1.5, gold: 10 },
+            orc: { icon: '👹', hp: 60, atk: 10, speed: 2.0, gold: 20 },
+            skeleton: { icon: '💀', hp: 40, atk: 8, speed: 1.2, gold: 15 },
+            demon: { icon: '😈', hp: 100, atk: 15, speed: 2.5, gold: 35 },
+            boss: { icon: '🐉', hp: 300, atk: 25, speed: 3.0, gold: 100 }
+        };
+        
+        // DOM Elements
+        const goldEl = document.getElementById('gold');
+        const waveEl = document.getElementById('wave');
+        const stageEl = document.getElementById('stage');
+        const killsEl = document.getElementById('kills');
+        const castleHpEl = document.getElementById('castle-hp');
+        const unitGridEl = document.getElementById('unit-grid');
+        const enemiesAreaEl = document.getElementById('enemies-area');
+        const unitShopEl = document.getElementById('unit-shop');
+        const btnStart = document.getElementById('btn-start');
+        const btnSpeed = document.getElementById('btn-speed');
+        const overlay = document.getElementById('overlay');
+        const overlayTitle = document.getElementById('overlay-title');
+        const overlayStats = document.getElementById('overlay-stats');
+        const btnRestart = document.getElementById('btn-restart');
+        const waveAnnounce = document.getElementById('wave-announce');
+        const battleArea = document.getElementById('battle-area');
+        
+        // Initialize grid
+        function initGrid() {
+            unitGridEl.innerHTML = '';
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 5; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.addEventListener('click', () => handleCellClick(row, col, cell));
+                    unitGridEl.appendChild(cell);
+                }
+            }
+        }
+        
+        // Handle cell click
+        function handleCellClick(row, col, cell) {
+            if (state.selectedUnit && !cell.classList.contains('has-unit')) {
+                const unitDef = unitTypes[state.selectedUnit];
+                if (state.gold >= unitDef.cost) {
+                    placeUnit(row, col, state.selectedUnit, cell);
+                    state.gold -= unitDef.cost;
+                    updateUI();
+                }
+            } else if (cell.classList.contains('has-unit')) {
+                // Remove unit (refund half)
+                const unit = state.units.find(u => u.row === row && u.col === col);
+                if (unit && !state.waveInProgress) {
+                    state.units = state.units.filter(u => u !== unit);
+                    state.gold += Math.floor(unitTypes[unit.type].cost / 2);
+                    cell.innerHTML = '';
+                    cell.classList.remove('has-unit');
+                    updateUI();
+                }
+            }
+        }
+        
+        // Place unit
+        function placeUnit(row, col, type, cell) {
+            const unitDef = unitTypes[type];
+            const unit = {
+                type,
+                row,
+                col,
+                hp: unitDef.hp,
+                maxHp: unitDef.hp,
+                atk: unitDef.atk,
+                range: unitDef.range,
+                speed: unitDef.speed,
+                aoe: unitDef.aoe || false,
+                cooldown: 0,
+                element: null
+            };
+            
+            const unitEl = document.createElement('div');
+            unitEl.className = 'unit';
+            unitEl.innerHTML = `
+                ${unitDef.icon}
+                <div class="unit-hp">
+                    <div class="unit-hp-fill" style="width: 100%"></div>
+                </div>
+            `;
+            unit.element = unitEl;
+            
+            cell.appendChild(unitEl);
+            cell.classList.add('has-unit');
+            state.units.push(unit);
+        }
+        
+        // Shop selection
+        unitShopEl.querySelectorAll('.shop-unit').forEach(shopUnit => {
+            shopUnit.addEventListener('click', () => {
+                const type = shopUnit.dataset.unit;
+                const cost = parseInt(shopUnit.dataset.cost);
+                
+                if (state.gold >= cost) {
+                    unitShopEl.querySelectorAll('.shop-unit').forEach(u => u.classList.remove('selected'));
+                    shopUnit.classList.add('selected');
+                    state.selectedUnit = type;
+                } else {
+                    shopUnit.classList.add('disabled');
+                    setTimeout(() => shopUnit.classList.remove('disabled'), 200);
+                }
+            });
+        });
+        
+        // Spawn enemy
+        function spawnEnemy() {
+            const types = ['goblin', 'skeleton', 'orc'];
+            if (state.wave >= 5) types.push('demon');
+            const isBoss = state.wave === 5 || state.wave === 10;
+            
+            const type = isBoss && state.enemiesSpawned === state.enemiesPerWave - 1 
+                ? 'boss' 
+                : types[Math.floor(Math.random() * types.length)];
+            
+            const def = enemyTypes[type];
+            const waveMultiplier = 1 + (state.wave - 1) * 0.2;
+            
+            const enemy = {
+                type,
+                x: -30,
+                y: 30 + Math.random() * 200,
+                hp: Math.floor(def.hp * waveMultiplier),
+                maxHp: Math.floor(def.hp * waveMultiplier),
+                atk: Math.floor(def.atk * waveMultiplier),
+                speed: def.speed,
+                gold: def.gold,
+                cooldown: 0,
+                element: null
+            };
+            
+            const enemyEl = document.createElement('div');
+            enemyEl.className = 'enemy';
+            enemyEl.innerHTML = `
+                ${def.icon}
+                <div class="enemy-hp">
+                    <div class="enemy-hp-fill" style="width: 100%"></div>
+                </div>
+            `;
+            enemyEl.style.left = enemy.x + 'px';
+            enemyEl.style.top = enemy.y + 'px';
+            enemy.element = enemyEl;
+            
+            enemiesAreaEl.appendChild(enemyEl);
+            state.enemies.push(enemy);
+            state.enemiesSpawned++;
+        }
+        
+        // Show damage number
+        function showDamage(x, y, damage, isGold = false) {
+            const dmgEl = document.createElement('div');
+            dmgEl.className = isGold ? 'gold-earn' : 'damage-number';
+            dmgEl.textContent = isGold ? `+${damage}💰` : `-${damage}`;
+            dmgEl.style.left = x + 'px';
+            dmgEl.style.top = y + 'px';
+            battleArea.appendChild(dmgEl);
+            setTimeout(() => dmgEl.remove(), 800);
+        }
+        
+        // Unit attacks
+        function processUnitAttacks(delta) {
+            state.units.forEach(unit => {
+                unit.cooldown -= delta * state.speed;
+                
+                if (unit.cooldown <= 0 && state.enemies.length > 0) {
+                    // Find target in range
+                    const unitX = 80 + unit.col * 50;
+                    const unitY = 40 + unit.row * 60;
+                    
+                    let targets = state.enemies.filter(e => {
+                        const dist = Math.abs(e.x - unitX) / 50;
+                        return dist <= unit.range && e.hp > 0;
+                    });
+                    
+                    if (targets.length > 0) {
+                        targets.sort((a, b) => b.x - a.x); // Attack nearest
+                        
+                        if (unit.aoe) {
+                            // AOE attack
+                            targets.slice(0, 3).forEach(target => {
+                                target.hp -= unit.atk;
+                                target.element.classList.add('hit');
+                                setTimeout(() => target.element.classList.remove('hit'), 100);
+                                showDamage(target.x + 16, target.y, unit.atk);
+                                target.element.querySelector('.enemy-hp-fill').style.width = 
+                                    Math.max(0, target.hp / target.maxHp * 100) + '%';
+                            });
+                        } else {
+                            const target = targets[0];
+                            target.hp -= unit.atk;
+                            target.element.classList.add('hit');
+                            setTimeout(() => target.element.classList.remove('hit'), 100);
+                            showDamage(target.x + 16, target.y, unit.atk);
+                            target.element.querySelector('.enemy-hp-fill').style.width = 
+                                Math.max(0, target.hp / target.maxHp * 100) + '%';
+                        }
+                        
+                        unit.element.classList.add('attacking');
+                        setTimeout(() => unit.element.classList.remove('attacking'), 200);
+                        unit.cooldown = unit.speed;
+                    }
+                }
+            });
+        }
+        
+        // Process enemies
+        function processEnemies(delta) {
+            state.enemies.forEach(enemy => {
+                if (enemy.hp <= 0) return;
+                
+                // Move towards castle
+                const targetX = 350;
+                if (enemy.x < targetX) {
+                    enemy.x += (30 / enemy.speed) * delta * state.speed;
+                    enemy.element.style.left = enemy.x + 'px';
+                } else {
+                    // Attack castle
+                    enemy.cooldown -= delta * state.speed;
+                    if (enemy.cooldown <= 0) {
+                        state.castleHp -= enemy.atk;
+                        castleHpEl.style.width = Math.max(0, state.castleHp / state.maxCastleHp * 100) + '%';
+                        enemy.cooldown = 1.5;
+                    }
+                }
+            });
+            
+            // Remove dead enemies
+            state.enemies = state.enemies.filter(enemy => {
+                if (enemy.hp <= 0) {
+                    state.kills++;
+                    state.gold += enemy.gold;
+                    showDamage(enemy.x, enemy.y - 20, enemy.gold, true);
+                    enemy.element.remove();
+                    updateUI();
+                    return false;
+                }
+                return true;
+            });
+        }
+        
+        // Check wave completion
+        function checkWaveComplete() {
+            if (state.waveInProgress && 
+                state.enemiesSpawned >= state.enemiesPerWave && 
+                state.enemies.length === 0) {
+                state.waveInProgress = false;
+                state.wave++;
+                
+                if (state.wave > 10) {
+                    victory();
+                } else {
+                    // Bonus gold between waves
+                    state.gold += 20 + state.wave * 5;
+                    updateUI();
+                }
+            }
+        }
+        
+        // Start wave
+        function startWave() {
+            if (state.waveInProgress) return;
+            
+            state.waveInProgress = true;
+            state.enemiesSpawned = 0;
+            state.enemiesPerWave = 5 + state.wave;
+            
+            // Announce wave
+            waveAnnounce.textContent = `WAVE ${state.wave}`;
+            waveAnnounce.classList.add('show');
+            setTimeout(() => waveAnnounce.classList.remove('show'), 2000);
+            
+            // Spawn enemies gradually
+            let spawnCount = 0;
+            const spawnInterval = setInterval(() => {
+                if (spawnCount >= state.enemiesPerWave || !state.isRunning) {
+                    clearInterval(spawnInterval);
+                    return;
+                }
+                spawnEnemy();
+                spawnCount++;
+            }, 1500 / state.speed);
+        }
+        
+        // Victory
+        function victory() {
+            state.isRunning = false;
+            overlayTitle.textContent = 'VICTORY!';
+            overlayTitle.className = 'overlay-title victory';
+            overlayStats.innerHTML = `
+                Stage ${state.stage} Complete!<br><br>
+                Kills: ${state.kills}<br>
+                Gold: ${state.gold}
+            `;
+            overlay.classList.add('show');
+        }
+        
+        // Game Over
+        function gameOver() {
+            state.isRunning = false;
+            overlayTitle.textContent = 'DEFEAT';
+            overlayTitle.className = 'overlay-title defeat';
+            overlayStats.innerHTML = `
+                Wave ${state.wave}/10<br><br>
+                Kills: ${state.kills}<br>
+                Gold Earned: ${state.gold}
+            `;
+            overlay.classList.add('show');
+        }
+        
+        // Update UI
+        function updateUI() {
+            goldEl.textContent = state.gold;
+            waveEl.textContent = state.wave;
+            stageEl.textContent = state.stage;
+            killsEl.textContent = state.kills;
+            
+            // Update shop affordability
+            unitShopEl.querySelectorAll('.shop-unit').forEach(shopUnit => {
+                const cost = parseInt(shopUnit.dataset.cost);
+                if (state.gold < cost) {
+                    shopUnit.classList.add('disabled');
+                } else {
+                    shopUnit.classList.remove('disabled');
+                }
+            });
+        }
+        
+        // Game loop
+        let lastTime = 0;
+        function gameLoop(timestamp) {
+            if (!state.isRunning) return;
+            
+            const delta = Math.min((timestamp - lastTime) / 1000, 0.1);
+            lastTime = timestamp;
+            
+            processUnitAttacks(delta);
+            processEnemies(delta);
+            checkWaveComplete();
+            
+            if (state.castleHp <= 0) {
+                gameOver();
+                return;
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Start button
+        btnStart.addEventListener('click', () => {
+            if (!state.isRunning) {
+                state.isRunning = true;
+                lastTime = performance.now();
+                requestAnimationFrame(gameLoop);
+                btnStart.textContent = 'WAVE';
+            }
+            startWave();
+        });
+        
+        // Speed button
+        btnSpeed.addEventListener('click', () => {
+            state.speed = state.speed === 1 ? 2 : state.speed === 2 ? 4 : 1;
+            btnSpeed.textContent = state.speed + 'X';
+        });
+        
+        // Restart
+        btnRestart.addEventListener('click', () => {
+            location.reload();
+        });
+        
+        // Initialize
+        initGrid();
+        updateUI();
+    </script>
+</body>
+</html>
