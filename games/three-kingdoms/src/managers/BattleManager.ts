@@ -5,6 +5,7 @@ import { SkillExecutor, SkillResult } from './SkillExecutor';
 import { BuffManager } from './BuffManager';
 import { RewardManager, BattleReward } from './RewardManager';
 import { GameManager } from './GameManager';
+import { SkillEffectManager } from './SkillEffectManager';
 import stagesData from '../data/stages.json';
 import generalsData from '../data/generals.json';
 
@@ -106,10 +107,12 @@ export class BattleManager {
   
   private buffManager: BuffManager;
   private gameManager: GameManager | null = null;
+  private skillEffectManager: SkillEffectManager;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     this.buffManager = new BuffManager();
+    this.skillEffectManager = new SkillEffectManager(scene);
     SkillExecutor.setBuffManager(this.buffManager);
   }
 
@@ -283,6 +286,7 @@ export class BattleManager {
 
   setSpeed(speed: number): void {
     this.speed = speed;
+    this.skillEffectManager.setSpeed(speed);
   }
 
   getState(): BattleState {
@@ -382,35 +386,26 @@ export class BattleManager {
   }
 
   /**
-   * 스킬 효과 연출
+   * 스킬 효과 연출 (SkillEffectManager 사용)
    */
   private showSkillEffect(result: SkillResult): void {
-    // 스킬 이름 표시
-    const x = 225;
-    const y = result.caster.team === 'player' ? 450 : 350;
+    // 유닛 위치를 계산하는 헬퍼
+    const getUnitPosition = (unit: BattleUnit): { x: number; y: number } => {
+      const { width } = this.scene.cameras.main;
+      const cellWidth = 100;
+      const startX = (width - 3 * cellWidth) / 2 + cellWidth / 2;
+      
+      const isPlayer = unit.team === 'player';
+      const baseY = isPlayer ? 550 : 200;
+      
+      return {
+        x: startX + unit.position.col * cellWidth,
+        y: baseY + (isPlayer ? (2 - unit.position.row) : unit.position.row) * 80,
+      };
+    };
 
-    const skillText = this.scene.add.text(x, y, `⚡ ${result.skillName}!`, {
-      fontSize: '20px',
-      color: '#ffff00',
-      fontStyle: 'bold',
-    }).setOrigin(0.5);
-
-    this.scene.tweens.add({
-      targets: skillText,
-      alpha: 0,
-      y: y - 30,
-      duration: 1500 / this.speed,
-      onComplete: () => skillText.destroy(),
-    });
-
-    // 데미지/회복 표시
-    for (const effect of result.effects) {
-      if (effect.type === 'damage' && effect.value > 0) {
-        this.showDamageText(effect.value, effect.target.team === 'player');
-      } else if (effect.type === 'heal' && effect.value > 0) {
-        this.showHealText(effect.value, effect.target.team === 'player');
-      }
-    }
+    // SkillEffectManager로 이펙트 재생
+    this.skillEffectManager.playSkillEffect(result, getUnitPosition);
   }
 
   /**

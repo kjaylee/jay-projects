@@ -1,3 +1,11 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
 export interface Database {
   public: {
     Tables: {
@@ -10,11 +18,38 @@ export interface Database {
           gems: number;
           stamina: number;
           vip_level: number;
+          max_cleared_stage: string | null;
+          cleared_stages: string[];
           created_at: string;
           last_login: string;
         };
-        Insert: Omit<Database['public']['Tables']['users']['Row'], 'id' | 'created_at'>;
-        Update: Partial<Database['public']['Tables']['users']['Insert']>;
+        Insert: {
+          id: string;
+          nickname: string;
+          level: number;
+          gold: number;
+          gems: number;
+          stamina: number;
+          vip_level: number;
+          max_cleared_stage?: string | null;
+          cleared_stages?: string[];
+          created_at?: string;
+          last_login: string;
+        };
+        Update: {
+          id?: string;
+          nickname?: string;
+          level?: number;
+          gold?: number;
+          gems?: number;
+          stamina?: number;
+          vip_level?: number;
+          max_cleared_stage?: string | null;
+          cleared_stages?: string[];
+          created_at?: string;
+          last_login?: string;
+        };
+        Relationships: [];
       };
       generals: {
         Row: {
@@ -29,8 +64,31 @@ export interface Database {
           base_charm: number;
           skill_ids: string[];
         };
-        Insert: Database['public']['Tables']['generals']['Row'];
-        Update: Partial<Database['public']['Tables']['generals']['Insert']>;
+        Insert: {
+          id: string;
+          name: string;
+          grade: 'N' | 'R' | 'SR' | 'SSR' | 'UR';
+          class: 'warrior' | 'tank' | 'archer' | 'strategist' | 'cavalry';
+          base_attack: number;
+          base_defense: number;
+          base_intelligence: number;
+          base_politics: number;
+          base_charm: number;
+          skill_ids: string[];
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          grade?: 'N' | 'R' | 'SR' | 'SSR' | 'UR';
+          class?: 'warrior' | 'tank' | 'archer' | 'strategist' | 'cavalry';
+          base_attack?: number;
+          base_defense?: number;
+          base_intelligence?: number;
+          base_politics?: number;
+          base_charm?: number;
+          skill_ids?: string[];
+        };
+        Relationships: [];
       };
       user_generals: {
         Row: {
@@ -41,8 +99,23 @@ export interface Database {
           stars: number;
           exp: number;
         };
-        Insert: Omit<Database['public']['Tables']['user_generals']['Row'], 'id'>;
-        Update: Partial<Database['public']['Tables']['user_generals']['Insert']>;
+        Insert: {
+          id?: string;
+          user_id: string;
+          general_id: string;
+          level: number;
+          stars: number;
+          exp: number;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          general_id?: string;
+          level?: number;
+          stars?: number;
+          exp?: number;
+        };
+        Relationships: [];
       };
       formations: {
         Row: {
@@ -52,8 +125,21 @@ export interface Database {
           positions: (string | null)[];
           is_active: boolean;
         };
-        Insert: Omit<Database['public']['Tables']['formations']['Row'], 'id'>;
-        Update: Partial<Database['public']['Tables']['formations']['Insert']>;
+        Insert: {
+          id?: string;
+          user_id: string;
+          slot: number;
+          positions: (string | null)[];
+          is_active: boolean;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          slot?: number;
+          positions?: (string | null)[];
+          is_active?: boolean;
+        };
+        Relationships: [];
       };
       battles: {
         Row: {
@@ -61,12 +147,31 @@ export interface Database {
           attacker_id: string;
           defender_id: string;
           winner_id: string | null;
-          replay_data: object;
+          replay_data: Json;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['battles']['Row'], 'id' | 'created_at'>;
-        Update: Partial<Database['public']['Tables']['battles']['Insert']>;
+        Insert: {
+          id?: string;
+          attacker_id: string;
+          defender_id: string;
+          winner_id?: string | null;
+          replay_data: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          attacker_id?: string;
+          defender_id?: string;
+          winner_id?: string | null;
+          replay_data?: Json;
+          created_at?: string;
+        };
+        Relationships: [];
       };
     };
+    Views: {};
+    Functions: {};
+    Enums: {};
+    CompositeTypes: {};
   };
 }

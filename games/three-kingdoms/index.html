@@ -6,127 +6,27 @@
   <title>삼국지 패왕전 - Three Kingdoms Warlord</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { 
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-      min-height: 100vh;
+    html, body { 
+      width: 100%;
+      height: 100%;
+      background: #1a1a2e;
+      overflow: hidden;
+    }
+    #game-container {
+      width: 100%;
+      height: 100%;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-family: 'Noto Sans KR', sans-serif;
-      color: white;
     }
-    .container {
-      text-align: center;
-      padding: 20px;
-    }
-    h1 {
-      font-size: 2.5rem;
-      color: #ffd700;
-      margin-bottom: 10px;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-    }
-    .subtitle {
-      color: #888;
-      margin-bottom: 30px;
-    }
-    .status {
-      background: rgba(255,255,255,0.1);
-      padding: 20px 40px;
-      border-radius: 10px;
-      margin-bottom: 30px;
-    }
-    .status h2 {
-      color: #ffd700;
-      margin-bottom: 15px;
-    }
-    .progress-bar {
-      background: #333;
-      height: 20px;
-      border-radius: 10px;
-      overflow: hidden;
-      margin-bottom: 10px;
-    }
-    .progress {
-      background: linear-gradient(90deg, #ffd700, #ff6b00);
-      height: 100%;
-      width: 15%;
-      transition: width 0.5s;
-    }
-    .tasks {
-      text-align: left;
-      margin-top: 20px;
-    }
-    .task {
-      padding: 5px 0;
-      color: #aaa;
-    }
-    .task.done {
-      color: #00ff00;
-    }
-    .task.done::before {
-      content: '✅ ';
-    }
-    .task.pending::before {
-      content: '⏳ ';
-    }
-    .back-link {
-      color: #ffd700;
-      text-decoration: none;
-      margin-top: 20px;
-      display: inline-block;
-    }
-    .tech-stack {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-top: 20px;
-    }
-    .tech {
-      background: rgba(255,255,255,0.1);
-      padding: 5px 15px;
-      border-radius: 20px;
-      font-size: 0.9rem;
+    canvas {
+      max-width: 100%;
+      max-height: 100%;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>⚔️ 삼국지 패왕전</h1>
-    <p class="subtitle">Three Kingdoms: Warlord</p>
-    
-    <div class="status">
-      <h2>🚧 개발 진행 중</h2>
-      <div class="progress-bar">
-        <div class="progress"></div>
-      </div>
-      <p>20 / 139 태스크 완료 (15%)</p>
-      
-      <div class="tasks">
-        <div class="task done">프로젝트 셋업</div>
-        <div class="task done">Phaser 3 보일러플레이트</div>
-        <div class="task done">Supabase 클라이언트</div>
-        <div class="task done">로그인 화면</div>
-        <div class="task done">메인 화면 UI</div>
-        <div class="task done">전투 화면 기본</div>
-        <div class="task done">전투 매니저</div>
-        <div class="task done">DB 스키마 설계</div>
-        <div class="task pending">장수 데이터 50명</div>
-        <div class="task pending">계략 시스템</div>
-        <div class="task pending">가챠 시스템</div>
-        <div class="task pending">PvP 시스템</div>
-      </div>
-    </div>
-
-    <div class="tech-stack">
-      <span class="tech">Phaser 3</span>
-      <span class="tech">TypeScript</span>
-      <span class="tech">Supabase</span>
-      <span class="tech">Cloudflare</span>
-    </div>
-
-    <a href="../" class="back-link">← 게임 목록으로</a>
-  </div>
+  <div id="game-container"></div>
+  <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

@@ -83,7 +83,7 @@
 - [ ] **VIP 보너스 시스템** - 방치 보상/가챠 배율 적용 `specs/idle-system.md`
 
 ## IN PROGRESS
-(없음)
+- [ ] **UI 컴포넌트 + 씬 전환** - Button, Modal, 네비게이션 동작
 
 ## DONE
 - [x] 엔티티 기본 구조 (General, Skill, Equipment, Formation)
