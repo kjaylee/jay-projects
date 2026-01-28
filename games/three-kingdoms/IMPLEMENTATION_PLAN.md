@@ -1,7 +1,7 @@
 # Implementation Plan
 
 ## 현재 상태
-엔티티(General, Skill, Equipment, Formation)와 전투 시스템 기본 구조 완료. 9개 씬(Boot, Preload, Login, Main, Battle, Formation, GeneralList, Gacha, StageSelect) 구현됨. **단위 테스트 794개 통과. 출시 준비 단계.**
+엔티티(General, Skill, Equipment, Formation)와 전투 시스템 기본 구조 완료. 9개 씬(Boot, Preload, Login, Main, Battle, Formation, GeneralList, Gacha, StageSelect) 구현됨. **단위 테스트 849개 통과. 출시 준비 단계.**
 
 ## TODO (우선순위순)
 
@@ -69,11 +69,11 @@
 - [x] **클래스 배치 가이드** - FormationGuide 유틸리티 완료 (2026-01-28)
 
 #### 스킬/전투 고도화
-- [ ] **스킬 연출** - 발동 시 이름 표시 + 이펙트 애니메이션 `specs/skill-system.md`
+- [x] **스킬 연출** - SkillEffectManager 완료 (2026-01-28)
 - [x] **스턴(행동불가) 효과** - StunManager 완료 (2026-01-28)
 - [x] **연환계 (쿨다운 초기화)** - CooldownResetManager 완료 (2026-01-28)
 - [x] **선제 기습 효과** - PreemptiveStrikeManager 완료 (2026-01-28)
-- [ ] **전투 리플레이** - 행동 기록 저장 및 재생 `specs/battle-system.md`
+- [x] **전투 리플레이** - BattleReplayManager 완료, 녹화/재생/내보내기 (2026-01-28)
 - [x] **턴 제한 시스템** - TurnLimitChecker 유틸리티 완료, BattleManager 연동 예정 (2026-01-28)
 
 #### 장수 시스템 고도화
@@ -82,7 +82,7 @@
 
 #### 추가 UI
 - [x] **StageSelectScene** - 챕터/스테이지 선택 화면 완료 (2026-01-28)
-- [ ] **GeneralDetailScene** - 장수 상세, 레벨업, 장비 장착 `specs/ui-scenes.md`
+- [x] **GeneralDetailManager** - 장수 상세, 레벨업, 장비 장착/해제 (2026-01-28)
 - [x] **VIP 보너스 시스템** - VIPManager 완료, 방치 보상/가챠 배율 적용 (2026-01-28)
 
 ## DONE (완료된 기능 총정리)
@@ -110,6 +110,8 @@
 - [x] PreemptiveStrikeManager - 선제 기습 (첫 턴 2배 데미지)
 - [x] SkillLevelManager - 스킬 레벨업/강화 시스템
 - [x] VIPManager - VIP 레벨/혜택 (방치 보상/가챠 보너스)
+- [x] BattleReplayManager - 전투 녹화/재생/내보내기
+- [x] GeneralDetailManager - 장수 상세, 레벨업, 장비 장착
 
 ### UI 컴포넌트
 - [x] Button (3가지 variant + 커스텀 색상)
@@ -135,8 +137,8 @@
 - [x] 10개 스테이지 데이터 (1-1 ~ 1-10)
 
 ### 테스트
-- **794개 테스트 통과** (Vitest)
-- 40개 테스트 파일
+- **849개 테스트 통과** (Vitest)
+- 42개 테스트 파일
 
 ## 출시 준비 상태
 
@@ -149,11 +151,9 @@
 - 장수 관리
 
 ### ⚠️ 출시 후 업데이트 권장
-- 스킬 연출 강화
-- 전투 리플레이
-- VIP 시스템
-- 선제 기습 효과
-- GeneralDetailScene
+- GeneralDetailScene UI (매니저 완료, UI 씬 미구현)
+- 스킬 연출 강화 (기본 완료)
+- 전투 리플레이 UI (매니저 완료, UI 미구현)
 
 ## DISCOVERIES
 - **기획서 vs 구현 불일치**: 방치 보상 공식이 테스트(×0.5, ×2)와 기획서(×10, ×5)에서 다름 - 확인 필요
